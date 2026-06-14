@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const { pobierzPozycjeZWartoscia, zKorekta } = require('../utils/calc');
 
 async function generujNumer() {
   const now = new Date();
@@ -151,6 +152,55 @@ router.delete('/wymiary/:dim_id', async (req, res) => {
 
 module.exports = router;
 
+// Eksport oferty do CSV
+router.get('/:id/csv', async (req, res) => {
+  try {
+    const oferta = await pool.query(`
+      SELECT o.*, c.nazwa as klient_nazwa
+      FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
+      WHERE o.id = $1
+    `, [req.params.id]);
+    if (!oferta.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
+
+    const tabele = await pool.query(`
+      SELECT * FROM furniture_tables WHERE oferta_id = $1 ORDER BY kolejnosc ASC
+    `, [req.params.id]);
+
+    const kortGlobalnaCSV = parseFloat(oferta.rows[0].korekta_globalna) || 0
+
+    let csv = '\uFEFF' // BOM dla Excel
+    csv += `Numer oferty;${oferta.rows[0].numer}\n`
+    csv += `Klient;${oferta.rows[0].klient_nazwa || ''}\n`
+    csv += `Data;${new Date(oferta.rows[0].data_oferty).toLocaleDateString('pl-PL')}\n`
+    csv += '\n'
+
+    for (const tabela of tabele.rows) {
+      csv += `${tabela.nazwa_mebla}\n`
+      const kortLaczCSV = (parseFloat(tabela.korekta_pct) || 0) + kortGlobalnaCSV
+      csv += `Pozycja;Ilość;Jednostka;Cena jedn.;Wartość\n`
+
+      const pozycjeRows = await pobierzPozycjeZWartoscia(pool, tabela.id)
+      let sumaTabeli = 0
+      for (const p of pozycjeRows) {
+        const ilosc = parseFloat(p.laczna_ilosc || 0).toFixed(2).replace('.', ',')
+        const wartoscZKort = zKorekta(p.wartosc_bazowa, kortLaczCSV)
+        sumaTabeli += wartoscZKort
+        csv += `${p.nazwa};${ilosc};${p.jednostka};;;${wartoscZKort.toFixed(2).replace('.', ',')}\n`
+      }
+      const razem = sumaTabeli.toFixed(2).replace('.', ',')
+      csv += `RAZEM;;;; ${razem}\n`
+      csv += '\n'
+    }
+
+    const nazwaPliku = `${oferta.rows[0].numer}.csv`
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="${nazwaPliku}"`)
+    res.send(csv)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+});
+
 // Pobierz szczegóły jednej tabeli z pozycjami i wymiarami
 router.get('/tabele-szczegoly/:tabela_id', async (req, res) => {
   try {
@@ -198,63 +248,4 @@ router.put('/pozycje/:pozycja_id', async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// Eksport oferty do CSV
-router.get('/:id/csv', async (req, res) => {
-  try {
-    const oferta = await pool.query(`
-      SELECT o.*, c.nazwa as klient_nazwa
-      FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
-      WHERE o.id = $1
-    `, [req.params.id]);
-    if (!oferta.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
-
-    const tabele = await pool.query(`
-      SELECT * FROM furniture_tables WHERE oferta_id = $1 ORDER BY kolejnosc ASC
-    `, [req.params.id]);
-
-    const kortGlobalnaCSV = parseFloat(oferta.rows[0].korekta_globalna) || 0
-
-    let csv = '\uFEFF' // BOM dla Excel
-    csv += `Numer oferty;${oferta.rows[0].numer}\n`
-    csv += `Klient;${oferta.rows[0].klient_nazwa || ''}\n`
-    csv += `Data;${new Date(oferta.rows[0].data_oferty).toLocaleDateString('pl-PL')}\n`
-    csv += '\n'
-
-    for (const tabela of tabele.rows) {
-      csv += `${tabela.nazwa_mebla}\n`
-      csv += `Pozycja;Ilość;Jednostka;Cena jedn.;Wartość\n`
-
-      const pozycje = await pool.query(`
-        SELECT ti.*,
-          CASE WHEN ti.jednostka = 'm2' THEN
-            COALESCE((SELECT SUM(ROUND(d.wymiar_x * d.wymiar_y, 2)) FROM item_dimensions d WHERE d.item_id = ti.id),0)
-          ELSE
-            COALESCE((SELECT SUM(d.ilosc) FROM item_dimensions d WHERE d.item_id = ti.id),0)
-          END as laczna_ilosc,
-          CASE WHEN ti.jednostka = 'm2' THEN
-            COALESCE((SELECT SUM(ROUND(ROUND(d.wymiar_x * d.wymiar_y, 2) * ti.cena_jedn, 2)) FROM item_dimensions d WHERE d.item_id = ti.id),0)
-          ELSE
-            COALESCE((SELECT SUM(ROUND(d.ilosc * ti.cena_jedn, 2)) FROM item_dimensions d WHERE d.item_id = ti.id),0)
-          END as wartosc
-        FROM table_items ti WHERE ti.tabela_id = $1 ORDER BY ti.kolejnosc ASC
-      `, [tabela.id]);
-
-      for (const p of pozycje.rows) {
-        const ilosc = parseFloat(p.laczna_ilosc || 0).toFixed(2).replace('.', ',')
-        const wartoscZKort = (parseFloat(p.wartosc || 0) * (1 + kortLaczCSV / 100)).toFixed(2).replace('.', ',')
-        csv += `${p.nazwa};${ilosc};${p.jednostka};;;${wartoscZKort}\n`
-      }
-      csv += `RAZEM;;;; ${razem}\n`
-      csv += '\n'
-    }
-
-    const nazwaPliku = `${oferta.rows[0].numer}.csv`
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-    res.setHeader('Content-Disposition', `attachment; filename="${nazwaPliku}"`)
-    res.send(csv)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
 });

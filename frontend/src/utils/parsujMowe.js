@@ -122,22 +122,3 @@ export function parsujMoweCiagla(tekst, cennik) {
 
   return wynik
 }
-
-// Parser dla pojedynczego pola (stary, dla przycisku w modalu)
-export function parsujMowe(tekst, jednostka) {
-  tekst = tekst.toLowerCase().trim()
-  const wynik = { nazwa: null, ilosc: null, wymiar_x: null, wymiar_y: null }
-  if (jednostka === 'm2') {
-    const wzorzec = /(\d+[.,]?\d*)\s*(na|przez|x|×)\s*(\d+[.,]?\d*)/i
-    const match = tekst.match(wzorzec)
-    if (match) {
-      wynik.wymiar_x = parseFloat(match[1].replace(',', '.'))
-      wynik.wymiar_y = parseFloat(match[3].replace(',', '.'))
-      return wynik
-    }
-  } else {
-    const match = tekst.match(/(\d+[.,]?\d*)/)
-    if (match) { wynik.ilosc = parseFloat(match[1].replace(',','.')); return wynik }
-  }
-  return wynik
-}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { round2 } from '../utils/calc'
 
 export default function Import() {
   const [plik, setPlik] = useState(null)
@@ -150,7 +151,6 @@ export default function Import() {
                         <td style={{padding:'6px 10px', fontSize:13}}>{p.nazwa}</td>
                         <td style={{padding:'6px 10px', fontSize:13, color:'#888'}}>
                           {(() => {
-                            const round2 = v => Math.round((v + Number.EPSILON)*100)/100
                             const suma = p.jednostka === 'm2'
                               ? p.wymiary.reduce((a,d) => a + round2((d.wymiar_x||0)*(d.wymiar_y||0)), 0)
                               : p.wymiary.reduce((a,d) => a + (d.ilosc||0), 0)

@@ -4,6 +4,7 @@ const pool = require('../db/pool');
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { pobierzPozycjeZWartoscia, zKorekta, round2 } = require('../utils/calc');
 
 router.get('/:id', async (req, res) => {
   try {
@@ -21,40 +22,18 @@ router.get('/:id', async (req, res) => {
     `, [req.params.id]);
 
     for (let t of tabele.rows) {
-      const pozycje = await pool.query(`
-        SELECT ti.*,
-          CASE
-            WHEN ti.jednostka = 'm2' THEN
-              COALESCE((
-                SELECT SUM(ROUND(ROUND(d.wymiar_x * d.wymiar_y, 2) * ti.cena_jedn, 2))
-                FROM item_dimensions d WHERE d.item_id = ti.id
-              ), 0)
-            ELSE
-              COALESCE((
-                SELECT SUM(ROUND(d.ilosc * ti.cena_jedn, 2))
-                FROM item_dimensions d WHERE d.item_id = ti.id
-              ), 0)
-          END as wartosc_bazowa
-        FROM table_items ti
-        WHERE ti.tabela_id = $1
-        ORDER BY ti.kolejnosc ASC
-      `, [t.id]);
-      t.pozycje = pozycje.rows;
+      t.pozycje = await pobierzPozycjeZWartoscia(pool, t.id);
     }
 
-    const round2 = v => Math.round((v + Number.EPSILON) * 100) / 100
     const kortGlobalna = parseFloat(oferta.rows[0].korekta_globalna) || 0
 
-    // Przelicz wartości z korektą lokalną + globalną
     for (const t of tabele.rows) {
-      const kortLokalna = parseFloat(t.korekta_pct) || 0
-      const kortLaczna = kortLokalna + kortGlobalna
+      const kortLaczna = (parseFloat(t.korekta_pct) || 0) + kortGlobalna
       for (const p of t.pozycje) {
-        const bazowa = parseFloat(p.wartosc_bazowa || 0)
-        p.wartosc_koncowa = round2(bazowa * (1 + kortLaczna / 100))
+        p.wartosc_koncowa = zKorekta(p.wartosc_bazowa, kortLaczna)
       }
       const sumaRaw = round2(t.pozycje.reduce((s, p) => s + parseFloat(p.wartosc_bazowa || 0), 0))
-      t.razem = round2(sumaRaw * (1 + kortLaczna / 100))
+      t.razem = zKorekta(sumaRaw, kortLaczna)
     }
 
     const dane = {
