@@ -1,15 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import { parsujMoweCiagla } from '../utils/parsujMowe'
+import { round2 } from '../utils/calc'
 
 export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
   const [aktywny, setAktywny] = useState(false)
   const [ostatni, setOstatni] = useState(null)
   const [blad, setBlad] = useState(null)
-  const [tryb, setTryb] = useState('web') // 'web' lub 'whisper'
+  const [tryb, setTryb] = useState('web')
   const recRef = useRef(null)
   const mediaRecRef = useRef(null)
-  const chunksRef = useRef([])
 
   useEffect(() => {
     return () => {
@@ -18,7 +18,7 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
     }
   }, [])
 
-  // --- Web Speech API (tryb web) ---
+  // --- Web Speech API ---
   function startWeb() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SR) { setBlad('Brak obsługi mowy — użyj trybu Whisper'); return }
@@ -43,7 +43,6 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
     }
     rec.onresult = (e) => {
       const tekst = e.results[e.results.length - 1][0].transcript
-      console.log('Web Speech:', tekst)
       przetworzTekst(tekst)
     }
 
@@ -57,23 +56,16 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
     setAktywny(false)
   }
 
-  // --- Whisper (tryb whisper) ---
+  // --- Whisper ---
   async function startWhisper() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      chunksRef.current = []
       setAktywny(true)
       setBlad(null)
       setOstatni(null)
 
       const mediaRec = new MediaRecorder(stream, { mimeType: 'audio/webm' })
       mediaRecRef.current = mediaRec
-
-      mediaRec.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data)
-      }
-
-      // Co 4 sekundy wysyłaj chunk do Whisper
       mediaRec.start(4000)
 
       mediaRec.onstop = async () => {
@@ -81,9 +73,8 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
         setAktywny(false)
       }
 
-      // Nasłuchuj na nowe chunki i wysyłaj do Whisper
       mediaRec.addEventListener('dataavailable', async (e) => {
-        if (e.data.size < 1000) return  // za krótki — ignoruj
+        if (e.data.size < 1000) return
         await wyslijDoWhisper(e.data)
       })
 
@@ -100,10 +91,7 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       const tekst = res.data.tekst
-      if (tekst) {
-        console.log('Whisper:', tekst)
-        przetworzTekst(tekst)
-      }
+      if (tekst) przetworzTekst(tekst)
     } catch (err) {
       console.error('Whisper error:', err)
     }
@@ -119,10 +107,18 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
   async function przetworzTekst(tekst) {
     const wynik = parsujMoweCiagla(tekst, cennik)
     if (wynik.sukces) {
-      await dodajPozycje(wynik)
+      const info = await dodajPozycje(wynik)
+      await zapiszLog(tekst, info, true)
     } else {
       setOstatni(`❓ Nie rozpoznano: "${tekst}"`)
+      await zapiszLog(tekst, null, false)
     }
+  }
+
+  async function zapiszLog(tekst, rozpoznano, sukces) {
+    try {
+      await axios.post(`/api/oferty/tabele/${tabelaId}/dyktowanie`, { tekst, rozpoznano, sukces })
+    } catch (e) {}
   }
 
   async function dodajPozycje(wynik) {
@@ -150,25 +146,29 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
         itemId = resPoz.data.id
       }
 
+      const ilosc = wynik.pozycja.jednostka === 'm2'
+        ? round2((wynik.wymiar_x || 0) * (wynik.wymiar_y || 0))
+        : (wynik.ilosc || 1)
+
       const dimPayload = {
         wymiar_x: wynik.wymiar_x || null,
         wymiar_y: wynik.wymiar_y || null,
-        ilosc: wynik.pozycja.jednostka === 'm2'
-          ? (wynik.wymiar_x || 0) * (wynik.wymiar_y || 0)
-          : (wynik.ilosc || 1),
+        ilosc,
         kolejnosc: (istniejaca?.wymiary?.length || 0) + 1
       }
 
       await axios.post(`/api/oferty/pozycje/${itemId}/wymiary`, dimPayload)
 
       const info = wynik.pozycja.jednostka === 'm2'
-        ? `${wynik.pozycja.nazwa} ${wynik.wymiar_x}×${wynik.wymiar_y}m²`
+        ? `${wynik.pozycja.nazwa} ${round2(wynik.wymiar_x)}×${round2(wynik.wymiar_y)}m² (${ilosc.toFixed(2)} m²)`
         : `${wynik.pozycja.nazwa} ${wynik.ilosc} ${wynik.pozycja.jednostka}`
 
       setOstatni(info)
       onDodano()
+      return info
     } catch (err) {
       setBlad('Błąd zapisu')
+      return null
     }
   }
 
@@ -177,8 +177,6 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
 
   return (
     <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
-
-      {/* Przełącznik trybu */}
       <select
         value={tryb}
         onChange={e => setTryb(e.target.value)}
@@ -192,7 +190,6 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
         <option value="whisper">🤖 Whisper (lokalny)</option>
       </select>
 
-      {/* Przycisk mikrofonu */}
       <button
         onClick={aktywny ? stop : start}
         style={{
@@ -221,14 +218,6 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
       )}
 
       {blad && <span style={{fontSize:12, color:'#e53935'}}>{blad}</span>}
-
-      <style>{`
-        @keyframes pulse {
-          0% { box-shadow: 0 0 0 0 rgba(229,57,53,0.4); }
-          70% { box-shadow: 0 0 0 8px rgba(229,57,53,0); }
-          100% { box-shadow: 0 0 0 0 rgba(229,57,53,0); }
-        }
-      `}</style>
     </div>
   )
 }

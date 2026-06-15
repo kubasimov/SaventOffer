@@ -249,3 +249,26 @@ router.put('/pozycje/:pozycja_id', async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// Dodaj wpis do logu dyktowania
+router.post('/tabele/:tabela_id/dyktowanie', async (req, res) => {
+  const { tekst, rozpoznano, sukces } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO dictation_log (tabela_id, tekst, rozpoznano, sukces) VALUES ($1,$2,$3,$4) RETURNING *`,
+      [req.params.tabela_id, tekst, rozpoznano || null, !!sukces]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Pobierz log dyktowania dla tabeli
+router.get('/tabele/:tabela_id/dyktowanie', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM dictation_log WHERE tabela_id = $1 ORDER BY utworzono ASC`,
+      [req.params.tabela_id]
+    );
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
