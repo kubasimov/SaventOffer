@@ -3,6 +3,12 @@ import axios from 'axios'
 
 const AuthContext = createContext(null)
 
+// Ustaw token natychmiast przy załadowaniu modułu (przed pierwszym renderem)
+const savedToken = localStorage.getItem('savento_token')
+if (savedToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -10,10 +16,12 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('savento_token')
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       axios.get('/api/auth/me')
         .then(r => setUser(r.data))
-        .catch(() => { localStorage.removeItem('savento_token'); delete axios.defaults.headers.common['Authorization'] })
+        .catch(() => {
+          localStorage.removeItem('savento_token')
+          delete axios.defaults.headers.common['Authorization']
+        })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)
