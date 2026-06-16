@@ -56,3 +56,48 @@ router.post('/zmien-haslo', async (req, res) => {
 });
 
 module.exports = router;
+
+// Google OAuth
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Weryfikacja tokenu Google (z frontendu)
+router.post('/google', async (req, res) => {
+  const { credential } = req.body;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const imie = payload.name;
+
+    // Sprawdź czy użytkownik istnieje
+    let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+    if (!result.rows.length) {
+      // Nowy użytkownik — utwórz konto (bez hasła)
+      const hash = await require('bcrypt').hash(Math.random().toString(36), 10);
+      result = await pool.query(
+        `INSERT INTO users (email, haslo_hash, imie_nazwisko, rola)
+         VALUES ($1, $2, $3, 'pracownik') RETURNING *`,
+        [email, hash, imie]
+      );
+    }
+
+    const user = result.rows[0];
+    if (!user.aktywny) return res.status(401).json({ error: 'Konto zablokowane' });
+
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola },
+      process.env.JWT_SECRET || 'savento_secret_2026',
+      { expiresIn: '7d' }
+    );
+    res.json({ token, user: { id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola } });
+  } catch (err) {
+    console.error('Google OAuth error:', err.message);
+    res.status(401).json({ error: 'Nieprawidłowy token Google' });
+  }
+});
