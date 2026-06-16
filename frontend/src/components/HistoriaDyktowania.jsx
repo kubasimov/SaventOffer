@@ -49,7 +49,7 @@ export default function HistoriaDyktowania({ tabelaId }) {
                         {entry.sukces ? '✓ rozpoznano' : '❓ nie rozpoznano'}
                       </span>
                     </div>
-                    <div style={{fontSize:14, color:'#333'}}>
+                    <div style={{fontSize:14, color:'#333', whiteSpace:'pre-wrap', wordBreak:'break-word'}}>
                       🎤 "{entry.tekst}"
                     </div>
                     {entry.rozpoznano && (

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 import MikrofonCiagly from './MikrofonCiagly'
 import HistoriaDyktowania from './HistoriaDyktowania'
+import AudioUpload from './AudioUpload'
+import WklejTekst from './WklejTekst'
 
 function round2(val) {
   return Math.round((val + Number.EPSILON) * 100) / 100
@@ -565,6 +567,8 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
         <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
           <MikrofonCiagly tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
           <HistoriaDyktowania tabelaId={tabela.id} />
+          <AudioUpload tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
+          <WklejTekst tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
           <button className="btn btn-secondary btn-sm" onClick={kopiujTabele}>⧉ Kopiuj</button>
           <button className="btn btn-secondary btn-sm" onClick={() => setModalPozycja(true)}>+ Pozycja</button>
           <button className="btn btn-danger btn-sm" onClick={() => onUsun(tabela.id)}>Usuń tabelę</button>

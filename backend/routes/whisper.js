@@ -5,40 +5,61 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const fs = require('fs');
 
-const upload = multer({ dest: '/tmp/whisper/' });
+const upload = multer({
+  dest: '/tmp/whisper/',
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB
+});
+
+function wykryjRozszerzenie(file) {
+  if (file.originalname && file.originalname.includes('.')) {
+    return file.originalname.split('.').pop().toLowerCase()
+  }
+  const mapa = {
+    'audio/webm': 'webm',
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
+    'audio/mp4': 'm4a',
+    'audio/x-m4a': 'm4a',
+    'audio/ogg': 'ogg'
+  }
+  return mapa[file.mimetype] || 'webm'
+}
 
 router.post('/transcribe', upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'brak pliku audio' });
 
-    console.log('Whisper: otrzymano plik', req.file.originalname, req.file.size, 'bytes');
+    const ext = wykryjRozszerzenie(req.file)
+    console.log('Whisper: plik otrzymany:', req.file.originalname, req.file.size, 'bytes, ext:', ext);
+
+    const tmpPath = req.file.path;
+    const finalPath = tmpPath + '.' + ext;
+    fs.renameSync(tmpPath, finalPath);
 
     const form = new FormData();
-    form.append('audio', fs.createReadStream(req.file.path), {
-      filename: 'audio.webm',
-      contentType: req.file.mimetype || 'audio/webm'
+    form.append('audio', fs.createReadStream(finalPath), {
+      filename: `audio.${ext}`,
+      contentType: req.file.mimetype || 'application/octet-stream'
     });
+
+    console.log('Whisper: wysyłam do http://192.168.1.12:5050/transcribe');
 
     const response = await fetch('http://192.168.1.12:5050/transcribe', {
       method: 'POST',
       body: form,
-      headers: form.getHeaders()
+      headers: form.getHeaders(),
+      timeout: 1200000 // 20 minut
     });
 
-    const text = await response.text();
-    console.log('Whisper response:', text);
+    const data = await response.json();
+    console.log('Whisper: odpowiedź:', JSON.stringify(data).slice(0, 300));
 
-    try {
-      const data = JSON.parse(text);
-      if (req.file) fs.unlinkSync(req.file.path);
-      res.json(data);
-    } catch(e) {
-      res.status(500).json({ error: 'Nieprawidłowa odpowiedź Whisper', raw: text });
-    }
-
+    fs.unlinkSync(finalPath);
+    res.json(data);
   } catch (err) {
     console.error('Whisper route error:', err.message);
-    if (req.file) try { fs.unlinkSync(req.file.path) } catch(e) {}
     res.status(500).json({ error: err.message });
   }
 });
