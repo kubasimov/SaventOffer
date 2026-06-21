@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import ModalZalozenia from '../components/ModalZalozenia'
 import TabelaMebla from '../components/TabelaMebla'
 
 export default function EdytorOferty() {
@@ -11,6 +12,7 @@ export default function EdytorOferty() {
   const [cennik, setCennik] = useState([])
   const [loading, setLoading] = useState(true)
   const [kortGlobalna, setKortGlobalna] = useState(0)
+  const [modalZalozenia, setModalZalozenia] = useState(false)
   const [edytujNumer, setEdytujNumer] = useState(false)
   const [nowyNumer, setNowyNumer] = useState('')
 
@@ -29,13 +31,24 @@ export default function EdytorOferty() {
     })
   }, [id])
 
-  async function generujPDF() {
-    const url = `/api/pdf/${id}`
-    window.open(url, '_blank')
+  function generujPDF() {
+    setModalZalozenia(true)
   }
 
+
+
   async function eksportCSV() {
-    window.open(`/api/oferty/${id}/csv`, '_blank')
+    try {
+      const res = await axios.get(`/api/oferty/${id}/csv`, { responseType: 'blob' })
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${oferta.numer}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Błąd eksportu CSV')
+    }
   }
 
   async function dodajTabele() {
@@ -233,6 +246,13 @@ export default function EdytorOferty() {
             onUsun={usunTabele}
           />
         ))
+      )}
+      {modalZalozenia && (
+        <ModalZalozenia
+          ofertaId={id}
+          numer={oferta?.numer || ''}
+          onClose={() => setModalZalozenia(false)}
+        />
       )}
     </div>
   )

@@ -1,3 +1,4 @@
+import ModalZalozenia from '../components/ModalZalozenia'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -5,6 +6,7 @@ import axios from 'axios'
 export default function Oferty() {
   const [oferty, setOferty] = useState([])
   const [klienci, setKlienci] = useState([])
+  const [modalPDF, setModalPDF] = useState(null) // { id, numer }
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ klient_id: '', uwagi: '' })
   const [szybkiKlient, setSzybkiKlient] = useState(false)
@@ -98,13 +100,19 @@ export default function Oferty() {
                   <td style={{textAlign:'right'}}>
                     <button
                       className="btn btn-secondary btn-sm"
-                      onClick={() => window.open(`/api/oferty/${o.id}/csv`, '_blank')}
+                      onClick={async () => {
+                        const res = await axios.get(`/api/oferty/${o.id}/csv`, { responseType: 'blob' })
+                        const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
+                        const a = document.createElement('a'); a.href = url
+                        a.download = `${o.numer}.csv`; a.click()
+                        URL.revokeObjectURL(url)
+                      }}
                     >
                       ⬇ CSV
                     </button>
                   <button
                       className="btn btn-secondary btn-sm"
-                      onClick={() => window.open(`/api/pdf/${o.id}`, '_blank')}
+                      onClick={() => setModalPDF({ id: o.id, numer: o.numer })}
                     >
                       ⬇ PDF
                     </button>
@@ -173,6 +181,13 @@ export default function Oferty() {
             </div>
           </div>
         </div>
+      )}
+      {modalPDF && (
+        <ModalZalozenia
+          ofertaId={modalPDF.id}
+          numer={modalPDF.numer}
+          onClose={() => setModalPDF(null)}
+        />
       )}
     </div>
   )

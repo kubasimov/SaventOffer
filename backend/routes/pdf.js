@@ -36,9 +36,12 @@ router.get('/:id', async (req, res) => {
       t.razem = zKorekta(sumaRaw, kortLaczna)
     }
 
+    const zalozenia = req.query.zalozenia || ''
+
     const dane = {
       numer: oferta.rows[0].numer,
       klient: oferta.rows[0].klient_nazwa || '',
+      zalozenia: zalozenia,
       tabele: tabele.rows
     };
 
