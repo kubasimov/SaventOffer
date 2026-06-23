@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import ModalZalozenia from '../components/ModalZalozenia'
+import KreatorPDF from '../components/KreatorPDF'
 import TabelaMebla from '../components/TabelaMebla'
 
 export default function EdytorOferty() {
@@ -248,9 +248,10 @@ export default function EdytorOferty() {
         ))
       )}
       {modalZalozenia && (
-        <ModalZalozenia
+        <KreatorPDF
           ofertaId={id}
-          numer={oferta?.numer || ''}
+          ofertaNumer={oferta?.numer || ''}
+          klientId={oferta?.klient_id}
           onClose={() => setModalZalozenia(false)}
         />
       )}

@@ -272,3 +272,4 @@ router.get('/tabele/:tabela_id/dyktowanie', async (req, res) => {
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+module.exports = router;

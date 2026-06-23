@@ -1,4 +1,4 @@
-import ModalZalozenia from '../components/ModalZalozenia'
+import KreatorPDF from '../components/KreatorPDF'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -112,7 +112,7 @@ export default function Oferty() {
                     </button>
                   <button
                       className="btn btn-secondary btn-sm"
-                      onClick={() => setModalPDF({ id: o.id, numer: o.numer })}
+                      onClick={() => setModalPDF({ id: o.id, numer: o.numer, klientId: o.klient_id })}
                     >
                       ⬇ PDF
                     </button>
@@ -183,9 +183,10 @@ export default function Oferty() {
         </div>
       )}
       {modalPDF && (
-        <ModalZalozenia
+        <KreatorPDF
           ofertaId={modalPDF.id}
-          numer={modalPDF.numer}
+          ofertaNumer={modalPDF.numer}
+          klientId={modalPDF.klientId}
           onClose={() => setModalPDF(null)}
         />
       )}

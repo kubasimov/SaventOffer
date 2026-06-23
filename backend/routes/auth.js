@@ -101,3 +101,4 @@ router.post('/google', async (req, res) => {
     res.status(401).json({ error: 'Nieprawidłowy token Google' });
   }
 });
+module.exports = router;

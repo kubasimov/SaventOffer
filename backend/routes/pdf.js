@@ -6,6 +6,27 @@ const path = require('path');
 const fs = require('fs');
 const { pobierzPozycjeZWartoscia, zKorekta, round2 } = require('../utils/calc');
 
+// Pobierz dostępne kategorie obrazów
+
+router.get('/kategorie', async (req, res) => {
+  try {
+    const nodePath = require('path')
+    const nodeFs = require('fs')
+    const obrazyDir = '/opt/savento/backend/obrazy'
+    if (!nodeFs.existsSync(obrazyDir)) return res.json([])
+    const kategorie = nodeFs.readdirSync(obrazyDir)
+      .filter(f => nodeFs.statSync(nodePath.join(obrazyDir, f)).isDirectory())
+      .map(nazwa => {
+        const pliki = nodeFs.readdirSync(nodePath.join(obrazyDir, nazwa))
+          .filter(f => f.match(/^\d+\.pdf$/))
+          .length
+        return { nazwa, pliki }
+      })
+      .filter(k => k.pliki > 0)
+      .sort((a, b) => a.nazwa.localeCompare(b.nazwa, 'pl'))
+    res.json(kategorie)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+
 router.get('/:id', async (req, res) => {
   try {
     // Pobierz ofertę z bazy
@@ -37,11 +58,17 @@ router.get('/:id', async (req, res) => {
     }
 
     const zalozenia = req.query.zalozenia || ''
+    const klient_dane = req.query.klient_dane ? JSON.parse(req.query.klient_dane) : null
+    const specyfikacja = req.query.specyfikacja ? JSON.parse(req.query.specyfikacja) : []
+    const kategoria = req.query.kategoria || ''
 
     const dane = {
       numer: oferta.rows[0].numer,
       klient: oferta.rows[0].klient_nazwa || '',
-      zalozenia: zalozenia,
+      klient_dane,
+      zalozenia,
+      specyfikacja,
+      kategoria,
       tabele: tabele.rows
     };
 
@@ -71,4 +98,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+module.exports = router;
+
+})
 module.exports = router;
