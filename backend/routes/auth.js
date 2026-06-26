@@ -3,101 +3,96 @@ const router = express.Router();
 const pool = require('../db/pool');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const OAuth2Client = require('google-auth-library').OAuth2Client;
+const { jwtSecret } = require('../config');
+const { enforcePasswordPolicy } = require('../utils/password');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'savento_secret_2026'
-const JWT_EXPIRES = '7d'
+const JWT_EXPIRES = '7d';
+
+function sign(user) {
+  return { token: jwt.sign({ id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola }, jwtSecret, { expiresIn: JWT_EXPIRES }), user: { id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola } };
+}
 
 router.post('/login', async (req, res) => {
   const { email, haslo } = req.body;
-  try {
-    const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1 AND aktywny = true', [email]
-    );
-    if (!result.rows.length)
-      return res.status(401).json({ error: 'Nieprawidłowy email lub hasło' });
-    const user = result.rows[0];
-    const ok = await bcrypt.compare(haslo, user.haslo_hash);
-    if (!ok) return res.status(401).json({ error: 'Nieprawidłowy email lub hasło' });
-    const token = jwt.sign(
-      { id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola },
-      JWT_SECRET, { expiresIn: JWT_EXPIRES }
-    );
-    res.json({ token, user: { id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola } });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  const u = await pool.query('SELECT * FROM users WHERE email = $1 AND aktywny = true', [email]);
+  if (!u.rows[0] || !await bcrypt.compare(haslo, u.rows[0].haslo_hash)) return res.status(401).json({ error: 'Nieprawidlowy email lub haslo' });
+  res.json(sign(u.rows[0]));
 });
 
 router.get('/me', async (req, res) => {
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Brak tokenu' });
   try {
-    const decoded = jwt.verify(auth.slice(7), JWT_SECRET);
-    const result = await pool.query(
-      'SELECT id, email, imie_nazwisko as imie, rola FROM users WHERE id = $1', [decoded.id]
-    );
-    if (!result.rows.length) return res.status(401).json({ error: 'Użytkownik nie istnieje' });
-    res.json(result.rows[0]);
-  } catch (err) { res.status(401).json({ error: 'Nieprawidłowy token' }); }
+    const decoded = jwt.verify(auth.slice(7), jwtSecret);
+    const user = (await pool.query('SELECT id,email,imie_nazwisko,rola FROM users WHERE id = $1', [decoded.id])).rows[0];
+    if (!user) return res.status(401).json({ error: 'Uzytkownik nie istnieje' });
+    res.json(user);
+  } catch { res.status(401).json({ error: 'Nieprawidlowy token' }); }
 });
 
 router.post('/zmien-haslo', async (req, res) => {
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Brak tokenu' });
   const { stare_haslo, nowe_haslo } = req.body;
+  if (!stare_haslo || !nowe_haslo) return res.status(400).json({ error: 'Podaj stare i nowe haslo' });
+  try { enforcePasswordPolicy(nowe_haslo); } catch (e) { return res.status(400).json({ error: e.message }); }
   try {
-    const decoded = jwt.verify(auth.slice(7), JWT_SECRET);
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id]);
-    const user = result.rows[0];
-    const ok = await bcrypt.compare(stare_haslo, user.haslo_hash);
-    if (!ok) return res.status(401).json({ error: 'Nieprawidłowe stare hasło' });
-    const hash = await bcrypt.hash(nowe_haslo, 10);
+    const decoded = jwt.verify(auth.slice(7), jwtSecret);
+    const user = (await pool.query('SELECT * FROM users WHERE id = $1', [decoded.id])).rows[0];
+    if (!await bcrypt.compare(stare_haslo, user.haslo_hash)) return res.status(401).json({ error: 'Nieprawidlowe stare haslo' });
+    const hash = await bcrypt.hash(nowe_haslo, 11);
     await pool.query('UPDATE users SET haslo_hash = $1 WHERE id = $2', [hash, decoded.id]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch { res.status(500).json({ error: 'Blad zmiany hasla' }); }
+});
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+router.post('/google', async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) return res.status(400).json({ error: 'Brak tokenu Google' });
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+    const { email, name: imie } = ticket.getPayload();
+    let user = (await pool.query('SELECT * FROM users WHERE email = $1', [email])).rows[0];
+    if (!user) {
+      const hash = await bcrypt.hash(Math.random().toString(36), 10);
+      user = (await pool.query('INSERT INTO users (email, haslo_hash, imie_nazwisko, rola) VALUES ($1,$2,$3,$4) RETURNING *', [email, hash, imie, 'pracownik'])).rows[0];
+    }
+    if (!user.aktywny) return res.status(401).json({ error: 'Konto zablokowane' });
+    res.json(sign(user));
+  } catch { res.status(401).json({ error: 'Nieprawidlowy token Google' }); }
 });
 
 module.exports = router;
+const fs = require('fs');
+const path = require('path');
 
-// Google OAuth
-const { OAuth2Client } = require('google-auth-library');
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const GPUID_MIN = 1000;
+const GGID_MIN = 1000;
+const ALLOWED_UID_FILE = path.join(__dirname, '..', '..', 'auth_uid_allow.txt');
+const ALLOWED_GID_FILE = path.join(__dirname, '..', '..', 'auth_gid_allow.txt');
 
-// Weryfikacja tokenu Google (z frontendu)
-router.post('/google', async (req, res) => {
-  const { credential } = req.body;
+function loadAllowedIds(filePath, minVal, label) {
   try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
-    const payload = ticket.getPayload();
-    const email = payload.email;
-    const imie = payload.name;
-
-    // Sprawdź czy użytkownik istnieje
-    let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-
-    if (!result.rows.length) {
-      // Nowy użytkownik — utwórz konto (bez hasła)
-      const hash = await require('bcrypt').hash(Math.random().toString(36), 10);
-      result = await pool.query(
-        `INSERT INTO users (email, haslo_hash, imie_nazwisko, rola)
-         VALUES ($1, $2, $3, 'pracownik') RETURNING *`,
-        [email, hash, imie]
-      );
-    }
-
-    const user = result.rows[0];
-    if (!user.aktywny) return res.status(401).json({ error: 'Konto zablokowane' });
-
-    const jwt = require('jsonwebtoken');
-    const token = jwt.sign(
-      { id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola },
-      process.env.JWT_SECRET || 'savento_secret_2026',
-      { expiresIn: '7d' }
-    );
-    res.json({ token, user: { id: user.id, email: user.email, imie: user.imie_nazwisko, rola: user.rola } });
-  } catch (err) {
-    console.error('Google OAuth error:', err.message);
-    res.status(401).json({ error: 'Nieprawidłowy token Google' });
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const lines = raw.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+    const ids = lines.map(Number).filter(n => Number.isFinite(n) && n >= minVal);
+    if (ids.length === 0) return new Set([]);
+    return new Set(ids);
+  } catch (e) {
+    return new Set([]);
   }
-});
+}
+
+const ALLOWED_UID = loadAllowedIds(ALLOWED_UID_FILE, GPUID_MIN, 'uid');
+const ALLOWED_GID = loadAllowedIds(ALLOWED_GID_FILE, GGID_MIN, 'gid');
+
+function isUserAllowed(user) {
+  if (!user || user.rola == null) return false;
+  const gid = typeof user.id === 'number' ? user.id : undefined;
+  const uid = typeof user.uid === 'number' ? user.uid : undefined;
+  const base = (uid !== undefined && ALLOWED_UID.size > 0) ? ALLOWED_UID.has(uid) : true;
+  const group = (gid !== undefined && ALLOWED_GID.size > 0) ? ALLOWED_GID.has(gid) : true;
+  return base && group;
+}
