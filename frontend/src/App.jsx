@@ -6,6 +6,7 @@ import EdytorOferty from './pages/EdytorOferty'
 import Import from './pages/Import'
 import Login from './pages/Login'
 import Uzytkownicy from './pages/Uzytkownicy'
+import Ustawienia from './pages/Ustawienia'
 import Profil from './pages/Profil'
 import { AuthProvider, useAuth } from './AuthContext'
 import './App.css'
@@ -35,6 +36,7 @@ function AppInner() {
             <NavLink to="/cennik">Cennik</NavLink>
             <NavLink to="/import">Import</NavLink>
             <NavLink to="/uzytkownicy">Użytkownicy</NavLink>
+            <NavLink to="/ustawienia">Ustawienia</NavLink>
             {user && (
               <div style={{display:'flex', alignItems:'center', gap:12, marginLeft:8}}>
                 <NavLink to="/profil" style={{fontSize:13, color:'rgba(255,255,255,0.7)',
@@ -63,6 +65,7 @@ function AppInner() {
               <Route path="/cennik" element={<Cennik />} />
               <Route path="/import" element={<Import />} />
               <Route path="/uzytkownicy" element={<Uzytkownicy />} />
+            <Route path="/ustawienia" element={<Ustawienia />} />
             <Route path="/profil" element={<Profil />} />
             </Routes>
           </ProtectedRoute>

@@ -17,7 +17,7 @@ async function generujNumer() {
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT o.*, c.nazwa as klient_nazwa
+      SELECT o.*, o.nazwa as oferta_nazwa, c.nazwa as klient_nazwa
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
       ORDER BY o.utworzony DESC
     `);
@@ -66,16 +66,18 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { klient_id, status, uwagi, korekta_globalna, numer } = req.body;
+  const { klient_id, status, uwagi, korekta_globalna, numer, nazwa } = req.body;
   try {
     const result = await pool.query(`
       UPDATE offers SET klient_id=$1, status=$2, uwagi=$3,
         korekta_globalna=COALESCE($4, korekta_globalna),
-        numer=COALESCE($5, numer)
-      WHERE id=$6 RETURNING *
+        numer=COALESCE($5, numer),
+        nazwa=COALESCE($6, nazwa)
+      WHERE id=$7 RETURNING *
     `, [klient_id || null, status, uwagi || null,
         korekta_globalna !== undefined ? korekta_globalna : null,
         numer || null,
+        nazwa !== undefined ? nazwa : null,
         req.params.id]);
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -199,6 +201,14 @@ router.get('/:id/csv', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+});
+
+// Usuń ofertę
+router.delete('/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM offers WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Pobierz szczegóły jednej tabeli z pozycjami i wymiarami

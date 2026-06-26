@@ -1,48 +1,36 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const DOMYSLNE_ZALOZENIA = `Wycena wstępna na podstawie zapytania;
-Oferta cenowa zawiera: projekt techniczny, wykonanie, transport i montaż na terenie Warszawy i okolic;
-O ile nie zaznaczono inaczej, wycena nie obejmuje uchwytów i blatów;
-Dokładna wycena możliwa po szczegółowych ustaleniach;
-Podane ceny są cenami netto (FV+23%);
-Zadatek materiałowy przy podpisaniu umowy ~50% wartości zamówienia;
-Czas wykonania zlecenia: ~25–55 dni roboczych od podpisania umowy i wpłaty zadatku – dokładny termin ustalany w czasie podpisania umowy;
-Wycena ważna 5 dni;
-W razie pytań proszę o kontakt.`
-
-const DOMYSLNA_SPECYFIKACJA = [
-  'Płyta meblowa laminowana 18mm',
-  'Plecy z płyty HDF 3mm',
-  'Okucia stalowe ocynkowane',
-  'Zawiasy z cichym domykaczem',
-  'Prowadnice kulkowe z cichym domykaczem',
-  'Nóżki regulowane meblowe',
-]
+// Dane ładowane z API
 
 const KROKI = ['Dane klienta', 'Założenia', 'Specyfikacja', 'Obrazy', 'Generuj']
 
-export default function KreatorPDF({ ofertaId, ofertaNumer, klientId, onClose }) {
+export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientId, onClose }) {
   const [krok, setKrok] = useState(0)
   const [loading, setLoading] = useState(false)
   const [kategorie, setKategorie] = useState([])
 
   // Krok 1 — dane klienta
+  const [nazwaInwestycji, setNazwaInwestycji] = useState(ofertaNazwa || '')
   const [klientDane, setKlientDane] = useState({
     nazwa: '', adres: '', telefon: '', email: '', uwagi: ''
   })
 
   // Krok 2 — założenia
-  const [zalozenia, setZalozenia] = useState(DOMYSLNE_ZALOZENIA)
+  const [zalozenia, setZalozenia] = useState('')
 
   // Krok 3 — specyfikacja
-  const [specyfikacja, setSpecyfikacja] = useState(
-    DOMYSLNA_SPECYFIKACJA.map(t => ({ tekst: t, zaznaczony: true }))
-  )
+  const [specyfikacja, setSpecyfikacja] = useState([])
   const [nowyPunkt, setNowyPunkt] = useState('')
 
   // Krok 4 — obrazy
   const [kategoria, setKategoria] = useState('')
+  // Lista klientów do dropdownu
+  const [klienci, setKlienci] = useState([])
+  const [recznyWpis, setRecznyWpis] = useState(false)
+  // Własne obrazy
+  const [wlasneObrazy, setWlasneObrazy] = useState([])
+  const [uploadujac, setUploadujac] = useState(false)
 
   useEffect(() => {
     // Pobierz dane klienta z bazy
@@ -64,7 +52,38 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, klientId, onClose })
     axios.get('/api/pdf/kategorie')
       .then(r => setKategorie(r.data))
       .catch(() => {})
+    // Pobierz domyślne założenia z pliku
+    axios.get('/api/pdf/zalozenia-domyslne')
+      .then(r => { if (r.data.tekst) setZalozenia(r.data.tekst) })
+      .catch(() => {})
+    // Pobierz domyślną specyfikację z bazy
+    axios.get('/api/ustawienia/specyfikacja_domyslna')
+      .then(r => {
+        if (r.data.wartosc) {
+          const punkty = r.data.wartosc.split('\n').filter(Boolean)
+          setSpecyfikacja(punkty.map(t => ({ tekst: t.trim(), zaznaczony: true })))
+        }
+      })
+      .catch(() => {})
+    // Pobierz listę klientów do dropdownu
+    axios.get('/api/klienci')
+      .then(r => setKlienci(r.data))
+      .catch(() => {})
   }, [klientId])
+
+  async function wgrajObraz(e) {
+    const pliki = Array.from(e.target.files)
+    if (!pliki.length) return
+    setUploadujac(true)
+    const nowe = []
+    for (const plik of pliki) {
+      const buf = await plik.arrayBuffer()
+      nowe.push({ nazwa: plik.name, dane: buf, blob: new Blob([buf], { type: 'application/pdf' }) })
+    }
+    setWlasneObrazy(prev => [...prev, ...nowe])
+    setKategoria('__wlasne__')
+    setUploadujac(false)
+  }
 
   function dodajPunkt() {
     if (!nowyPunkt.trim()) return
@@ -86,15 +105,28 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, klientId, onClose })
     setLoading(true)
     try {
       const specAktywna = specyfikacja.filter(p => p.zaznaczony).map(p => p.tekst)
-      const res = await axios.get(`/api/pdf/${ofertaId}`, {
-        params: {
+
+      let res
+      if (kategoria === '__wlasne__' && wlasneObrazy.length > 0) {
+        // Wyślij własne obrazy jako multipart
+        const formData = new FormData()
+        formData.append('zalozenia', zalozenia)
+        formData.append('klient_dane', JSON.stringify({ ...klientDane, nazwa_inwestycji: nazwaInwestycji }))
+        formData.append('specyfikacja', JSON.stringify(specAktywna))
+        formData.append('kategoria', '')
+        wlasneObrazy.forEach((o, i) => formData.append(`obraz_${i}`, o.blob, o.nazwa))
+        res = await axios.post(`/api/pdf/${ofertaId}/z-obrazami`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          responseType: 'blob'
+        })
+      } else {
+        res = await axios.post(`/api/pdf/${ofertaId}`, {
           zalozenia,
-          klient_dane: JSON.stringify(klientDane),
-          specyfikacja: JSON.stringify(specAktywna),
+          klient_dane: { ...klientDane, nazwa_inwestycji: nazwaInwestycji },
+          specyfikacja: specAktywna,
           kategoria
-        },
-        responseType: 'blob'
-      })
+        }, { responseType: 'blob' })
+      }
       const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
       const a = document.createElement('a')
       a.href = url
@@ -139,6 +171,47 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, klientId, onClose })
         {krok === 0 && (
           <div>
             <h2 style={{ marginBottom: 16 }}>Dane klienta</h2>
+
+            <div className="form-group">
+              <label>Nazwa inwestycji (np. Zabudowa kuchenna)</label>
+              <input
+                value={nazwaInwestycji}
+                onChange={e => setNazwaInwestycji(e.target.value)}
+                placeholder="np. Zabudowa kuchenna"
+              />
+            </div>
+
+            {/* Wybór klienta z bazy lub ręczny wpis */}
+            <div className="form-group">
+              <label>Wybierz klienta</label>
+              <div style={{display:'flex', gap:8}}>
+                <select
+                  value={recznyWpis ? '__reczny__' : (klienci.find(k => k.nazwa === klientDane.nazwa)?.id || '')}
+                  onChange={e => {
+                    if (e.target.value === '__reczny__') {
+                      setRecznyWpis(true)
+                      setKlientDane({ nazwa:'', adres:'', telefon:'', email:'', uwagi:'' })
+                    } else if (e.target.value) {
+                      setRecznyWpis(false)
+                      const k = klienci.find(c => c.id === e.target.value)
+                      if (k) setKlientDane({
+                        nazwa: k.nazwa || '', adres: k.adres || '',
+                        telefon: k.telefon || '', email: k.email || '', uwagi: ''
+                      })
+                    }
+                  }}
+                  style={{flex:1}}
+                >
+                  <option value="">— wybierz klienta z bazy —</option>
+                  {klienci.map(k => (
+                    <option key={k.id} value={k.id}>{k.nazwa}</option>
+                  ))}
+                  <option value="__reczny__">✏️ Wpisz ręcznie...</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Pola danych */}
             {[
               ['Imię i nazwisko / Firma', 'nazwa'],
               ['Adres', 'adres'],
@@ -268,6 +341,46 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, klientId, onClose })
                   <code style={{ fontSize: 12 }}>/opt/savento/backend/obrazy/</code>
                 </div>
               )}
+
+              {/* Własne obrazy */}
+              <div style={{marginTop:12, paddingTop:12, borderTop:'1px solid #eee'}}>
+                <div style={{fontSize:13, fontWeight:500, color:'#555', marginBottom:8}}>
+                  lub wgraj własne pliki PDF:
+                </div>
+                <label className="btn btn-secondary btn-sm" style={{cursor:'pointer'}}>
+                  {uploadujac ? '⏳ Wgrywanie...' : '📎 Wybierz obrazy (JPG/PNG)'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg"
+                    multiple
+                    onChange={wgrajObraz}
+                    style={{display:'none'}}
+                    disabled={uploadujac}
+                  />
+                </label>
+                {wlasneObrazy.length > 0 && (
+                  <div style={{marginTop:10}}>
+                    <label style={{display:'flex', alignItems:'center', gap:12,
+                      padding:'10px 14px', borderRadius:8, cursor:'pointer',
+                      border: `2px solid ${kategoria === '__wlasne__' ? '#5a2d6e' : '#eee'}`,
+                      background: kategoria === '__wlasne__' ? '#f8f5ff' : 'white',
+                      marginBottom:8}}>
+                      <input type="radio" name="kategoria" value="__wlasne__"
+                        checked={kategoria === '__wlasne__'}
+                        onChange={() => setKategoria('__wlasne__')}
+                        style={{accentColor:'#5a2d6e'}}
+                      />
+                      <div>
+                        <div style={{fontWeight:500, fontSize:14}}>Wgrane pliki</div>
+                        <div style={{fontSize:12, color:'#888'}}>{wlasneObrazy.length} {wlasneObrazy.length === 1 ? 'plik' : 'pliki'}: {wlasneObrazy.map(o => o.nazwa).join(', ')}</div>
+                      </div>
+                      <button onClick={e => {e.preventDefault(); setWlasneObrazy([]); setKategoria('')}}
+                        style={{marginLeft:'auto', background:'none', border:'none',
+                          cursor:'pointer', color:'#aaa', fontSize:18}}>✕</button>
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

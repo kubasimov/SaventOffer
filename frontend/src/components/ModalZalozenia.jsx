@@ -18,10 +18,12 @@ export default function ModalZalozenia({ ofertaId, numer, onClose }) {
   async function generuj(zalozenia) {
     setLoading(true)
     try {
-      const res = await axios.get(`/api/pdf/${ofertaId}`, {
-        params: { zalozenia },
-        responseType: 'blob'
-      })
+      const res = await axios.post(`/api/pdf/${ofertaId}`, {
+        zalozenia,
+        klient_dane: null,
+        specyfikacja: [],
+        kategoria: ''
+      }, { responseType: 'blob' })
       const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
       const a = document.createElement('a')
       a.href = url

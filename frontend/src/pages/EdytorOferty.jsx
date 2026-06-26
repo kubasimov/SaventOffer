@@ -15,6 +15,8 @@ export default function EdytorOferty() {
   const [modalZalozenia, setModalZalozenia] = useState(false)
   const [edytujNumer, setEdytujNumer] = useState(false)
   const [nowyNumer, setNowyNumer] = useState('')
+  const [edytujNazwe, setEdytujNazwe] = useState(false)
+  const [nowaNazwaOferty, setNowaNazwaOferty] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -27,6 +29,7 @@ export default function EdytorOferty() {
       setCennik(c.data)
       setKortGlobalna(parseFloat(o.data.korekta_globalna) || 0)
       setNowyNumer(o.data.numer)
+      setNowaNazwaOferty(o.data.nazwa || '')
       setLoading(false)
     })
   }, [id])
@@ -78,6 +81,17 @@ export default function EdytorOferty() {
       ...prev,
       tabele: prev.tabele.filter(t => t.id !== tabela_id)
     }))
+  }
+
+  async function zapiszNazweOferty() {
+    await axios.put(`/api/oferty/${id}`, {
+      klient_id: oferta.klient_id,
+      status: oferta.status,
+      uwagi: oferta.uwagi,
+      nazwa: nowaNazwaOferty.trim()
+    })
+    setOferta(prev => ({ ...prev, nazwa: nowaNazwaOferty.trim() }))
+    setEdytujNazwe(false)
   }
 
   async function zapiszNumerOferty() {
@@ -188,6 +202,33 @@ export default function EdytorOferty() {
               ))}
             </select>
           </div>
+          <div style={{flex:1}}>
+            {edytujNazwe ? (
+              <div style={{display:'flex', gap:8, alignItems:'center', marginBottom:8}}>
+                <input
+                  value={nowaNazwaOferty}
+                  onChange={e => setNowaNazwaOferty(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && zapiszNazweOferty()}
+                  placeholder="np. Zabudowa kuchenna"
+                  style={{padding:'4px 8px', border:'1px solid #5a2d6e', borderRadius:6,
+                    fontSize:14, width:260, background:'white', color:'#333'}}
+                  autoFocus
+                />
+                <button className="btn btn-primary btn-sm" onClick={zapiszNazweOferty}>✓</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setEdytujNazwe(false)}>✕</button>
+              </div>
+            ) : (
+              <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:8}}>
+                <span style={{fontSize:15, color: nowaNazwaOferty ? '#333' : '#aaa'}}>
+                  {nowaNazwaOferty || 'Brak nazwy inwestycji'}
+                </span>
+                <button onClick={() => setEdytujNazwe(true)}
+                  style={{background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#aaa'}}>
+                  ✏️
+                </button>
+              </div>
+            )}
+          </div>
           <div style={{fontSize:13, color:'#888', minWidth:120}}>
             <div>Data: <strong>{new Date(oferta.data_oferty).toLocaleDateString('pl-PL')}</strong></div>
             <div style={{marginTop:4, display:'flex', alignItems:'center', gap:6}}>
@@ -251,6 +292,7 @@ export default function EdytorOferty() {
         <KreatorPDF
           ofertaId={id}
           ofertaNumer={oferta?.numer || ''}
+          ofertaNazwa={nowaNazwaOferty || oferta?.nazwa || ''}
           klientId={oferta?.klient_id}
           onClose={() => setModalZalozenia(false)}
         />
