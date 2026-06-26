@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { port } = require('./config');
+const { notFound, errorHandler, asyncWrap } = require('./middleware/errors');
 
 const app = express();
 
@@ -27,6 +28,9 @@ app.use('/api/ustawienia', requireAuth, require('./routes/ustawienia'));
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', czas: new Date().toISOString() });
 });
+
+app.use(notFound);
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Savento backend działa na porcie ${port}`);
