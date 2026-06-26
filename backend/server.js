@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-require('dotenv').config();
+const { port } = require('./config');
 
 const app = express();
 
@@ -28,8 +28,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', czas: new Date().toISOString() });
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Savento backend działa na porcie ${PORT}`);
+app.listen(port, () => {
+  console.log(`Savento backend działa na porcie ${port}`);
 });
 // poniżej tego komentarza nie dodawaj nic - placeholder
