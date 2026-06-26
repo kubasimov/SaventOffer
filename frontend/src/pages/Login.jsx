@@ -108,6 +108,7 @@ export default function Login() {
               type="password"
               value={haslo}
               onChange={e => setHaslo(e.target.value)}
+              autoComplete="current-password"
               placeholder="••••••••"
               required
             />
