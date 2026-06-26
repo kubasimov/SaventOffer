@@ -1,1 +1,13 @@
-const MIN_PASSWORD_LENGTH=*** PASSWORD_RE=/^(?=....$/{enforcePasswordPolicy(value){if(typeof value!=='string')throw new Error('Haslo musi byc tekstem');if(!PASSWORD_RE.test(value))throw new Error('Haslo musi miec min. 10 znakow, w tym mala i duza litere, cyfre oraz znak specjalny')}module.exports={enforcePasswordPolicy,MIN_PASSWORD_LENGTH,PASSWORD_RE}}
+function enforcePasswordPolicy(value) {
+      if (typeof value !== 'string') {
+        throw new Error('Haslo musi byc tekstem');
+      }
+      if (value.length < 10) {
+        throw new Error('Haslo musi miec co najmniej 10 znakow');
+      }
+      if (!/^(?=.[a-z])(?=.[A-Z])(?=.\d)(?=.[\W_]).*$/.test(value)) {
+        throw new Error('Haslo musi zawierac mala i duza litere, cyfre oraz znak specjalny');
+      }
+    }
+
+    module.exports = { enforcePasswordPolicy };
