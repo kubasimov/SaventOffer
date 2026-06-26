@@ -1,4 +1,4 @@
-import ModalZalozenia from '../components/ModalZalozenia'
+import KreatorPDF from '../components/KreatorPDF'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -26,6 +26,12 @@ export default function Oferty() {
   async function pobierzKlientow() {
     const res = await axios.get('/api/klienci')
     setKlienci(res.data)
+  }
+
+  async function usunOferte(id, numer) {
+    if (!confirm(`Usunąć ofertę "${numer}"? Tej operacji nie można cofnąć.`)) return
+    await axios.delete(`/api/oferty/${id}`)
+    pobierzOferty()
   }
 
   async function dodajSzybkiegoKlienta() {
@@ -112,7 +118,7 @@ export default function Oferty() {
                     </button>
                   <button
                       className="btn btn-secondary btn-sm"
-                      onClick={() => setModalPDF({ id: o.id, numer: o.numer })}
+                      onClick={() => setModalPDF({ id: o.id, numer: o.numer, klientId: o.klient_id, nazwa: o.nazwa })}
                     >
                       ⬇ PDF
                     </button>
@@ -121,6 +127,12 @@ export default function Oferty() {
                       onClick={() => navigate(`/oferty/${o.id}`)}
                     >
                       Otwórz
+                    </button>
+                  <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => usunOferte(o.id, o.numer)}
+                    >
+                      Usuń
                     </button>
                   </td>
                 </tr>
@@ -183,9 +195,11 @@ export default function Oferty() {
         </div>
       )}
       {modalPDF && (
-        <ModalZalozenia
+        <KreatorPDF
           ofertaId={modalPDF.id}
-          numer={modalPDF.numer}
+          ofertaNumer={modalPDF.numer}
+          ofertaNazwa={modalPDF.nazwa}
+          klientId={modalPDF.klientId}
           onClose={() => setModalPDF(null)}
         />
       )}

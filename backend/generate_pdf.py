@@ -2,16 +2,17 @@ import sys
 import json
 import io
 import os
+from datetime import datetime
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.utils import ImageReader
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+OBRAZY = os.path.join(BASE, 'obrazy')
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/"
 
-# Rejestruj DejaVu (fallback) i Poppins
 pdfmetrics.registerFont(TTFont('DejaVu', FONT_PATH + 'DejaVuSans.ttf'))
 pdfmetrics.registerFont(TTFont('DejaVuBold', FONT_PATH + 'DejaVuSans-Bold.ttf'))
 pdfmetrics.registerFont(TTFont('Poppins', os.path.join(BASE, 'Poppins-Regular.ttf')))
@@ -19,18 +20,22 @@ pdfmetrics.registerFont(TTFont('PoppinsBold', os.path.join(BASE, 'Poppins-Bold.t
 
 PAGE_W = 1190
 PAGE_H = 842
-
 TABLE_TOP = 630
-COL_NAME_W = 697
-COL_VAL_W = 238
+COL_NAME_W = 594
+COL_VAL_W = 200
 TABLE_W = COL_NAME_W + COL_VAL_W
-
-BG_DARK  = (0.498, 0.239, 0.435)
-BG_LIGHT = (0.906, 0.906, 0.906)
-BG_WHITE = (0.949, 0.949, 0.949)
+BG_DARK   = (0.498, 0.239, 0.435)
+BG_LIGHT  = (0.906, 0.906, 0.906)
+BG_WHITE  = (0.949, 0.949, 0.949)
 TEXT_DARK  = (0.22, 0.18, 0.18)
 TEXT_WHITE = (1, 1, 1)
+TEXT_COLOR = (0.15, 0.12, 0.15)
 BULLET_COLOR = (0.35, 0.28, 0.35)
+FONT_SIZE_ZAL = 22
+LINE_H_ZAL = 82
+INTER_LINE_ZAL = int(FONT_SIZE_ZAL * 1.58)
+FONT_SIZE_TAB = 15
+FONT_SIZE_TAB_BOLD = 16
 
 
 def formatPLN(val):
@@ -41,38 +46,42 @@ def oblicz_razem(tabela):
     return float(tabela.get('razem', 0))
 
 
-def generuj_warstwe_zalozen(zalozenia_tekst):
-    """Generuje warstwę z tekstem założeń — nakładaną na szablon_zalozenia.pdf."""
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
+def szablon(nazwa):
+    return PdfReader(os.path.join(OBRAZY, nazwa)).pages[0]
 
-    punkty = [p.strip() for p in zalozenia_tekst.strip().split('\n') if p.strip()]
 
-    # Pozycja startowa — pod drugą kreską nagłówka szablonu
-    start_y = PAGE_H - 189
-    line_h = 48
-    bullet_x = 78
+def rysuj_liste_z_checkbox(c, punkty, start_y, line_h, font_size, inter_line):
+    checkbox_path = os.path.join(OBRAZY, 'check-box.png')
+    checkbox_size = int(font_size * 1.3)
+    bullet_x = 65
     text_x = 108
-    max_text_w = PAGE_W - text_x - 100
+    max_text_w = PAGE_W - text_x - 80
 
-    c.setFont('Poppins', 14)
+    c.setFont('Poppins', font_size)
 
     for i, punkt in enumerate(punkty):
         y = start_y - i * line_h
-        if y < 55:
+        if y < 40:
             break
 
-        # Bullet — wypełniony okrąg
-        c.setFillColorRGB(*BULLET_COLOR)
-        c.circle(bullet_x, y + 7, 4, fill=1, stroke=0)
+        if os.path.exists(checkbox_path):
+            try:
+                img = ImageReader(checkbox_path)
+                c.drawImage(img, bullet_x, y - 4, width=checkbox_size,
+                           height=checkbox_size, mask='auto')
+            except Exception:
+                c.setFillColorRGB(*BULLET_COLOR)
+                c.circle(bullet_x + 10, y + 10, 6, fill=1, stroke=0)
+        else:
+            c.setFillColorRGB(*BULLET_COLOR)
+            c.circle(bullet_x + 10, y + 10, 6, fill=1, stroke=0)
 
-        # Tekst — zawijanie długich linii
         words = punkt.split()
         lines = []
         line = ''
         for word in words:
             test = (line + ' ' + word).strip()
-            if c.stringWidth(test, 'Poppins', 14) < max_text_w:
+            if c.stringWidth(test, 'Poppins', font_size) < max_text_w:
                 line = test
             else:
                 if line:
@@ -81,10 +90,79 @@ def generuj_warstwe_zalozen(zalozenia_tekst):
         if line:
             lines.append(line)
 
-        c.setFillColorRGB(*TEXT_DARK)
-        c.drawString(text_x, y + 3, lines[0])
+        c.setFillColorRGB(*TEXT_COLOR)
+        c.drawString(text_x, y + 6, lines[0])
         for j, extra in enumerate(lines[1:], 1):
-            c.drawString(text_x, y + 3 - j * 19, extra)
+            c.drawString(text_x, y + 6 - j * inter_line, extra)
+
+
+def generuj_warstwe_klienta(klient):
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
+
+    nazwa             = klient.get('nazwa', '')
+    adres             = klient.get('adres', '')
+    nazwa_inwestycji  = klient.get('nazwa_inwestycji', '')
+    data              = datetime.now().strftime('%d.%m.%Y')
+    FONT_SIZE         = 30
+    LINE_H            = FONT_SIZE * 1.5   # wysokość wiersza
+    PUSTY             = LINE_H * 2        # dwa puste wiersze
+
+    # Nazwa inwestycji - czcionka 75, wyśrodkowana, ~10cm od góry (ok Y=600)
+    if nazwa_inwestycji:
+        c.setFillColorRGB(*TEXT_COLOR)
+        c.setFont('Poppins', 75)
+        text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 75)
+        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 320, nazwa_inwestycji)
+
+    # Tekst danych klienta zaczyna się w połowie strony
+    start_y = PAGE_H / 2  # Y=421
+
+    c.setFillColorRGB(*TEXT_COLOR)
+    c.setFont('Poppins', FONT_SIZE)
+
+    y = start_y
+    if nazwa:
+        c.drawString(75, y, f'Inwestor: {nazwa}')
+        y -= LINE_H
+    if adres:
+        c.drawString(75, y, f'Lokalizacja: {adres}')
+        y -= LINE_H
+
+    # Dwa puste wiersze
+    y -= PUSTY
+
+    c.drawString(75, y, f'Data wystawienia: {data}')
+    y -= LINE_H
+    c.drawString(75, y, 'Ważność oferty: 5 dni od daty wystawienia')
+
+    c.save()
+    buf.seek(0)
+    return buf
+
+
+def generuj_warstwe_zalozen(zalozenia_tekst):
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
+
+    punkty = [p.strip() for p in zalozenia_tekst.strip().split('\n') if p.strip()]
+    start_y = PAGE_H - 162 - FONT_SIZE_ZAL * 2  # obniżony o dwie wysokości czcionki
+    rysuj_liste_z_checkbox(c, punkty, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
+
+    c.save()
+    buf.seek(0)
+    return buf
+
+
+def generuj_warstwe_specyfikacji(specyfikacja):
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
+
+    punkty = [p.strip() for p in specyfikacja if p.strip()]
+    # Identyczne parametry jak założenia
+    start_y = PAGE_H - 162 - FONT_SIZE_ZAL * 2
+
+    rysuj_liste_z_checkbox(c, punkty, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
 
     c.save()
     buf.seek(0)
@@ -96,29 +174,27 @@ def generuj_strone_tabeli(tabela):
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
 
     nazwa_mebla = tabela.get('nazwa_mebla', '')
-    pozycje = tabela.get('pozycje', [])
-    razem = oblicz_razem(tabela)
+    pozycje     = tabela.get('pozycje', [])
+    razem       = oblicz_razem(tabela)
 
-    TABLE_BOTTOM = 40
-    dostepna_wys = TABLE_TOP - TABLE_BOTTOM
-    n_elementow = 1 + len(pozycje) + 1 + 1
+    TABLE_BOTTOM  = 40
+    dostepna_wys  = TABLE_TOP - TABLE_BOTTOM
+    n_elementow   = 1 + len(pozycje) + 1 + 1
     wys_na_element = dostepna_wys / n_elementow
-    ROW_H = min(36, max(18, wys_na_element))
+    ROW_H   = min(36, max(18, wys_na_element))
     HEADER_H = min(38, max(20, wys_na_element))
-
     table_x = (PAGE_W - TABLE_W) / 2
 
-    # Nagłówek
     c.setFillColorRGB(*BG_DARK)
     c.rect(table_x, TABLE_TOP, TABLE_W, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    c.setFont('PoppinsBold', 11)
+    c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
     c.drawString(table_x + 12, TABLE_TOP + 13, nazwa_mebla)
 
     current_y = TABLE_TOP - ROW_H
 
     for i, poz in enumerate(pozycje):
-        nazwa = poz.get('nazwa', '')
+        nazwa   = poz.get('nazwa', '')
         wartosc = float(poz.get('wartosc_koncowa', 0))
 
         c.setFillColorRGB(*(BG_LIGHT if i % 2 == 0 else BG_WHITE))
@@ -129,80 +205,191 @@ def generuj_strone_tabeli(tabela):
         c.line(table_x, current_y, table_x + TABLE_W, current_y)
 
         c.setFillColorRGB(*TEXT_DARK)
-        c.setFont('Poppins', 10)
+        c.setFont('Poppins', FONT_SIZE_TAB)
         c.drawString(table_x + 12, current_y + 12, nazwa)
 
-        c.setFont('PoppinsBold', 10)
+        c.setFont('PoppinsBold', FONT_SIZE_TAB)
         c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(wartosc))
 
         c.setStrokeColorRGB(0.75, 0.75, 0.75)
         c.setLineWidth(0.5)
-        c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + ROW_H)
+        c.line(table_x + COL_NAME_W, current_y,
+               table_x + COL_NAME_W, current_y + ROW_H)
 
         current_y -= ROW_H
 
-    # Pusty separator
     c.setFillColorRGB(*BG_LIGHT)
     c.rect(table_x, current_y, TABLE_W, ROW_H, fill=1, stroke=0)
     current_y -= ROW_H
 
-    # RAZEM
     c.setFillColorRGB(*BG_LIGHT)
     c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=1, stroke=0)
     c.setStrokeColorRGB(0.7, 0.7, 0.7)
     c.setLineWidth(0.8)
     c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=0, stroke=1)
     c.setFillColorRGB(*TEXT_DARK)
-    c.setFont('PoppinsBold', 11)
+    c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
     c.drawString(table_x + 12, current_y + 12, "RAZEM:")
     c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(razem))
     c.setStrokeColorRGB(0.7, 0.7, 0.7)
-    c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + HEADER_H)
+    c.line(table_x + COL_NAME_W, current_y,
+           table_x + COL_NAME_W, current_y + HEADER_H)
 
     c.save()
     buf.seek(0)
     return buf
 
 
-def generuj_pdf(dane, output_path):
-    szablon1   = PdfReader(os.path.join(BASE, 'szablon_strona1.pdf'))
-    szablon2   = PdfReader(os.path.join(BASE, 'szablon_strona2.pdf'))
-    szablon_zal = PdfReader(os.path.join(BASE, 'szablon_zalozenia.pdf'))
-    szablon34  = PdfReader(os.path.join(BASE, 'szablon_strony34.pdf'))
+def generuj_strone_z_obrazem(sciezka_obrazu):
+    """Wstawia obraz JPG/PNG na podkład podklad_obraz.pdf, wyśrodkowany i przeskalowany."""
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
 
+    podklad_obraz = os.path.join(OBRAZY, 'podklad_obraz.pdf')
+
+    # Pobierz wymiary obrazu
+    try:
+        from PIL import Image as PILImage
+        img_pil = PILImage.open(sciezka_obrazu)
+        img_w, img_h = img_pil.size
+    except Exception:
+        img_w, img_h = 800, 600
+
+    # Obszar dostępny na stronie (od Y=162 do Y=40)
+    OBSZAR_TOP = PAGE_H - 162   # gdzie zaczyna się obszar (jak założenia)
+    OBSZAR_BOT = 40             # margines dolny
+    OBSZAR_LEFT = 60
+    OBSZAR_RIGHT = PAGE_W - 60
+
+    dostepna_sz = OBSZAR_RIGHT - OBSZAR_LEFT
+    dostepna_wys = OBSZAR_TOP - OBSZAR_BOT
+
+    # Skaluj zachowując proporcje
+    skala_sz  = dostepna_sz  / img_w
+    skala_wys = dostepna_wys / img_h
+    skala     = min(skala_sz, skala_wys)
+
+    rys_w = img_w * skala
+    rys_h = img_h * skala
+
+    # Wyśrodkuj poziomo i wyrównaj do góry obszaru
+    x = OBSZAR_LEFT + (dostepna_sz - rys_w) / 2
+    y = OBSZAR_TOP - rys_h  # od góry obszaru w dół
+
+    img = ImageReader(sciezka_obrazu)
+    c.drawImage(img, x, y, width=rys_w, height=rys_h, preserveAspectRatio=True, mask='auto')
+
+    c.save()
+    buf.seek(0)
+
+    # Nałóż na podkład jeśli istnieje
+    if os.path.exists(podklad_obraz):
+        tlo = PdfReader(podklad_obraz).pages[0]
+        tlo.merge_page(PdfReader(buf).pages[0])
+        out_buf = io.BytesIO()
+        w = PdfWriter()
+        w.add_page(tlo)
+        w.write(out_buf)
+        out_buf.seek(0)
+        return out_buf
+    return buf
+
+
+def generuj_pdf(dane, output_path):
     writer = PdfWriter()
 
-    # Strona 1 — okładka
-    writer.add_page(szablon1.pages[0])
+    # 1. Okładka
+    writer.add_page(szablon('okladka.pdf'))
 
-    # Strona założeń — tło z szablonu + warstwa tekstu
-    zalozenia = dane.get('zalozenia', '').strip()
-    if zalozenia:
-        warstwa_buf = generuj_warstwe_zalozen(zalozenia)
-        warstwa_reader = PdfReader(warstwa_buf)
-        warstwa_page = warstwa_reader.pages[0]
-
-        tlo_zal = PdfReader(os.path.join(BASE, 'szablon_zalozenia.pdf')).pages[0]
-        tlo_zal.merge_page(warstwa_page)
-        writer.add_page(tlo_zal)
-
-    # Strony tabel mebli
-    for tabela in dane.get('tabele', []):
-        tabela_buf = generuj_strone_tabeli(tabela)
-        tabela_reader = PdfReader(tabela_buf)
-        tabela_page = tabela_reader.pages[0]
-
-        tlo = PdfReader(os.path.join(BASE, 'szablon_strona2.pdf')).pages[0]
-        tlo.merge_page(tabela_page)
+    # 2. Dane klienta
+    klient = dane.get('klient_dane') or {}
+    podklad_klient = os.path.join(OBRAZY, 'podklad_klient.pdf')
+    if klient and any(klient.values()) and os.path.exists(podklad_klient):
+        warstwa = generuj_warstwe_klienta(klient)
+        tlo = szablon('podklad_klient.pdf')
+        tlo.merge_page(PdfReader(warstwa).pages[0])
         writer.add_page(tlo)
 
-    # Strony 3 i 4
-    for page in szablon34.pages:
-        writer.add_page(page)
+    # 3. Obrazy — z kategorii lub własne wgrane pliki JPG/PNG
+    wlasne_obrazy = dane.get('wlasne_obrazy', [])
+    if wlasne_obrazy:
+        for plik in wlasne_obrazy:
+            if os.path.exists(plik):
+                try:
+                    ext = os.path.splitext(plik)[1].lower()
+                    if ext in ['.jpg', '.jpeg', '.png']:
+                        # Wstaw obraz na podkład
+                        strona_buf = generuj_strone_z_obrazem(plik)
+                        writer.add_page(PdfReader(strona_buf).pages[0])
+                    else:
+                        # PDF — dodaj bezpośrednio
+                        reader = PdfReader(plik)
+                        for page in reader.pages:
+                            writer.add_page(page)
+                except Exception as e:
+                    print(f'Błąd obrazu {plik}: {e}', file=sys.stderr)
+    else:
+        kategoria = dane.get('kategoria', '')
+        if kategoria:
+            obrazy_dir = os.path.join(OBRAZY, kategoria)
+            if os.path.exists(obrazy_dir):
+                i = 1
+                while True:
+                    plik = os.path.join(obrazy_dir, f'{i}.pdf')
+                    if not os.path.exists(plik):
+                        break
+                    try:
+                        reader = PdfReader(plik)
+                        for page in reader.pages:
+                            writer.add_page(page)
+                    except Exception:
+                        pass
+                    i += 1
+
+    # 4. Założenia
+    zalozenia = dane.get('zalozenia', '').strip()
+    podklad_zal = os.path.join(OBRAZY, 'podklad_zalozenia.pdf')
+    if zalozenia and os.path.exists(podklad_zal):
+        warstwa = generuj_warstwe_zalozen(zalozenia)
+        tlo = szablon('podklad_zalozenia.pdf')
+        tlo.merge_page(PdfReader(warstwa).pages[0])
+        writer.add_page(tlo)
+
+    # 5. Specyfikacja materiałowa
+    specyfikacja = dane.get('specyfikacja', [])
+    podklad_spec = os.path.join(OBRAZY, "podklad_specyfikacja.pdf") if os.path.exists(os.path.join(OBRAZY, "podklad_specyfikacja.pdf")) else os.path.join(OBRAZY, "podklad_zalozenia.pdf")  # używamy tego samego podkładu
+    if specyfikacja and os.path.exists(podklad_spec):
+        warstwa = generuj_warstwe_specyfikacji(specyfikacja)
+        tlo = PdfReader(podklad_spec).pages[0]
+        tlo.merge_page(PdfReader(warstwa).pages[0])
+        writer.add_page(tlo)
+
+    # 6. Tabele wyceny
+    for tabela in dane.get('tabele', []):
+        tabela_buf = generuj_strone_tabeli(tabela)
+        tlo = szablon('podklad_oferta_cenowa.pdf')
+        tlo.merge_page(PdfReader(tabela_buf).pages[0])
+        writer.add_page(tlo)
+
+    # 7. Spacer VR
+    spacer = os.path.join(OBRAZY, 'spacer_vr.pdf')
+    if os.path.exists(spacer):
+        reader = PdfReader(spacer)
+        for page in reader.pages:
+            writer.add_page(page)
+
+    # 8. Strona zaproszenia
+    koniec_zap = os.path.join(OBRAZY, 'koniec_zaproszenie.pdf')
+    if os.path.exists(koniec_zap):
+        writer.add_page(PdfReader(koniec_zap).pages[0])
+
+    # 9. Strona końcowa
+    koniec_haslo = os.path.join(OBRAZY, 'koniec_haslo.pdf')
+    if os.path.exists(koniec_haslo):
+        writer.add_page(PdfReader(koniec_haslo).pages[0])
 
     with open(output_path, 'wb') as f:
         writer.write(f)
-
     print(f"OK:{output_path}")
 
 

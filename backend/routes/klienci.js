@@ -47,3 +47,15 @@ router.put('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
+// Pobierz jednego klienta
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM clients WHERE id = $1', [req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+module.exports = router;
