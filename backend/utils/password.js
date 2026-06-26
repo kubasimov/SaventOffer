@@ -1,0 +1,1 @@
+const MIN_PASSWORD_LENGTH=*** PASSWORD_RE=/^(?=....$/{enforcePasswordPolicy(value){if(typeof value!=='string')throw new Error('Haslo musi byc tekstem');if(!PASSWORD_RE.test(value))throw new Error('Haslo musi miec min. 10 znakow, w tym mala i duza litere, cyfre oraz znak specjalny')}module.exports={enforcePasswordPolicy,MIN_PASSWORD_LENGTH,PASSWORD_RE}}
