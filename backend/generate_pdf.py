@@ -248,6 +248,61 @@ def generuj_strone_z_obrazem(sciezka_obrazu):
     return buf
 
 
+def generuj_strone_podsumowania(tabele):
+    """Tabelka zestawienia: kazdy mebel + jego cena."""
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
+    TABLE_BOTTOM = 40
+    dostepna_wys = TABLE_TOP - TABLE_BOTTOM
+    n_elementow = 1 + len(tabele) + 1 + 1
+    wys_na_element = dostepna_wys / n_elementow
+    ROW_H = min(36, max(18, wys_na_element))
+    HEADER_H = min(38, max(20, wys_na_element))
+    table_x = (PAGE_W - TABLE_W) / 2
+    # Nagłówek
+    c.setFillColorRGB(*BG_DARK)
+    c.rect(table_x, TABLE_TOP, TABLE_W, HEADER_H, fill=1, stroke=0)
+    c.setFillColorRGB(*TEXT_WHITE)
+    c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
+    c.drawString(table_x + 12, TABLE_TOP + 13, 'Zestawienie')
+    c.drawRightString(table_x + TABLE_W - 12, TABLE_TOP + 13, 'Cena')
+    # Wiersze
+    current_y = TABLE_TOP - ROW_H
+    for i, tabela in enumerate(tabele):
+        nazwa = tabela.get('nazwa_mebla', '')
+        wartosc = oblicz_razem(tabela)
+        c.setFillColorRGB(*(BG_LIGHT if i % 2 == 0 else BG_WHITE))
+        c.rect(table_x, current_y, TABLE_W, ROW_H, fill=1, stroke=0)
+        c.setStrokeColorRGB(0.8, 0.8, 0.8)
+        c.setLineWidth(0.5)
+        c.line(table_x, current_y, table_x + TABLE_W, current_y)
+        c.setFillColorRGB(*TEXT_DARK)
+        c.setFont('Poppins', FONT_SIZE_TAB)
+        c.drawString(table_x + 12, current_y + 12, nazwa)
+        c.setFont('PoppinsBold', FONT_SIZE_TAB)
+        c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(wartosc))
+        c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + ROW_H)
+        current_y -= ROW_H
+    # Razem
+    suma = sum(oblicz_razem(t) for t in tabele)
+    c.setFillColorRGB(*BG_LIGHT)
+    c.rect(table_x, current_y, TABLE_W, ROW_H, fill=1, stroke=0)
+    current_y -= ROW_H
+    c.setFillColorRGB(*BG_LIGHT)
+    c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=1, stroke=0)
+    c.setStrokeColorRGB(0.7, 0.7, 0.7)
+    c.setLineWidth(0.8)
+    c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=0, stroke=1)
+    c.setFillColorRGB(*TEXT_DARK)
+    c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
+    c.drawString(table_x + 12, current_y + 12, 'RAZEM:')
+    c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(suma))
+    c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + HEADER_H)
+    c.save()
+    buf.seek(0)
+    return buf
+
+
 def generuj_pdf(dane, output_path):
     writer = PdfWriter()
     writer.add_page(szablon('okladka.pdf'))
@@ -317,6 +372,13 @@ def generuj_pdf(dane, output_path):
         tabela_buf = generuj_strone_tabeli(tabela)
         tlo = szablon('podklad_oferta_cenowa.pdf')
         tlo.merge_page(PdfReader(tabela_buf).pages[0])
+        writer.add_page(tlo)
+    # Podsumowanie wszystkich mebli
+    tabele = dane.get('tabele', [])
+    if tabele:
+        podsumowanie_buf = generuj_strone_podsumowania(tabele)
+        tlo = szablon('podklad_oferta_cenowa.pdf')
+        tlo.merge_page(PdfReader(podsumowanie_buf).pages[0])
         writer.add_page(tlo)
     spacer = os.path.join(OBRAZY, 'spacer_vr.pdf')
     if os.path.exists(spacer):
