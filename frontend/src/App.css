@@ -440,7 +440,9 @@ tr:hover td { background: #fafafa; }
     border-top: 1px solid #eee;
   }
 
-  /* Cennik: przyciski pod opisem */
+  /* Cennik: przyciski pod opisem, aliasy ukryte */
+  .cennik-table th:nth-child(2),
+  .cennik-table td:nth-child(2) { display: none; }
   .cennik-table td:last-child {
     display: flex;
     gap: 6px;
