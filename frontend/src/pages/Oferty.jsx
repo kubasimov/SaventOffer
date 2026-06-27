@@ -9,6 +9,9 @@ export default function Oferty() {
   const isAdmin = user?.rola === 'admin'
   const [oferty, setOferty] = useState([])
   const [klienci, setKlienci] = useState([])
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [pages, setPages] = useState(1)
   const [modalPDF, setModalPDF] = useState(null) // { id, numer }
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ klient_id: '', uwagi: '' })
@@ -19,15 +22,17 @@ export default function Oferty() {
   useEffect(() => {
     pobierzOferty()
     pobierzKlientow()
-  }, [])
+  }, [page])
 
   async function pobierzOferty() {
-    const res = await axios.get('/api/oferty')
-    setOferty(res.data)
+    const res = await axios.get(`/api/oferty?page=${page}&limit=20`)
+    setOferty(res.data.rows)
+    setTotal(res.data.total)
+    setPages(res.data.pages)
   }
 
   async function pobierzKlientow() {
-    const res = await axios.get('/api/klienci')
+    const res = await axios.get('/api/klienci?all=true')
     setKlienci(res.data)
   }
 
@@ -142,6 +147,33 @@ export default function Oferty() {
               ))}
             </tbody>
           </table>
+        )}
+        {/* Paginacja */}
+        {oferty.length > 0 && (
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 16px', borderTop:'1px solid #eee'}}>
+            <span style={{fontSize:13, color:'#888'}}>
+              {total} {total === 1 ? 'oferta' : (total >= 2 && total <= 4 ? 'oferty' : 'ofert')}
+            </span>
+            <div style={{display:'flex', gap:6, alignItems:'center'}}>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                ← Poprzednia
+              </button>
+              <span style={{fontSize:13, color:'#666', padding:'0 8px'}}>
+                Strona {page} z {pages}
+              </span>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={page >= pages}
+                onClick={() => setPage(p => Math.min(pages, p + 1))}
+              >
+                Następna →
+              </button>
+            </div>
+          </div>
         )}
       </div>
 

@@ -13,7 +13,7 @@ export default function Import() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    axios.get('/api/klienci').then(r => setKlienci(r.data))
+    axios.get('/api/klienci?all=true').then(r => setKlienci(r.data))
   }, [])
 
   async function wczytajPodglad(file) {

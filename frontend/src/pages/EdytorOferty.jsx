@@ -21,7 +21,7 @@ export default function EdytorOferty() {
   useEffect(() => {
     Promise.all([
       axios.get(`/api/oferty/${id}`),
-      axios.get('/api/klienci'),
+      axios.get('/api/klienci?all=true'),
       axios.get('/api/cennik')
     ]).then(([o, k, c]) => {
       setOferta(o.data)

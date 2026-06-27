@@ -3,15 +3,20 @@ import axios from 'axios'
 
 export default function Klienci() {
   const [klienci, setKlienci] = useState([])
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [pages, setPages] = useState(1)
   const [modal, setModal] = useState(false)
   const [edytowany, setEdytowany] = useState(null)
   const [form, setForm] = useState({ nazwa: '', kontakt: '', email: '', telefon: '', uwagi: '' })
 
-  useEffect(() => { pobierzKlientow() }, [])
+  useEffect(() => { pobierzKlientow() }, [page])
 
   async function pobierzKlientow() {
-    const res = await axios.get('/api/klienci')
-    setKlienci(res.data)
+    const res = await axios.get(`/api/klienci?page=${page}&limit=20`)
+    setKlienci(res.data.rows)
+    setTotal(res.data.total)
+    setPages(res.data.pages)
   }
 
   function otworzModal(klient = null) {
@@ -52,6 +57,7 @@ export default function Klienci() {
         {klienci.length === 0 ? (
           <div className="empty-state">Brak klientów — dodaj pierwszego</div>
         ) : (
+          <>
           <table>
             <thead>
               <tr>
@@ -76,6 +82,22 @@ export default function Klienci() {
               ))}
             </tbody>
           </table>
+          {/* Paginacja */}
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 16px', borderTop:'1px solid #eee'}}>
+            <span style={{fontSize:13, color:'#888'}}>
+              {total} {total === 1 ? 'klient' : (total >= 2 && total <= 4 ? 'klientów' : 'klientów')}
+            </span>
+            <div style={{display:'flex', gap:6, alignItems:'center'}}>
+              <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                ← Poprzednia
+              </button>
+              <span style={{fontSize:13, color:'#666', padding:'0 8px'}}>Strona {page} z {pages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={page >= pages} onClick={() => setPage(p => Math.min(pages, p + 1))}>
+                Następna →
+              </button>
+            </div>
+          </div>
+          </>
         )}
       </div>
 

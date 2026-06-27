@@ -16,12 +16,22 @@ async function generujNumer() {
 
 router.get('/', async (req, res) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM offers'
+    );
+    const total = parseInt(countResult.rows[0].count);
+
     const result = await pool.query(`
       SELECT o.*, o.nazwa as oferta_nazwa, c.nazwa as klient_nazwa
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
       ORDER BY o.utworzony DESC
-    `);
-    res.json(result.rows);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    res.json({ rows: result.rows, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

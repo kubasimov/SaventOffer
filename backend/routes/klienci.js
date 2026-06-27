@@ -2,13 +2,27 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 
-// Pobierz wszystkich klientów
+// Pobierz klientów z paginacją
 router.get('/', async (req, res) => {
   try {
+    // ?all=true — zwraca wszystkie rekordy (do dropdownów)
+    if (req.query.all === 'true') {
+      const result = await pool.query('SELECT * FROM clients ORDER BY nazwa ASC');
+      return res.json(result.rows);
+    }
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+
+    const countResult = await pool.query('SELECT COUNT(*) FROM clients');
+    const total = parseInt(countResult.rows[0].count);
+
     const result = await pool.query(
-      'SELECT * FROM clients ORDER BY nazwa ASC'
+      'SELECT * FROM clients ORDER BY nazwa ASC LIMIT $1 OFFSET $2',
+      [limit, offset]
     );
-    res.json(result.rows);
+    res.json({ rows: result.rows, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

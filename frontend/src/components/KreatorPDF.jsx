@@ -66,7 +66,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
       })
       .catch(() => {})
     // Pobierz listę klientów do dropdownu
-    axios.get('/api/klienci')
+    axios.get('/api/klienci?all=true')
       .then(r => setKlienci(r.data))
       .catch(() => {})
   }, [klientId])
