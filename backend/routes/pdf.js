@@ -69,46 +69,54 @@ async function generujPrzezPythona(dane, outputPath, res, onCleanup) {
   });
 }
 
+// Helper: pobiera ofertę z tabelami i przeliczonymi korektami
+async function pobierzDaneOferty(id) {
+  const oferta = await pool.query(`
+    SELECT o.*, c.nazwa as klient_nazwa
+    FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
+    WHERE o.id = $1
+  `, [id]);
+  if (!oferta.rows.length) return null;
+
+  const tabele = await pool.query(`
+    SELECT * FROM furniture_tables WHERE oferta_id = $1 ORDER BY kolejnosc ASC
+  `, [id]);
+
+  for (let t of tabele.rows) {
+    t.pozycje = await pobierzPozycjeZWartoscia(pool, t.id);
+  }
+
+  const kortGlobalna = parseFloat(oferta.rows[0].korekta_globalna) || 0;
+
+  for (const t of tabele.rows) {
+    const kortLaczna = (parseFloat(t.korekta_pct) || 0) + kortGlobalna;
+    for (const p of t.pozycje) {
+      p.wartosc_koncowa = zKorekta(p.wartosc_bazowa, kortLaczna);
+    }
+    const sumaRaw = round2(t.pozycje.reduce((s, p) => s + parseFloat(p.wartosc_bazowa || 0), 0));
+    t.razem = zKorekta(sumaRaw, kortLaczna);
+  }
+
+  return { oferta: oferta.rows[0], tabele: tabele.rows };
+}
+
 router.post('/:id', async (req, res) => {
   try {
-    const oferta = await pool.query(`
-      SELECT o.*, c.nazwa as klient_nazwa
-      FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
-      WHERE o.id = $1
-    `, [req.params.id]);
-
-    if (!oferta.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
-
-    const tabele = await pool.query(`
-      SELECT * FROM furniture_tables WHERE oferta_id = $1 ORDER BY kolejnosc ASC
-    `, [req.params.id]);
-
-    for (let t of tabele.rows) {
-      t.pozycje = await pobierzPozycjeZWartoscia(pool, t.id);
-    }
-
-    const kortGlobalna = parseFloat(oferta.rows[0].korekta_globalna) || 0
-
-    for (const t of tabele.rows) {
-      const kortLaczna = (parseFloat(t.korekta_pct) || 0) + kortGlobalna
-      for (const p of t.pozycje) {
-        p.wartosc_koncowa = zKorekta(p.wartosc_bazowa, kortLaczna)
-      }
-      const sumaRaw = round2(t.pozycje.reduce((s, p) => s + parseFloat(p.wartosc_bazowa || 0), 0))
-      t.razem = zKorekta(sumaRaw, kortLaczna)
-    }
+    const data = await pobierzDaneOferty(req.params.id);
+    if (!data) return res.status(404).json({ error: 'Nie znaleziono' });
+    const { oferta, tabele } = data;
 
     const dane = {
-      numer: oferta.rows[0].numer,
-      klient: oferta.rows[0].klient_nazwa || '',
+      numer: oferta.numer,
+      klient: oferta.klient_nazwa || '',
       klient_dane: req.body.klient_dane || null,
       zalozenia: req.body.zalozenia || '',
       specyfikacja: req.body.specyfikacja || [],
       kategoria: req.body.kategoria || '',
-      tabele: tabele.rows
+      tabele
     };
 
-    const outputPath = path.join('/opt/savento/pdf-output', `${oferta.rows[0].numer}.pdf`);
+    const outputPath = path.join('/opt/savento/pdf-output', `${oferta.numer}.pdf`);
     generujPrzezPythona(dane, outputPath, res);
 
   } catch (err) {
@@ -132,25 +140,8 @@ router.post('/:id/z-obrazami', multerPdf.any(), async (req, res) => {
     const klient_dane = req.body.klient_dane ? JSON.parse(req.body.klient_dane) : null;
     const specyfikacja = req.body.specyfikacja ? JSON.parse(req.body.specyfikacja) : [];
 
-    const oferta = await pool.query(`
-      SELECT o.*, c.nazwa as klient_nazwa
-      FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
-      WHERE o.id = $1`, [id]);
-    if (!oferta.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
-
-    const tabele = await pool.query(
-      `SELECT * FROM furniture_tables WHERE oferta_id = $1 ORDER BY kolejnosc ASC`, [id]
-    );
-    for (let t of tabele.rows) {
-      t.pozycje = await pobierzPozycjeZWartoscia(pool, t.id);
-    }
-    const kortGlobalna = parseFloat(oferta.rows[0].korekta_globalna) || 0;
-    for (const t of tabele.rows) {
-      const kortLaczna = (parseFloat(t.korekta_pct) || 0) + kortGlobalna;
-      for (const p of t.pozycje) { p.wartosc_koncowa = zKorekta(p.wartosc_bazowa, kortLaczna); }
-      const sumaRaw = round2(t.pozycje.reduce((s, p) => s + parseFloat(p.wartosc_bazowa || 0), 0));
-      t.razem = zKorekta(sumaRaw, kortLaczna);
-    }
+    const oferta = await pobierzDaneOferty(id);
+    if (!oferta) return res.status(404).json({ error: 'Nie znaleziono' });
 
     const obrazyPliki = (req.files || [])
       .filter(f => f.fieldname.startsWith('obraz_'))
@@ -158,17 +149,17 @@ router.post('/:id/z-obrazami', multerPdf.any(), async (req, res) => {
       .map(f => f.path);
 
     const dane = {
-      numer: oferta.rows[0].numer,
-      klient: oferta.rows[0].klient_nazwa || '',
+      numer: oferta.numer,
+      klient: oferta.klient_nazwa || '',
       klient_dane,
       zalozenia,
       specyfikacja,
       kategoria: '',
       wlasne_obrazy: obrazyPliki,
-      tabele: tabele.rows
+      tabele: oferta.tabele
     };
 
-    const nazwaPliku = `${oferta.rows[0].numer}.pdf`;
+    const nazwaPliku = `${oferta.numer}.pdf`;
     const outputPath = path.join('/opt/savento/pdf-output', nazwaPliku);
 
     function cleanupObrazy() {

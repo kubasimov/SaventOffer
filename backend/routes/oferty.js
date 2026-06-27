@@ -78,6 +78,9 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const { klient_id, status, uwagi, korekta_globalna, numer, nazwa } = req.body;
   try {
+    // Pobierz stary status dla auditu
+    const stary = (await pool.query('SELECT status FROM offers WHERE id=$1', [req.params.id])).rows[0];
+
     const result = await pool.query(`
       UPDATE offers SET klient_id=$1, status=$2, uwagi=$3,
         korekta_globalna=COALESCE($4, korekta_globalna),
@@ -89,6 +92,15 @@ router.put('/:id', async (req, res) => {
         numer || null,
         nazwa !== undefined ? nazwa : null,
         req.params.id]);
+
+    // Audit log: zapisz kto i kiedy zmienił status
+    if (stary && status && stary.status !== status) {
+      await pool.query(
+        `INSERT INTO offer_log (oferta_id, uzytkownik_id, stary_status, nowy_status)
+         VALUES ($1, $2, $3, $4)`,
+        [req.params.id, req.user.id, stary.status, status]
+      ).catch(() => {}); // Table moze nie isniec — log opcjonalny
+    }
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

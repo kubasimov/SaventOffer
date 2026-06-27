@@ -72,3 +72,14 @@ CREATE TABLE table_items (
 CREATE INDEX idx_offers_klient ON offers(klient_id);
 CREATE INDEX idx_furniture_oferta ON furniture_tables(oferta_id);
 CREATE INDEX idx_items_tabela ON table_items(tabela_id);
+
+-- Audit log zmian statusu ofert
+CREATE TABLE IF NOT EXISTS offer_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    oferta_id UUID REFERENCES offers(id) ON DELETE CASCADE,
+    uzytkownik_id UUID REFERENCES users(id),
+    stary_status VARCHAR(20),
+    nowy_status VARCHAR(20) NOT NULL,
+    utworzony TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_offer_log_oferta ON offer_log(oferta_id);
