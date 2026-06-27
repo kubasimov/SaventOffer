@@ -32,7 +32,27 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
   const [wlasneObrazy, setWlasneObrazy] = useState([])
   const [uploadujac, setUploadujac] = useState(false)
 
+  // Podgląd przed pobraniem (dla każdej oferty osobno)
+  const [podglad, setPodglad] = useState(false)
+
   useEffect(() => {
+    // Wczytaj zapisane ustawienia PDF dla tej oferty
+    axios.get(`/api/ustawienia/pdf_settings_${ofertaId}`)
+      .then(r => {
+        if (r.data?.wartosc) {
+          try {
+            const s = JSON.parse(r.data.wartosc);
+            if (s.zalozenia) setZalozenia(s.zalozenia);
+            if (s.specyfikacja) setSpecyfikacja(s.specyfikacja);
+            if (s.kategoria) setKategoria(s.kategoria);
+            if (s.klientDane) setKlientDane(prev => ({ ...prev, ...s.klientDane }));
+            if (s.nazwaInwestycji) setNazwaInwestycji(s.nazwaInwestycji);
+            if (s.podglad !== undefined) setPodglad(s.podglad);
+          } catch (e) {}
+        }
+      })
+      .catch(() => {})
+
     // Pobierz dane klienta z bazy
     if (klientId) {
       axios.get(`/api/klienci/${klientId}`)
@@ -52,11 +72,11 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
     axios.get('/api/pdf/kategorie')
       .then(r => setKategorie(r.data))
       .catch(() => {})
-    // Pobierz domyślne założenia z pliku
+    // Pobierz domyślne założenia
     axios.get('/api/pdf/zalozenia-domyslne')
       .then(r => { if (r.data.tekst) setZalozenia(r.data.tekst) })
       .catch(() => {})
-    // Pobierz domyślną specyfikację z bazy
+    // Pobierz domyślną specyfikację
     axios.get('/api/ustawienia/specyfikacja_domyslna')
       .then(r => {
         if (r.data.wartosc) {
@@ -65,7 +85,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         }
       })
       .catch(() => {})
-    // Pobierz listę klientów do dropdownu
+    // Pobierz listę klientów
     axios.get('/api/klienci?all=true')
       .then(r => setKlienci(r.data))
       .catch(() => {})
@@ -119,16 +139,48 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
           kategoria
         }, { responseType: 'blob' })
       }
+
+      // Zapisz ustawienia PDF
+      zapiszUstawienia(specAktywna)
+
       const url = URL.createObjectURL(res.data)
-      // Otworz PDF w nowej karcie — podglad przed pobraniem
-      window.open(url, '_blank')
-      // Zwolnij URL po 30s (daje czas na obejrzenie/zapisanie)
-      setTimeout(() => URL.revokeObjectURL(url), 30000)
+      if (podglad) {
+        // Podgląd — otwórz w nowej karcie
+        window.open(url, '_blank')
+        setTimeout(() => URL.revokeObjectURL(url), 30000)
+      } else {
+        // Auto-download
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${ofertaNumer}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        setTimeout(() => {
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+        }, 100)
+      }
       onClose()
     } catch (err) {
       alert('Błąd generowania PDF')
     }
     setLoading(false)
+  }
+
+  // Zapisz ustawienia PDF do bazy
+  async function zapiszUstawienia(specAktywna) {
+    try {
+      await axios.put(`/api/ustawienia/pdf_settings_${ofertaId}`, {
+        wartosc: JSON.stringify({
+          nazwaInwestycji,
+          klientDane,
+          zalozenia,
+          specyfikacja,
+          kategoria,
+          podglad
+        })
+      });
+    } catch (e) { /* ignoruj */ }
   }
 
   const btnStyle = {
@@ -399,6 +451,22 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                 </div>
               ))}
             </div>
+            {/* Checkbox podglądu */}
+            <label style={{ display:'flex', alignItems:'center', gap:10, marginTop:16,
+              padding:'10px 14px', background:'#f0ebf8', borderRadius:8, cursor:'pointer' }}>
+              <input
+                type="checkbox"
+                checked={podglad}
+                onChange={e => setPodglad(e.target.checked)}
+                style={{ width:18, height:18, cursor:'pointer', accentColor:'#5a2d6e' }}
+              />
+              <div>
+                <div style={{ fontWeight:500, fontSize:13, color:'#5a2d6e' }}>Podgląd przed pobraniem</div>
+                <div style={{ fontSize:12, color:'#888' }}>
+                  {podglad ? 'PDF otworzy się w nowej karcie' : 'PDF zostanie pobrany automatycznie'}
+                </div>
+              </div>
+            </label>
           </div>
         )}
 
