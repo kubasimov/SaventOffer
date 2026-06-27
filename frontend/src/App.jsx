@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom'
 import Klienci from './pages/Klienci'
 import Oferty from './pages/Oferty'
@@ -25,13 +26,17 @@ function ProtectedRoute({ children }) {
 function AppInner() {
   const { user, logout } = useAuth()
   const isAdmin = user?.rola === 'admin'
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
     <Router>
       <div className="app">
         {user && (
         <nav className="navbar">
           <div className="navbar-brand">SaventOffer</div>
-          <div className="navbar-links">
+          <button className="navbar-toggle" onClick={() => setMenuOpen(m => !m)}>
+            {menuOpen ? '✕' : '☰'}
+          </button>
+          <div className={'navbar-links' + (menuOpen ? ' open' : '')} onClick={() => setMenuOpen(false)}>
             <NavLink to="/" end>Oferty</NavLink>
             {isAdmin && <NavLink to="/klienci">Klienci</NavLink>}
             {isAdmin && <NavLink to="/import">Import</NavLink>}
