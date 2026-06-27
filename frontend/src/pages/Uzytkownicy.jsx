@@ -4,6 +4,7 @@ import axios from 'axios'
 export default function Uzytkownicy() {
   const [uzytkownicy, setUzytkownicy] = useState([])
   const [modal, setModal] = useState(false)
+  const [rozwinietaId, setRozwinietaId] = useState(null)
   const [form, setForm] = useState({ email: '', haslo: '', imie: '', rola: 'pracownik' })
   const [blad, setBlad] = useState(null)
 
@@ -43,7 +44,7 @@ export default function Uzytkownicy() {
         <button className="btn btn-primary" onClick={() => setModal(true)}>+ Dodaj</button>
       </div>
       <div className="card">
-        <table>
+        <table className="mobile-card-table">
           <thead>
             <tr>
               <th>Imię</th>
@@ -55,10 +56,12 @@ export default function Uzytkownicy() {
           </thead>
           <tbody>
             {uzytkownicy.map(u => (
-              <tr key={u.id}>
+              <tr key={u.id}
+                className={rozwinietaId === u.id ? 'expanded' : ''}
+                onClick={() => setRozwinietaId(rozwinietaId === u.id ? null : u.id)}>
                 <td>{u.imie_nazwisko || '—'}</td>
-                <td>{u.email}</td>
-                <td>
+                <td className="mobile-hide">{u.email}</td>
+                <td className="mobile-hide">
                   <select
                     value={u.rola}
                     onChange={e => zmienRole(u, e.target.value)}
@@ -66,12 +69,13 @@ export default function Uzytkownicy() {
                       padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd',
                       fontSize: 13, background: '#fff', color: '#333', cursor: 'pointer'
                     }}
+                    onClick={e => e.stopPropagation()}
                   >
                     <option value="pracownik">Pracownik</option>
                     <option value="admin">Admin</option>
                   </select>
                 </td>
-                <td>
+                <td className="mobile-hide">
                   <span style={{
                     display:'inline-block', padding:'2px 10px', borderRadius:12,
                     fontSize:12, fontWeight:500,
@@ -81,7 +85,8 @@ export default function Uzytkownicy() {
                     {u.aktywny ? 'Aktywny' : 'Zablokowany'}
                   </span>
                 </td>
-                <td style={{textAlign:'right'}}>
+                <td className="mobile-hide" style={{textAlign:'right'}}
+                  onClick={e => e.stopPropagation()}>
                   <button className="btn btn-secondary btn-sm" onClick={() => toggleAktywny(u)}>
                     {u.aktywny ? 'Zablokuj' : 'Odblokuj'}
                   </button>

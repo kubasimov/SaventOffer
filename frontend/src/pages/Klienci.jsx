@@ -9,6 +9,7 @@ export default function Klienci() {
   const [pages, setPages] = useState(1)
   const [modal, setModal] = useState(false)
   const [edytowany, setEdytowany] = useState(null)
+  const [rozwinietaId, setRozwinietaId] = useState(null)
   const [form, setForm] = useState({ nazwa: '', kontakt: '', email: '', telefon: '', uwagi: '' })
 
   useEffect(() => { pobierzKlientow() }, [page])
@@ -65,7 +66,7 @@ export default function Klienci() {
           <div className="empty-state">Brak klientów — dodaj pierwszego</div>
         ) : (
           <>
-          <table>
+          <table className="mobile-card-table">
             <thead>
               <tr>
                 <th>Nazwa</th>
@@ -77,12 +78,15 @@ export default function Klienci() {
             </thead>
             <tbody>
               {klienci.map(k => (
-                <tr key={k.id}>
+                <tr key={k.id}
+                  className={rozwinietaId === k.id ? 'expanded' : ''}
+                  onClick={() => setRozwinietaId(rozwinietaId === k.id ? null : k.id)}>
                   <td><strong>{k.nazwa}</strong></td>
-                  <td>{k.kontakt || '—'}</td>
-                  <td>{k.email || '—'}</td>
-                  <td>{k.telefon || '—'}</td>
-                  <td style={{textAlign:'right'}}>
+                  <td className="mobile-hide">{k.kontakt || '—'}</td>
+                  <td className="mobile-hide">{k.email || '—'}</td>
+                  <td className="mobile-hide">{k.telefon || '—'}</td>
+                  <td className="mobile-hide" style={{textAlign:'right'}}
+                    onClick={e => e.stopPropagation()}>
                     <button className="btn btn-secondary btn-sm" onClick={() => otworzModal(k)}>Edytuj</button>
                   </td>
                 </tr>
