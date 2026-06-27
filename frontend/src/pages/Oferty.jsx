@@ -12,6 +12,7 @@ export default function Oferty() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
+  const [blad, setBlad] = useState(null)
   const [modalPDF, setModalPDF] = useState(null) // { id, numer }
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState({ klient_id: '', uwagi: '' })
@@ -25,15 +26,23 @@ export default function Oferty() {
   }, [page])
 
   async function pobierzOferty() {
-    const res = await axios.get(`/api/oferty?page=${page}&limit=20`)
-    setOferty(res.data.rows)
-    setTotal(res.data.total)
-    setPages(res.data.pages)
+    try {
+      setBlad(null)
+      const res = await axios.get(`/api/oferty?page=${page}&limit=20`)
+      setOferty(res.data.rows)
+      setTotal(res.data.total)
+      setPages(res.data.pages)
+    } catch (err) {
+      setBlad(err.response?.data?.error || 'Błąd ładowania ofert')
+      setOferty([])
+    }
   }
 
   async function pobierzKlientow() {
-    const res = await axios.get('/api/klienci?all=true')
-    setKlienci(res.data)
+    try {
+      const res = await axios.get('/api/klienci?all=true')
+      setKlienci(res.data)
+    } catch { /* ignoruj — dropdown nie jest krytyczny */ }
   }
 
   async function usunOferte(id, numer) {
@@ -82,6 +91,11 @@ export default function Oferty() {
         <h1>Oferty</h1>
         {isAdmin && <button className="btn btn-primary" onClick={() => setModal(true)}>+ Nowa oferta</button>}
       </div>
+      {blad && (
+        <div className="card" style={{background:'#fff5f5', border:'1px solid #fcc', marginBottom:16}}>
+          <p style={{color:'#c62828', fontSize:14, margin:0}}>⚠️ {blad}</p>
+        </div>
+      )}
       <div className="card">
         {oferty.length === 0 ? (
           <div className="empty-state">Brak ofert — utwórz pierwszą</div>

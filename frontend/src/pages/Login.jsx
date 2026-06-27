@@ -98,6 +98,7 @@ export default function Login() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="email@savento.pl"
+              autoComplete="username"
               required
               autoFocus
             />
