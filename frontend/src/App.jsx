@@ -25,6 +25,7 @@ function ProtectedRoute({ children }) {
 
 function AppInner() {
   const { user, logout } = useAuth()
+  const isAdmin = user?.rola === 'admin'
   return (
     <Router>
       <div className="app">
@@ -34,9 +35,9 @@ function AppInner() {
             <NavLink to="/" end>Oferty</NavLink>
             <NavLink to="/klienci">Klienci</NavLink>
             <NavLink to="/cennik">Cennik</NavLink>
-            <NavLink to="/import">Import</NavLink>
-            <NavLink to="/uzytkownicy">Użytkownicy</NavLink>
-            <NavLink to="/ustawienia">Ustawienia</NavLink>
+            {isAdmin && <NavLink to="/import">Import</NavLink>}
+            {isAdmin && <NavLink to="/uzytkownicy">U¿ytkownicy</NavLink>}
+            {isAdmin && <NavLink to="/ustawienia">Ustawienia</NavLink>}
             {user && (
               <div style={{display:'flex', alignItems:'center', gap:12, marginLeft:8}}>
                 <NavLink to="/profil" style={{fontSize:13, color:'rgba(255,255,255,0.7)',
@@ -60,13 +61,13 @@ function AppInner() {
           <ProtectedRoute>
             <Routes>
               <Route path="/" element={<Oferty />} />
-              <Route path="/oferty/:id" element={<EdytorOferty />} />
+              {isAdmin && <Route path="/oferty/:id" element={<EdytorOferty />} />}
               <Route path="/klienci" element={<Klienci />} />
               <Route path="/cennik" element={<Cennik />} />
-              <Route path="/import" element={<Import />} />
-              <Route path="/uzytkownicy" element={<Uzytkownicy />} />
-            <Route path="/ustawienia" element={<Ustawienia />} />
-            <Route path="/profil" element={<Profil />} />
+              {isAdmin && <Route path="/import" element={<Import />} />}
+              {isAdmin && <Route path="/uzytkownicy" element={<Uzytkownicy />} />}
+              {isAdmin && <Route path="/ustawienia" element={<Ustawienia />} />}
+              <Route path="/profil" element={<Profil />} />
             </Routes>
           </ProtectedRoute>
         </main>

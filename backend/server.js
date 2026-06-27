@@ -12,17 +12,20 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 
-// Wszystkie poniższe routes wymagają zalogowania
+// Wszystkie poni¿sze routes wymagaj¹ zalogowania + kontroli roli
 const requireAuth = require('./middleware/auth');
-app.use('/api/cennik', requireAuth, require('./routes/cennik'));
-app.use('/api/klienci', requireAuth, require('./routes/klienci'));
-app.use('/api/oferty', requireAuth, require('./routes/oferty'));
+const requireRole = require('./middleware/role');
+const authAndRole = [requireAuth, requireRole];
+
+app.use('/api/cennik', authAndRole, require('./routes/cennik'));
+app.use('/api/klienci', authAndRole, require('./routes/klienci'));
+app.use('/api/oferty', authAndRole, require('./routes/oferty'));
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/pdf', requireAuth, require('./routes/pdf'));
-app.use('/api/whisper', requireAuth, require('./routes/whisper'));
-app.use('/api/import', requireAuth, require('./routes/import'));
-app.use('/api/users', requireAuth, require('./routes/users'));
-app.use('/api/ustawienia', requireAuth, require('./routes/ustawienia'));
+app.use('/api/pdf', authAndRole, require('./routes/pdf'));
+app.use('/api/whisper', authAndRole, require('./routes/whisper'));
+app.use('/api/import', authAndRole, require('./routes/import'));
+app.use('/api/users', authAndRole, require('./routes/users'));
+app.use('/api/ustawienia', authAndRole, require('./routes/ustawienia'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', czas: new Date().toISOString() });

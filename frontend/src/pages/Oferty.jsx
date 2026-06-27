@@ -1,9 +1,12 @@
 import KreatorPDF from '../components/KreatorPDF'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../AuthContext'
 import axios from 'axios'
 
 export default function Oferty() {
+  const { user } = useAuth()
+  const isAdmin = user?.rola === 'admin'
   const [oferty, setOferty] = useState([])
   const [klienci, setKlienci] = useState([])
   const [modalPDF, setModalPDF] = useState(null) // { id, numer }
@@ -72,7 +75,7 @@ export default function Oferty() {
     <div>
       <div className="page-header">
         <h1>Oferty</h1>
-        <button className="btn btn-primary" onClick={() => setModal(true)}>+ Nowa oferta</button>
+        {isAdmin && <button className="btn btn-primary" onClick={() => setModal(true)}>+ Nowa oferta</button>}
       </div>
       <div className="card">
         {oferty.length === 0 ? (
@@ -122,18 +125,18 @@ export default function Oferty() {
                     >
                       ⬇ PDF
                     </button>
-                    <button
+                    {isAdmin && <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => navigate(`/oferty/${o.id}`)}
                     >
                       Otwórz
-                    </button>
-                  <button
+                    </button>}
+                  {isAdmin && <button
                       className="btn btn-danger btn-sm"
                       onClick={() => usunOferte(o.id, o.numer)}
                     >
                       Usuń
-                    </button>
+                    </button>}
                   </td>
                 </tr>
               ))}
