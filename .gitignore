@@ -6,3 +6,5 @@ backend/node_modules/
 pdf-output/*.pdf
 uploads/*
 *.log
+__pycache__/
+*.pyc
