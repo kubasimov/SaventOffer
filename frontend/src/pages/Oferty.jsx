@@ -138,6 +138,18 @@ export default function Oferty() {
                     >
                       ⬇ CSV
                     </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={async () => {
+                        const res = await axios.get(`/api/oferty/${o.id}/xlsx`, { responseType: 'blob' })
+                        const url = URL.createObjectURL(new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+                        const a = document.createElement('a'); a.href = url
+                        a.download = `${o.numer}.xlsx`; a.click()
+                        URL.revokeObjectURL(url)
+                      }}
+                    >
+                      ⬇ XLSX
+                    </button>
                   <button
                       className="btn btn-secondary btn-sm"
                       onClick={() => setModalPDF({ id: o.id, numer: o.numer, klientId: o.klient_id, nazwa: o.nazwa })}

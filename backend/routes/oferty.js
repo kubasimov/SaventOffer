@@ -174,6 +174,62 @@ router.delete('/wymiary/:dim_id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Eksport oferty do XLSX
+router.get('/:id/xlsx', async (req, res) => {
+  try {
+    const oferta = await pool.query(`
+      SELECT o.*, c.nazwa as klient_nazwa
+      FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
+      WHERE o.id = $1
+    `, [req.params.id]);
+    if (!oferta.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
+
+    const tabele = await pool.query(
+      'SELECT * FROM furniture_tables WHERE oferta_id = $1 ORDER BY kolejnosc ASC', [req.params.id]
+    );
+    const kortGlobalna = parseFloat(oferta.rows[0].korekta_globalna) || 0;
+
+    const wb = XLSX.utils.book_new();
+
+    // Strona tytulowa
+    const info = [
+      ['Numer oferty:', oferta.rows[0].numer],
+      ['Klient:', oferta.rows[0].klient_nazwa || ''],
+      ['Data:', new Date(oferta.rows[0].data_oferty).toLocaleDateString('pl-PL')],
+      ['Status:', oferta.rows[0].status],
+    ];
+    const wsInfo = XLSX.utils.aoa_to_sheet(info);
+    XLSX.utils.book_append_sheet(wb, wsInfo, 'Informacje');
+
+    // Tabele mebli
+    for (const tabela of tabele.rows) {
+      const pozycje = await pobierzPozycjeZWartoscia(pool, tabela.id);
+      const kortLaczna = (parseFloat(tabela.korekta_pct) || 0) + kortGlobalna;
+
+      const dane = [['Pozycja', 'Ilość', 'Jednostka', 'Cena jedn.', 'Wartość']];
+      let suma = 0;
+      for (const p of pozycje) {
+        const ilosc = parseFloat(p.laczna_ilosc || 0);
+        const wartosc = zKorekta(p.wartosc_bazowa, kortLaczna);
+        suma += wartosc;
+        dane.push([p.nazwa, ilosc, p.jednostka, parseFloat(p.cena_jedn), wartosc]);
+      }
+      dane.push(['RAZEM', '', '', '', suma]);
+      if (kortLaczna !== 0) dane.push(['Korekta:', `${kortLaczna}%`]);
+
+      const ws = XLSX.utils.aoa_to_sheet(dane);
+      XLSX.utils.book_append_sheet(wb, ws, String(tabela.nazwa_mebla).slice(0, 31));
+    }
+
+    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${oferta.rows[0].numer}.xlsx"`);
+    res.send(buf);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
 
 // Eksport oferty do CSV
