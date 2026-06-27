@@ -17,6 +17,9 @@ export default function EdytorOferty() {
   const [nowyNumer, setNowyNumer] = useState('')
   const [edytujNazwe, setEdytujNazwe] = useState(false)
   const [nowaNazwaOferty, setNowaNazwaOferty] = useState('')
+  const [historia, setHistoria] = useState([])
+  const [modalHistoria, setModalHistoria] = useState(false)
+  const [loadingHistoria, setLoadingHistoria] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -126,6 +129,16 @@ export default function EdytorOferty() {
     setOferta(prev => ({ ...prev, status: nowyStatus }))
   }
 
+  async function pokazHistorie() {
+    setModalHistoria(true)
+    setLoadingHistoria(true)
+    try {
+      const res = await axios.get(`/api/oferty/${id}/historia`)
+      setHistoria(res.data)
+    } catch {}
+    setLoadingHistoria(false)
+  }
+
   async function zapiszKlienta(klient_id) {
     await axios.put(`/api/oferty/${id}`, {
       klient_id,
@@ -181,6 +194,9 @@ export default function EdytorOferty() {
           </button>
           <button className="btn btn-secondary" onClick={generujPDF}>
             ⬇ PDF
+          </button>
+          <button className="btn btn-secondary" onClick={pokazHistorie}>
+            📋 Historia
           </button>
           <button className="btn btn-primary" onClick={dodajTabele}>
             + Dodaj mebel
@@ -296,6 +312,42 @@ export default function EdytorOferty() {
           klientId={oferta?.klient_id}
           onClose={() => setModalZalozenia(false)}
         />
+      )}
+
+      {/* Modal historii */}
+      {modalHistoria && (
+        <div className="modal-overlay" onClick={() => setModalHistoria(false)}>
+          <div className="modal" style={{maxWidth:560}} onClick={e => e.stopPropagation()}>
+            <h2>Historia zmian statusu</h2>
+            {loadingHistoria ? (
+              <div style={{padding:20, textAlign:'center', color:'#999'}}>Ładowanie...</div>
+            ) : historia.length === 0 ? (
+              <div className="empty-state">Brak historii zmian</div>
+            ) : (
+              <div style={{maxHeight:'50vh', overflowY:'auto'}}>
+                {historia.map(h => (
+                  <div key={h.id} style={{display:'flex', justifyContent:'space-between',
+                    alignItems:'center', padding:'10px 12px', borderBottom:'1px solid #f0f0f0'}}>
+                    <div>
+                      <span style={{fontSize:13, color:'#888'}}>{h.uzytkownik || '?'}</span>
+                      <div style={{marginTop:2}}>
+                        <span style={{fontSize:12, color:'#c62828', fontWeight:500}}>{h.stary_status || '—'}</span>
+                        <span style={{margin:'0 8px', color:'#ccc'}}>→</span>
+                        <span style={{fontSize:12, color:'#2e7d32', fontWeight:500}}>{h.nowy_status}</span>
+                      </div>
+                    </div>
+                    <span style={{fontSize:11, color:'#aaa', whiteSpace:'nowrap'}}>
+                      {new Date(h.utworzony).toLocaleString('pl-PL')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setModalHistoria(false)}>Zamknij</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

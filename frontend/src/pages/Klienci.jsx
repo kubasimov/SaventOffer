@@ -3,6 +3,7 @@ import axios from 'axios'
 
 export default function Klienci() {
   const [klienci, setKlienci] = useState([])
+  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
@@ -17,6 +18,7 @@ export default function Klienci() {
     setKlienci(res.data.rows)
     setTotal(res.data.total)
     setPages(res.data.pages)
+    setLoading(false)
   }
 
   function otworzModal(klient = null) {
@@ -54,7 +56,12 @@ export default function Klienci() {
         <button className="btn btn-primary" onClick={() => otworzModal()}>+ Dodaj klienta</button>
       </div>
       <div className="card">
-        {klienci.length === 0 ? (
+        {loading ? (
+          <div className="empty-state" style={{color:'#999'}}>
+            <div style={{fontSize:32, marginBottom:8}}>⏳</div>
+            <div>Ładowanie klientów...</div>
+          </div>
+        ) : klienci.length === 0 ? (
           <div className="empty-state">Brak klientów — dodaj pierwszego</div>
         ) : (
           <>

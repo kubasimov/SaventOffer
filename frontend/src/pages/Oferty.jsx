@@ -9,6 +9,7 @@ export default function Oferty() {
   const isAdmin = user?.rola === 'admin'
   const [oferty, setOferty] = useState([])
   const [klienci, setKlienci] = useState([])
+  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
@@ -28,6 +29,7 @@ export default function Oferty() {
   async function pobierzOferty() {
     try {
       setBlad(null)
+      setLoading(true)
       const res = await axios.get(`/api/oferty?page=${page}&limit=20`)
       setOferty(res.data.rows)
       setTotal(res.data.total)
@@ -35,6 +37,8 @@ export default function Oferty() {
     } catch (err) {
       setBlad(err.response?.data?.error || 'Błąd ładowania ofert')
       setOferty([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -96,6 +100,14 @@ export default function Oferty() {
           <p style={{color:'#c62828', fontSize:14, margin:0}}>⚠️ {blad}</p>
         </div>
       )}
+      {loading ? (
+        <div className="card">
+          <div className="empty-state" style={{color:'#999'}}>
+            <div style={{fontSize:32, marginBottom:8}}>⏳</div>
+            <div>Ładowanie ofert...</div>
+          </div>
+        </div>
+      ) : (
       <div className="card">
         {oferty.length === 0 ? (
           <div className="empty-state">Brak ofert — utwórz pierwszą</div>
@@ -202,6 +214,7 @@ export default function Oferty() {
           </div>
         )}
       </div>
+      )}
 
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(false)}>

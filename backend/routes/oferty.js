@@ -360,4 +360,19 @@ router.get('/tabele/:tabela_id/dyktowanie', async (req, res) => {
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// Pobierz historię zmian statusu oferty (audit log)
+router.get('/:id/historia', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT ol.*, u.imie_nazwisko as uzytkownik
+      FROM offer_log ol
+      LEFT JOIN users u ON ol.uzytkownik_id = u.id
+      WHERE ol.oferta_id = $1
+      ORDER BY ol.utworzony DESC
+    `, [req.params.id]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;
