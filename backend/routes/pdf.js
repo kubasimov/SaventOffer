@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const multer = require('multer');
+const XLSX = require('xlsx');
+const fs = require('fs');
 const { exec } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 const { pobierzPozycjeZWartoscia, zKorekta, round2 } = require('../utils/calc');
 
 // Pobierz dostępne kategorie obrazów
@@ -26,10 +28,48 @@ router.get('/kategorie', async (req, res) => {
       .sort((a, b) => a.nazwa.localeCompare(b.nazwa, 'pl'))
     res.json(kategorie)
   } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// Pobierz domyślny tekst założeń z pliku
+router.get('/zalozenia-domyslne', async (req, res) => {
+  try {
+    const fs = require('fs')
+    const path = '/opt/savento/backend/obrazy/ZALOZENIA.txt'
+    if (!fs.existsSync(path)) return res.json({ tekst: '' })
+    const tekst = fs.readFileSync(path, 'utf8')
+    res.json({ tekst: tekst.trim() })
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// Helper: zapisz JSON do pliku tymczasowego, wywołaj Pythona, posprzątaj
+async function generujPrzezPythona(dane, outputPath, res, onCleanup) {
+  const danePath = path.join('/tmp', `pdf_dane_${Date.now()}_${Math.random().toString(36).slice(2,10)}.json`);
+  fs.writeFileSync(danePath, JSON.stringify(dane), 'utf8');
+  const cmd = `python3 /opt/savento/backend/generate_pdf.py '${danePath}' '${outputPath}'`;
+
+  exec(cmd, { timeout: 120000 }, (error, stdout, stderr) => {
+    // Zawsze usuń plik z danymi
+    try { fs.unlinkSync(danePath); } catch (e) {}
+    // Wywołaj dodatkowy cleanup (np. obrazy tymczasowe)
+    if (onCleanup) onCleanup();
+
+    if (error) {
+      console.error('PDF error:', (stderr || '').slice(0, 500));
+      return res.status(500).json({ error: 'Błąd generowania PDF', details: stderr });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(outputPath)}"`);
+    const stream = fs.createReadStream(outputPath);
+    const cleanup = () => fs.unlink(outputPath, () => {});
+    stream.on('error', cleanup);
+    stream.on('end', cleanup);
+    stream.pipe(res);
+  });
+}
 
 router.post('/:id', async (req, res) => {
   try {
-    // Pobierz ofertę z bazy
     const oferta = await pool.query(`
       SELECT o.*, c.nazwa as klient_nazwa
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
@@ -57,66 +97,33 @@ router.post('/:id', async (req, res) => {
       t.razem = zKorekta(sumaRaw, kortLaczna)
     }
 
-    const { zalozenia = '', klient_dane = null, specyfikacja = [], kategoria = '' } = req.body
-
     const dane = {
       numer: oferta.rows[0].numer,
       klient: oferta.rows[0].klient_nazwa || '',
-      klient_dane,
-      zalozenia,
-      specyfikacja,
-      kategoria,
+      klient_dane: req.body.klient_dane || null,
+      zalozenia: req.body.zalozenia || '',
+      specyfikacja: req.body.specyfikacja || [],
+      kategoria: req.body.kategoria || '',
       tabele: tabele.rows
     };
 
-    // Nazwa pliku PDF
-    const nazwaPliku = `${oferta.rows[0].numer}.pdf`;
-    const outputPath = path.join('/opt/savento/pdf-output', nazwaPliku);
-
-    // Wywołaj skrypt Python
-    console.log('[PDF] wlasne_obrazy:', dane.wlasne_obrazy)
-    console.log('[PDF] kategoria:', dane.kategoria)
-    console.log('[PDF] zalozenia length:', (dane.zalozenia||'').length)
-    const daneJson = JSON.stringify(dane).replace(/'/g, "\\'");
-    const cmd = `python3 /opt/savento/backend/generate_pdf.py '${daneJson}' '${outputPath}'`;
-
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.error('PDF error:', stderr);
-        return res.status(500).json({ error: 'Błąd generowania PDF', details: stderr });
-      }
-
-      // Wyślij plik
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${nazwaPliku}"`);
-      const fileStream = fs.createReadStream(outputPath);
-      fileStream.pipe(res);
-    });
+    const outputPath = path.join('/opt/savento/pdf-output', `${oferta.rows[0].numer}.pdf`);
+    generujPrzezPythona(dane, outputPath, res);
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-module.exports = router;
-
-})
-module.exports = router;
-
-// Pobierz domyślny tekst założeń z pliku
-router.get('/zalozenia-domyslne', async (req, res) => {
-  try {
-    const fs = require('fs')
-    const path = '/opt/savento/backend/obrazy/ZALOZENIA.txt'
-    if (!fs.existsSync(path)) return res.json({ tekst: '' })
-    const tekst = fs.readFileSync(path, 'utf8')
-    res.json({ tekst: tekst.trim() })
-  } catch (err) { res.status(500).json({ error: err.message }) }
-})
-
-
 // Generuj PDF z własnymi obrazami (multipart)
-const multerPdf = require('multer')({ dest: '/tmp/pdf-obrazy/', limits: { fileSize: 20 * 1024 * 1024 } });
+const pdfStorage = multer.diskStorage({
+  destination: '/tmp/pdf-obrazy/',
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '';
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`);
+  }
+});
+const multerPdf = multer({ storage: pdfStorage, limits: { fileSize: 20 * 1024 * 1024 } });
 router.post('/:id/z-obrazami', multerPdf.any(), async (req, res) => {
   try {
     const id = req.params.id;
@@ -144,9 +151,6 @@ router.post('/:id/z-obrazami', multerPdf.any(), async (req, res) => {
       t.razem = zKorekta(sumaRaw, kortLaczna);
     }
 
-    // Ścieżki wgranych plików obrazów (posortowane po nazwie)
-    console.log('[PDF] z-obrazami: req.files:', JSON.stringify((req.files||[]).map(f=>({field:f.fieldname,name:f.originalname,size:f.size,path:f.path}))))
-    console.log('[PDF] req.body keys:', Object.keys(req.body))
     const obrazyPliki = (req.files || [])
       .filter(f => f.fieldname.startsWith('obraz_'))
       .sort((a, b) => a.fieldname.localeCompare(b.fieldname))
@@ -164,24 +168,20 @@ router.post('/:id/z-obrazami', multerPdf.any(), async (req, res) => {
     };
 
     const nazwaPliku = `${oferta.rows[0].numer}.pdf`;
-    const outputPath = require('path').join('/opt/savento/pdf-output', nazwaPliku);
-    const daneJson = JSON.stringify(dane).replace(/'/g, "\\'");
-    const cmd = `python3 /opt/savento/backend/generate_pdf.py '${daneJson}' '${outputPath}'`;
+    const outputPath = path.join('/opt/savento/pdf-output', nazwaPliku);
 
-    console.log('[PDF] running python cmd length:', cmd.length)
-    require('child_process').exec(cmd, { timeout: 120000 }, (error, stdout, stderr) => {
-      if (error) console.error('[PDF] python error:', stderr.slice(0, 500))
-      else console.log('[PDF] python OK:', stdout)
-      // Usuń pliki tymczasowe
+    function cleanupObrazy() {
       const nodeFs = require('fs');
-      obrazyPliki.forEach(f => { try { nodeFs.unlinkSync(f); } catch(e) {} });
+      obrazyPliki.forEach((f) => {
+        try { nodeFs.unlinkSync(f); } catch (e) {}
+      });
+    }
 
-      if (error) return res.status(500).json({ error: 'Błąd generowania PDF', details: stderr });
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${nazwaPliku}"`);
-      require('fs').createReadStream(outputPath).pipe(res);
-    });
+    generujPrzezPythona(dane, outputPath, res, cleanupObrazy);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+module.exports = router;
