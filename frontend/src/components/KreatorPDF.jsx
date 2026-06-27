@@ -74,15 +74,8 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
   async function wgrajObraz(e) {
     const pliki = Array.from(e.target.files)
     if (!pliki.length) return
-    setUploadujac(true)
-    const nowe = []
-    for (const plik of pliki) {
-      const buf = await plik.arrayBuffer()
-      nowe.push({ nazwa: plik.name, dane: buf, blob: new Blob([buf], { type: 'application/pdf' }) })
-    }
-    setWlasneObrazy(prev => [...prev, ...nowe])
+    setWlasneObrazy(prev => [...prev, ...pliki])
     setKategoria('__wlasne__')
-    setUploadujac(false)
   }
 
   function dodajPunkt() {
@@ -108,13 +101,12 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
 
       let res
       if (kategoria === '__wlasne__' && wlasneObrazy.length > 0) {
-        // Wyślij własne obrazy jako multipart
         const formData = new FormData()
         formData.append('zalozenia', zalozenia)
         formData.append('klient_dane', JSON.stringify({ ...klientDane, nazwa_inwestycji: nazwaInwestycji }))
         formData.append('specyfikacja', JSON.stringify(specAktywna))
         formData.append('kategoria', '')
-        wlasneObrazy.forEach((o, i) => formData.append(`obraz_${i}`, o.blob, o.nazwa))
+        wlasneObrazy.forEach((plik, i) => formData.append(`obraz_${i}`, plik, plik.name))
         res = await axios.post(`/api/pdf/${ofertaId}/z-obrazami`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           responseType: 'blob'
@@ -127,12 +119,16 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
           kategoria
         }, { responseType: 'blob' })
       }
-      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const url = URL.createObjectURL(res.data)
       const a = document.createElement('a')
       a.href = url
       a.download = `${ofertaNumer}.pdf`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      setTimeout(() => {
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 100)
       onClose()
     } catch (err) {
       alert('Błąd generowania PDF')
@@ -345,18 +341,17 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
               {/* Własne obrazy */}
               <div style={{marginTop:12, paddingTop:12, borderTop:'1px solid #eee'}}>
                 <div style={{fontSize:13, fontWeight:500, color:'#555', marginBottom:8}}>
-                  lub wgraj własne pliki PDF:
+                  lub wgraj własne pliki JPG/PNG:
                 </div>
                 <label className="btn btn-secondary btn-sm" style={{cursor:'pointer'}}>
-                  {uploadujac ? '⏳ Wgrywanie...' : '📎 Wybierz obrazy (JPG/PNG)'}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/jpg"
                     multiple
                     onChange={wgrajObraz}
                     style={{display:'none'}}
-                    disabled={uploadujac}
                   />
+                  Wybierz obrazy (JPG/PNG)
                 </label>
                 {wlasneObrazy.length > 0 && (
                   <div style={{marginTop:10}}>
@@ -372,7 +367,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                       />
                       <div>
                         <div style={{fontWeight:500, fontSize:14}}>Wgrane pliki</div>
-                        <div style={{fontSize:12, color:'#888'}}>{wlasneObrazy.length} {wlasneObrazy.length === 1 ? 'plik' : 'pliki'}: {wlasneObrazy.map(o => o.nazwa).join(', ')}</div>
+                        <div style={{fontSize:12, color:'#888'}}>{wlasneObrazy.length} {wlasneObrazy.length === 1 ? 'plik' : 'pliki'}: {wlasneObrazy.map(o => typeof o === 'string' ? o : o.name).join(', ')}</div>
                       </div>
                       <button onClick={e => {e.preventDefault(); setWlasneObrazy([]); setKategoria('')}}
                         style={{marginLeft:'auto', background:'none', border:'none',
