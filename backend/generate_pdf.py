@@ -94,23 +94,27 @@ def generuj_warstwe_klienta(klient):
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
     nazwa = klient.get('nazwa', '')
+    adres = klient.get('adres', '')
     nazwa_inwestycji = klient.get('nazwa_inwestycji', '')
     data = datetime.now().strftime('%d.%m.%Y')
-    # Nazwa inwestycji: 10cm od góry, środek, Poppins 75
+    # Nazwa inwestycji: 12cm od góry (10 + 2), środek, Poppins 75
     if nazwa_inwestycji:
         c.setFillColorRGB(*TEXT_COLOR)
         c.setFont('Poppins', 75)
         text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 75)
-        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 283, nazwa_inwestycji)
-    # Reszta danych: 20cm od góry, środek, Poppins 30
-    y = PAGE_H - 567
-    c.setFont('Poppins', 30)
+        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 340, nazwa_inwestycji)
+    # Reszta danych: 22cm od góry (20 + 2), środek
+    y = PAGE_H - 624
     if nazwa:
-        # Imię i nazwisko klienta: pogrubione, 36
         c.setFont('PoppinsBold', 36)
-        text_w = c.stringWidth(nazwa, 'PoppinsBold', 36)
-        c.drawString((PAGE_W - text_w) / 2, y, nazwa)
+        text_w = c.stringWidth(f'Inwestor: {nazwa}', 'PoppinsBold', 36)
+        c.drawString((PAGE_W - text_w) / 2, y, f'Inwestor: {nazwa}')
         y -= 60
+    if adres:
+        c.setFont('Poppins', 30)
+        text_w = c.stringWidth(f'Lokalizacja: {adres}', 'Poppins', 30)
+        c.drawString((PAGE_W - text_w) / 2, y, f'Lokalizacja: {adres}')
+        y -= 50
     c.setFont('Poppins', 30)
     c.drawCentredString(PAGE_W / 2, y, f'Data wystawienia: {data}')
     y -= 50
