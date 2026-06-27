@@ -440,7 +440,28 @@ tr:hover td { background: #fafafa; }
     border-top: 1px solid #eee;
   }
 
-  /* Cennik: przyciski pod opisem, aliasy ukryte */
+  /* Cennik: przyciski pod opisem, aliasy ukryte, karty */
+  .cennik-table,
+  .cennik-table thead,
+  .cennik-table tbody,
+  .cennik-table tr,
+  .cennik-table th,
+  .cennik-table td { display: block; }
+  .cennik-table { min-width: 0 !important; width: 100%; }
+  .cennik-table thead { display: none; }
+  .cennik-table tr {
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 12px;
+    border: 1px solid #eee;
+  }
+  .cennik-table td {
+    border: none;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+  .cennik-table td:empty { display: none; }
   .cennik-table th:nth-child(2),
   .cennik-table td:nth-child(2) { display: none; }
   .cennik-table td:last-child {
