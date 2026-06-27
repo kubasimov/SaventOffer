@@ -120,15 +120,10 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         }, { responseType: 'blob' })
       }
       const url = URL.createObjectURL(res.data)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${ofertaNumer}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      setTimeout(() => {
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      }, 100)
+      // Otworz PDF w nowej karcie — podglad przed pobraniem
+      window.open(url, '_blank')
+      // Zwolnij URL po 30s (daje czas na obejrzenie/zapisanie)
+      setTimeout(() => URL.revokeObjectURL(url), 30000)
       onClose()
     } catch (err) {
       alert('Błąd generowania PDF')
