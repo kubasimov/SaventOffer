@@ -258,8 +258,6 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
             {[
               ['Imię i nazwisko / Firma', 'nazwa'],
               ['Adres', 'adres'],
-              ['Telefon', 'telefon'],
-              ['Email', 'email'],
             ].map(([label, field]) => (
               <div className="form-group" key={field}>
                 <label>{label}</label>
@@ -269,17 +267,6 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                 />
               </div>
             ))}
-            <div className="form-group">
-              <label>Uwagi do klienta</label>
-              <textarea
-                value={klientDane.uwagi}
-                onChange={e => setKlientDane(prev => ({ ...prev, uwagi: e.target.value }))}
-                rows={3}
-                style={{ width: '100%', padding: '8px 12px', border: '1px solid #ddd',
-                  borderRadius: 8, fontSize: 14, background: 'white', color: '#333',
-                  fontFamily: 'inherit', resize: 'vertical' }}
-              />
-            </div>
           </div>
         )}
 

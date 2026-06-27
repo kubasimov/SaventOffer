@@ -24,7 +24,7 @@ TABLE_TOP = 630
 COL_NAME_W = 594
 COL_VAL_W = 200
 TABLE_W = COL_NAME_W + COL_VAL_W
-BG_DARK = (0.498, 0.239, 0.435)
+BG_DARK = (0.369, 0.180, 0.298)   # #5e2e4c
 BG_LIGHT = (0.906, 0.906, 0.906)
 BG_WHITE = (0.949, 0.949, 0.949)
 TEXT_DARK = (0.22, 0.18, 0.18)
@@ -94,31 +94,27 @@ def generuj_warstwe_klienta(klient):
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
     nazwa = klient.get('nazwa', '')
-    adres = klient.get('adres', '')
     nazwa_inwestycji = klient.get('nazwa_inwestycji', '')
     data = datetime.now().strftime('%d.%m.%Y')
-    FONT_SIZE = 30
-    LINE_H = FONT_SIZE * 1.5
-    PUSTY = LINE_H * 2
+    # Nazwa inwestycji: 10cm od góry, środek, Poppins 75
     if nazwa_inwestycji:
         c.setFillColorRGB(*TEXT_COLOR)
         c.setFont('Poppins', 75)
         text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 75)
-        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 320, nazwa_inwestycji)
-    start_y = PAGE_H / 2
-    c.setFillColorRGB(*TEXT_COLOR)
-    c.setFont('Poppins', FONT_SIZE)
-    y = start_y
+        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 283, nazwa_inwestycji)
+    # Reszta danych: 20cm od góry, środek, Poppins 30
+    y = PAGE_H - 567
+    c.setFont('Poppins', 30)
     if nazwa:
-        c.drawString(75, y, f'Inwestor: {nazwa}')
-        y -= LINE_H
-    if adres:
-        c.drawString(75, y, f'Lokalizacja: {adres}')
-        y -= LINE_H
-    y -= PUSTY
-    c.drawString(75, y, f'Data wystawienia: {data}')
-    y -= LINE_H
-    c.drawString(75, y, 'Ważność oferty: 5 dni od daty wystawienia')
+        # Imię i nazwisko klienta: pogrubione, 36
+        c.setFont('PoppinsBold', 36)
+        text_w = c.stringWidth(nazwa, 'PoppinsBold', 36)
+        c.drawString((PAGE_W - text_w) / 2, y, nazwa)
+        y -= 60
+    c.setFont('Poppins', 30)
+    c.drawCentredString(PAGE_W / 2, y, f'Data wystawienia: {data}')
+    y -= 50
+    c.drawCentredString(PAGE_W / 2, y, 'Ważność oferty: 5 dni od daty wystawienia')
     c.save()
     buf.seek(0)
     return buf
@@ -289,15 +285,20 @@ def generuj_pdf(dane, output_path):
                     except Exception:
                         pass
                     i += 1
+    # Strona z naszymi standardami (podklad_nasze_standardy.pdf)
+    nasze_standardy = os.path.join(OBRAZY, 'podklad_nasze_standardy.pdf')
+    if os.path.exists(nasze_standardy):
+        writer.add_page(szablon('podklad_nasze_standardy.pdf'))
     zalozenia = dane.get('zalozenia', '').strip()
-    podklad_zal = os.path.join(OBRAZY, 'podklad_zalozenia.pdf')
-    if zalozenia and os.path.exists(podklad_zal):
+    # Strona z informacjami (podklad_informacje.pdf) — dane z założeń
+    podklad_info = os.path.join(OBRAZY, 'podklad_informacje.pdf')
+    if zalozenia and os.path.exists(podklad_info):
         warstwa = generuj_warstwe_zalozen(zalozenia)
-        tlo = szablon('podklad_zalozenia.pdf')
+        tlo = szablon('podklad_informacje.pdf')
         tlo.merge_page(PdfReader(warstwa).pages[0])
         writer.add_page(tlo)
     specyfikacja = dane.get('specyfikacja', [])
-    podklad_spec = os.path.join(OBRAZY, 'podklad_specyfikacja.pdf') if os.path.exists(os.path.join(OBRAZY, 'podklad_specyfikacja.pdf')) else os.path.join(OBRAZY, 'podklad_zalozenia.pdf')
+    podklad_spec = os.path.join(OBRAZY, 'podklad_specyfikacja.pdf')
     if specyfikacja and os.path.exists(podklad_spec):
         warstwa = generuj_warstwe_specyfikacji(specyfikacja)
         tlo = PdfReader(podklad_spec).pages[0]
