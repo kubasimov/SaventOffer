@@ -106,9 +106,14 @@ def generuj_warstwe_klienta(klient):
     # Reszta danych: 22cm od góry (20 + 2), środek
     y = PAGE_H - 624
     if nazwa:
+        c.setFont('Poppins', 30)
+        label = 'Inwestor: '
+        label_w = c.stringWidth(label, 'Poppins', 30)
+        full_text_w = label_w + c.stringWidth(nazwa, 'PoppinsBold', 36)
+        start_x = (PAGE_W - full_text_w) / 2
+        c.drawString(start_x, y, label)
         c.setFont('PoppinsBold', 36)
-        text_w = c.stringWidth(f'Inwestor: {nazwa}', 'PoppinsBold', 36)
-        c.drawString((PAGE_W - text_w) / 2, y, f'Inwestor: {nazwa}')
+        c.drawString(start_x + label_w, y, nazwa)
         y -= 60
     if adres:
         c.setFont('Poppins', 30)
