@@ -196,7 +196,7 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
           display:'flex', alignItems:'center', gap:6,
           padding:'6px 14px', borderRadius:20, border:'none',
           cursor:'pointer', fontSize:13, fontWeight:500,
-          background: aktywny ? '#e53935' : '#5a2d6e',
+          background: aktywny ? '#e53935' : '#582A48',
           color:'white',
           transition: 'all 0.2s'
         }}

@@ -45,7 +45,7 @@ export default function MikrofonBtn({ onWynik, jezyk = 'pl-PL' }) {
           border: 'none',
           cursor: 'pointer',
           fontSize: 18,
-          background: nagrywanie ? '#e53935' : '#5a2d6e',
+          background: nagrywanie ? '#e53935' : '#582A48',
           color: 'white',
           display: 'flex',
           alignItems: 'center',

@@ -15,7 +15,7 @@ body {
 
 /* Navbar */
 .navbar {
-  background: #5a2d6e;
+  background: #582A48;
   color: white;
   padding: 0 16px;
   min-height: 54px;
@@ -76,7 +76,7 @@ body {
     top: 54px;
     left: 0;
     right: 0;
-    background: #5a2d6e;
+    background: #582A48;
     flex-direction: column;
     padding: 8px 16px 16px;
     gap: 2px;
@@ -139,8 +139,8 @@ body {
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-.btn-primary { background: #5a2d6e; color: white; }
-.btn-primary:hover:not(:disabled) { background: #4a2460; }
+.btn-primary { background: #582A48; color: white; }
+.btn-primary:hover:not(:disabled) { background: #462439; }
 
 .btn-secondary { background: #eaeaec; color: #333; }
 .btn-secondary:hover:not(:disabled) { background: #dddde0; }
@@ -297,7 +297,7 @@ tr:hover td { background: #fafafa; }
 }
 
 .form-group input:focus,
-.form-group select:focus { border-color: #5a2d6e; box-shadow: 0 0 0 3px rgba(90,45,110,0.1); }
+.form-group select:focus { border-color: #582A48; box-shadow: 0 0 0 3px rgba(88,42,72,0.1); }
 
 @media (max-width: 600px) {
   .form-group input,
@@ -464,6 +464,10 @@ tr:hover td { background: #fafafa; }
   .cennik-table td:empty { display: none; }
   .cennik-table th:nth-child(2),
   .cennik-table td:nth-child(2) { display: none; }
+  /* Cena + jednostka w jednym rzedzie */
+  .cennik-table td:nth-child(3),
+  .cennik-table td:nth-child(4) { display: inline; font-size: 14px; }
+  .cennik-table td:nth-child(4) { margin-left: 8px; }
   .cennik-table td:last-child {
     display: flex;
     gap: 6px;

@@ -73,7 +73,7 @@ export default function Import() {
         </div>
 
         {loading && (
-          <div style={{color:'#5a2d6e', fontSize:14, padding:'8px 0'}}>
+          <div style={{color:'#582A48', fontSize:14, padding:'8px 0'}}>
             ⏳ Wczytuję plik...
           </div>
         )}
@@ -131,7 +131,7 @@ export default function Import() {
                 borderRadius:8, overflow:'hidden'
               }}>
                 <div style={{
-                  background:'#5a2d6e', color:'white',
+                  background:'#582A48', color:'white',
                   padding:'8px 14px', fontSize:13, fontWeight:600
                 }}>
                   {t.nazwa_mebla}

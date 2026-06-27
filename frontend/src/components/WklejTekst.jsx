@@ -128,7 +128,7 @@ export default function WklejTekst({ tabelaId, cennik, onDodano }) {
             </div>
 
             {przetwarzanie && (
-              <div style={{fontSize:13, color:'#5a2d6e', marginBottom:12}}>
+              <div style={{fontSize:13, color:'#582A48', marginBottom:12}}>
                 ⏳ Przetwarzanie...
               </div>
             )}

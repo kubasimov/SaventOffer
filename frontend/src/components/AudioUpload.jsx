@@ -134,7 +134,7 @@ export default function AudioUpload({ tabelaId, cennik, onDodano }) {
       </label>
 
       {przetwarzanie && (
-        <span style={{fontSize:12, color:'#5a2d6e'}}>
+        <span style={{fontSize:12, color:'#582A48'}}>
           ⏳ Przetwarzanie audio... (może potrwać kilka minut, nie zamykaj strony)
         </span>
       )}

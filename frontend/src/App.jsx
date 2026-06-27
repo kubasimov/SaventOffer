@@ -15,7 +15,7 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',
-      height:'100vh',color:'#5a2d6e',fontSize:16}}>
+      height:'100vh',color:'#582A48',fontSize:16}}>
       Ładowanie...
     </div>
   )

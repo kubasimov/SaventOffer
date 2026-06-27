@@ -199,11 +199,11 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
             <div key={i} style={{ flex: 1, textAlign: 'center' }}>
               <div style={{
                 height: 4, borderRadius: 2, marginBottom: 6,
-                background: i <= krok ? '#5a2d6e' : '#ddd',
+                background: i <= krok ? '#582A48' : '#ddd',
                 transition: 'background 0.2s'
               }} />
               <span style={{
-                fontSize: 11, color: i === krok ? '#5a2d6e' : '#aaa',
+                fontSize: 11, color: i === krok ? '#582A48' : '#aaa',
                 fontWeight: i === krok ? 600 : 400
               }}>{nazwa}</span>
             </div>
@@ -304,7 +304,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                     type="checkbox"
                     checked={p.zaznaczony}
                     onChange={() => togglePunkt(i)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#5a2d6e' }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#582A48' }}
                   />
                   <span style={{ flex: 1, fontSize: 13, color: p.zaznaczony ? '#333' : '#aaa' }}>
                     {p.tekst}
@@ -339,12 +339,12 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
-                border: `2px solid ${kategoria === '' ? '#5a2d6e' : '#eee'}`,
+                border: `2px solid ${kategoria === '' ? '#582A48' : '#eee'}`,
                 background: kategoria === '' ? '#f8f5ff' : 'white' }}>
                 <input type="radio" name="kategoria" value=""
                   checked={kategoria === ''}
                   onChange={() => setKategoria('')}
-                  style={{ accentColor: '#5a2d6e' }} />
+                  style={{ accentColor: '#582A48' }} />
                 <div>
                   <div style={{ fontWeight: 500, fontSize: 14 }}>Bez obrazów</div>
                   <div style={{ fontSize: 12, color: '#aaa' }}>Pomiń sekcję z realizacjami</div>
@@ -353,12 +353,12 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
               {kategorie.map(k => (
                 <label key={k.nazwa} style={{ display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
-                  border: `2px solid ${kategoria === k.nazwa ? '#5a2d6e' : '#eee'}`,
+                  border: `2px solid ${kategoria === k.nazwa ? '#582A48' : '#eee'}`,
                   background: kategoria === k.nazwa ? '#f8f5ff' : 'white' }}>
                   <input type="radio" name="kategoria" value={k.nazwa}
                     checked={kategoria === k.nazwa}
                     onChange={() => setKategoria(k.nazwa)}
-                    style={{ accentColor: '#5a2d6e' }} />
+                    style={{ accentColor: '#582A48' }} />
                   <div>
                     <div style={{ fontWeight: 500, fontSize: 14 }}>{k.nazwa}</div>
                     <div style={{ fontSize: 12, color: '#aaa' }}>{k.pliki} {k.pliki === 1 ? 'strona' : 'stron'}</div>
@@ -391,13 +391,13 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                   <div style={{marginTop:10}}>
                     <label style={{display:'flex', alignItems:'center', gap:12,
                       padding:'10px 14px', borderRadius:8, cursor:'pointer',
-                      border: `2px solid ${kategoria === '__wlasne__' ? '#5a2d6e' : '#eee'}`,
+                      border: `2px solid ${kategoria === '__wlasne__' ? '#582A48' : '#eee'}`,
                       background: kategoria === '__wlasne__' ? '#f8f5ff' : 'white',
                       marginBottom:8}}>
                       <input type="radio" name="kategoria" value="__wlasne__"
                         checked={kategoria === '__wlasne__'}
                         onChange={() => setKategoria('__wlasne__')}
-                        style={{accentColor:'#5a2d6e'}}
+                        style={{accentColor:'#582A48'}}
                       />
                       <div>
                         <div style={{fontWeight:500, fontSize:14}}>Wgrane pliki</div>
@@ -445,10 +445,10 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                 type="checkbox"
                 checked={podglad}
                 onChange={e => setPodglad(e.target.checked)}
-                style={{ width:18, height:18, cursor:'pointer', accentColor:'#5a2d6e' }}
+                style={{ width:18, height:18, cursor:'pointer', accentColor:'#582A48' }}
               />
               <div>
-                <div style={{ fontWeight:500, fontSize:13, color:'#5a2d6e' }}>Podgląd przed pobraniem</div>
+                <div style={{ fontWeight:500, fontSize:13, color:'#582A48' }}>Podgląd przed pobraniem</div>
                 <div style={{ fontSize:12, color:'#888' }}>
                   {podglad ? 'PDF otworzy się w nowej karcie' : 'PDF zostanie pobrany automatycznie'}
                 </div>
@@ -476,7 +476,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                   Bez założeń i danych
                 </button>
                 <button
-                  style={{ ...btnStyle, background: '#5a2d6e', color: 'white' }}
+                  style={{ ...btnStyle, background: '#582A48', color: 'white' }}
                   onClick={generuj}
                   disabled={loading}
                 >
@@ -485,7 +485,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
               </>
             ) : (
               <button
-                style={{ ...btnStyle, background: '#5a2d6e', color: 'white' }}
+                style={{ ...btnStyle, background: '#582A48', color: 'white' }}
                 onClick={() => setKrok(k => k + 1)}
               >
                 Dalej →

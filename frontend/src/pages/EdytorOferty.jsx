@@ -171,7 +171,7 @@ export default function EdytorOferty() {
                 value={nowyNumer}
                 onChange={e => setNowyNumer(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && zapiszNumerOferty()}
-                style={{padding:'4px 8px', border:'1px solid #5a2d6e', borderRadius:6,
+                style={{padding:'4px 8px', border:'1px solid #582A48', borderRadius:6,
                   fontSize:16, fontWeight:600, width:280, background:'white', color:'#333'}}
                 autoFocus
               />
@@ -226,7 +226,7 @@ export default function EdytorOferty() {
                   onChange={e => setNowaNazwaOferty(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && zapiszNazweOferty()}
                   placeholder="np. Zabudowa kuchenna"
-                  style={{padding:'4px 8px', border:'1px solid #5a2d6e', borderRadius:6,
+                  style={{padding:'4px 8px', border:'1px solid #582A48', borderRadius:6,
                     fontSize:14, width:260, background:'white', color:'#333'}}
                   autoFocus
                 />
@@ -267,7 +267,7 @@ export default function EdytorOferty() {
           </div>
           <div style={{display:'flex', alignItems:'center', gap:8, padding:'8px 12px',
             background:'#f8f5ff', borderRadius:8, border:'1px solid #e0d6f5'}}>
-            <span style={{fontSize:13, color:'#5a2d6e', fontWeight:500}}>Korekta globalna %</span>
+            <span style={{fontSize:13, color:'#582A48', fontWeight:500}}>Korekta globalna %</span>
             <input
               type="number" step="1"
               value={kortGlobalna}

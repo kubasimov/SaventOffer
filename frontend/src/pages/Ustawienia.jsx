@@ -51,9 +51,9 @@ export default function Ustawienia() {
             style={{
               padding: '10px 24px', border: 'none', cursor: 'pointer',
               fontSize: 14, fontWeight: aktywna === i ? 600 : 400,
-              color: aktywna === i ? '#5a2d6e' : '#888',
+              color: aktywna === i ? '#582A48' : '#888',
               background: 'none',
-              borderBottom: aktywna === i ? '3px solid #5a2d6e' : '3px solid transparent',
+              borderBottom: aktywna === i ? '3px solid #582A48' : '3px solid transparent',
               marginBottom: -2, transition: 'all 0.15s'
             }}
           >

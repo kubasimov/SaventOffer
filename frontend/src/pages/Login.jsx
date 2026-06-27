@@ -71,7 +71,7 @@ export default function Login() {
         boxShadow:'0 4px 24px rgba(0,0,0,0.10)', width:'100%', maxWidth:380
       }}>
         <div style={{textAlign:'center', marginBottom:32}}>
-          <div style={{fontSize:28, fontWeight:700, color:'#5a2d6e', letterSpacing:1}}>
+          <div style={{fontSize:28, fontWeight:700, color:'#582A48', letterSpacing:1}}>
             SaventOffer
           </div>
           <div style={{fontSize:14, color:'#999', marginTop:4}}>Zaloguj się aby kontynuować</div>

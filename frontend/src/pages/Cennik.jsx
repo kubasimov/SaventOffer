@@ -83,7 +83,7 @@ export default function Cennik() {
                       {(p.aliasy || []).map(a => (
                         <span key={a.id} style={{
                           display:'inline-flex', alignItems:'center', gap:4,
-                          background:'#f0ebf8', color:'#5a2d6e',
+                          background:'#f0ebf8', color:'#582A48',
                           borderRadius:12, padding:'2px 8px', fontSize:12
                         }}>
                           {a.alias}

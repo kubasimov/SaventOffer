@@ -53,7 +53,7 @@ export default function HistoriaDyktowania({ tabelaId }) {
                       🎤 "{entry.tekst}"
                     </div>
                     {entry.rozpoznano && (
-                      <div style={{fontSize:13, color:'#5a2d6e', fontWeight:500}}>
+                      <div style={{fontSize:13, color:'#582A48', fontWeight:500}}>
                         → {entry.rozpoznano}
                       </div>
                     )}

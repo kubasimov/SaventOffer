@@ -46,7 +46,7 @@ export default function Profil() {
           <div style={{fontSize:14, color:'#666'}}>{user?.email}</div>
           <div style={{marginTop:4}}>
             <span style={{
-              background:'#f0ebf8', color:'#5a2d6e',
+              background:'#f0ebf8', color:'#582A48',
               padding:'2px 10px', borderRadius:12, fontSize:12, fontWeight:500
             }}>
               {user?.rola}
