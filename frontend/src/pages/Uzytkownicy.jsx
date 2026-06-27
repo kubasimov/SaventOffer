@@ -4,7 +4,7 @@ import axios from 'axios'
 export default function Uzytkownicy() {
   const [uzytkownicy, setUzytkownicy] = useState([])
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState({ email: '', haslo: '', imie: '' })
+  const [form, setForm] = useState({ email: '', haslo: '', imie: '', rola: 'pracownik' })
   const [blad, setBlad] = useState(null)
 
   useEffect(() => { pobierz() }, [])
@@ -19,7 +19,7 @@ export default function Uzytkownicy() {
     try {
       await axios.post('/api/users', form)
       setModal(false)
-      setForm({ email: '', haslo: '', imie: '' })
+      setForm({ email: '', haslo: '', imie: '', rola: 'pracownik' })
       pobierz()
     } catch (err) {
       setBlad(err.response?.data?.error || 'Błąd')
@@ -28,6 +28,11 @@ export default function Uzytkownicy() {
 
   async function toggleAktywny(u) {
     await axios.put(`/api/users/${u.id}`, { aktywny: !u.aktywny })
+    pobierz()
+  }
+
+  async function zmienRole(u, nowaRola) {
+    await axios.put(`/api/users/${u.id}`, { rola: nowaRola })
     pobierz()
   }
 
@@ -43,6 +48,7 @@ export default function Uzytkownicy() {
             <tr>
               <th>Imię</th>
               <th>Email</th>
+              <th>Rola</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -50,8 +56,21 @@ export default function Uzytkownicy() {
           <tbody>
             {uzytkownicy.map(u => (
               <tr key={u.id}>
-                <td>{u.imie || '—'}</td>
+                <td>{u.imie_nazwisko || '—'}</td>
                 <td>{u.email}</td>
+                <td>
+                  <select
+                    value={u.rola}
+                    onChange={e => zmienRole(u, e.target.value)}
+                    style={{
+                      padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd',
+                      fontSize: 13, background: 'white', cursor: 'pointer'
+                    }}
+                  >
+                    <option value="pracownik">Pracownik</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </td>
                 <td>
                   <span style={{
                     display:'inline-block', padding:'2px 10px', borderRadius:12,
@@ -88,6 +107,17 @@ export default function Uzytkownicy() {
             <div className="form-group">
               <label>Hasło</label>
               <input type="password" value={form.haslo} onChange={e => setForm({...form, haslo: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label>Rola</label>
+              <select
+                value={form.rola}
+                onChange={e => setForm({...form, rola: e.target.value})}
+                style={{width:'100%', padding:'8px 12px', borderRadius:8, border:'1px solid #ddd', fontSize:14}}
+              >
+                <option value="pracownik">Pracownik</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
             {blad && <div style={{color:'#e53935', fontSize:13, marginBottom:12}}>{blad}</div>}
             <div className="modal-actions">

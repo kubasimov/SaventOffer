@@ -15,7 +15,7 @@ router.get("/", requireAdmin, async (req, res) => {
 });
 
 router.post("/", requireAdmin, async (req, res) => {
-  const { email, haslo, imie } = req.body;
+  const { email, haslo, imie, rola } = req.body;
   if (!email || !haslo) return res.status(400).json({ error: "Podaj email i haslo" });
   try { enforcePasswordPolicy(haslo); } catch (e) { return res.status(400).json({ error: e.message }); }
   try {
@@ -23,7 +23,7 @@ router.post("/", requireAdmin, async (req, res) => {
     const user = (
       await pool.query(
         "INSERT INTO users (email, haslo_hash, imie_nazwisko, rola) VALUES ($1,$2,$3,$4) RETURNING id, email, imie_nazwisko, rola, aktywny",
-        [email, hash, imie || ""]
+        [email, hash, imie || "", rola === "admin" ? "admin" : "pracownik"]
       )
     ).rows[0];
     res.status(201).json(user);
@@ -34,17 +34,30 @@ router.post("/", requireAdmin, async (req, res) => {
 });
 
 router.put("/:id", requireAdmin, async (req, res) => {
-  const { aktywny, imie, haslo } = req.body;
+  const { aktywny, imie, haslo, rola } = req.body;
   try {
     if (haslo) {
       try { enforcePasswordPolicy(haslo); } catch (e) { return res.status(400).json({ error: e.message }); }
       const hash = await bcrypt.hash(haslo, 11);
       await pool.query("UPDATE users SET haslo_hash = $1 WHERE id = $2", [hash, req.params.id]);
     }
+    // Walidacja roli
+    if (rola !== undefined && rola !== 'admin' && rola !== 'pracownik') {
+      return res.status(400).json({ error: 'Niepoprawna rola. Dozwolone: admin, pracownik' });
+    }
     const updated = (
       await pool.query(
-        "UPDATE users SET aktywny = COALESCE($1, aktywny), imie_nazwisko = COALESCE($2, imie_nazwisko) WHERE id = $3 RETURNING id, email, imie_nazwisko, rola, aktywny",
-        [aktywny !== undefined ? aktywny : null, imie || null, req.params.id]
+        `UPDATE users SET
+          aktywny = COALESCE($1, aktywny),
+          imie_nazwisko = COALESCE($2, imie_nazwisko),
+          rola = COALESCE($3, rola)
+         WHERE id = $4 RETURNING id, email, imie_nazwisko, rola, aktywny`,
+        [
+          aktywny !== undefined ? aktywny : null,
+          imie || null,
+          rola || null,
+          req.params.id
+        ]
       )
     ).rows[0];
     res.json(updated);
