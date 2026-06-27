@@ -65,34 +65,3 @@ router.post('/google', async (req, res) => {
 });
 
 module.exports = router;
-const fs = require('fs');
-const path = require('path');
-
-const GPUID_MIN = 1000;
-const GGID_MIN = 1000;
-const ALLOWED_UID_FILE = path.join(__dirname, '..', '..', 'auth_uid_allow.txt');
-const ALLOWED_GID_FILE = path.join(__dirname, '..', '..', 'auth_gid_allow.txt');
-
-function loadAllowedIds(filePath, minVal, label) {
-  try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const lines = raw.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
-    const ids = lines.map(Number).filter(n => Number.isFinite(n) && n >= minVal);
-    if (ids.length === 0) return new Set([]);
-    return new Set(ids);
-  } catch (e) {
-    return new Set([]);
-  }
-}
-
-const ALLOWED_UID = loadAllowedIds(ALLOWED_UID_FILE, GPUID_MIN, 'uid');
-const ALLOWED_GID = loadAllowedIds(ALLOWED_GID_FILE, GGID_MIN, 'gid');
-
-function isUserAllowed(user) {
-  if (!user || user.rola == null) return false;
-  const gid = typeof user.id === 'number' ? user.id : undefined;
-  const uid = typeof user.uid === 'number' ? user.uid : undefined;
-  const base = (uid !== undefined && ALLOWED_UID.size > 0) ? ALLOWED_UID.has(uid) : true;
-  const group = (gid !== undefined && ALLOWED_GID.size > 0) ? ALLOWED_GID.has(gid) : true;
-  return base && group;
-}

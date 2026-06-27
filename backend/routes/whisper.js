@@ -27,6 +27,8 @@ function wykryjRozszerzenie(file) {
   return mapa[file.mimetype] || 'webm'
 }
 
+const WHISPER_URL = process.env.WHISPER_URL || 'http://192.168.1.12:5050/transcribe';
+
 router.post('/transcribe', upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'brak pliku audio' });
@@ -44,9 +46,9 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
       contentType: req.file.mimetype || 'application/octet-stream'
     });
 
-    console.log('Whisper: wysyłam do http://192.168.1.12:5050/transcribe');
+    console.log('Whisper: wysyłam do', WHISPER_URL);
 
-    const response = await fetch('http://192.168.1.12:5050/transcribe', {
+    const response = await fetch(WHISPER_URL, {
       method: 'POST',
       body: form,
       headers: form.getHeaders(),
