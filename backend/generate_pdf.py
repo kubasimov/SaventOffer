@@ -118,6 +118,7 @@ def generuj_warstwe_klienta(klient):
         tekst = f'Lokalizacja: {adres}'
         w = c.stringWidth(tekst, 'Poppins', 30)
         linie.append(('single', tekst, 'Poppins', 30, w))
+        linie.append(('single', '', 'Poppins', 20, 0))  # pusta linia przed Data
     tekst_data = f'Data wystawienia: {data}'
     w_data = c.stringWidth(tekst_data, 'Poppins', 30)
     linie.append(('single', tekst_data, 'Poppins', 30, w_data))

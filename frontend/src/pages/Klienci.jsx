@@ -10,7 +10,7 @@ export default function Klienci() {
   const [modal, setModal] = useState(false)
   const [edytowany, setEdytowany] = useState(null)
   const [rozwinietaId, setRozwinietaId] = useState(null)
-  const [form, setForm] = useState({ nazwa: '', kontakt: '', email: '', telefon: '', uwagi: '' })
+  const [form, setForm] = useState({ nazwa: '', adres: '', kontakt: '', email: '', telefon: '', uwagi: '' })
 
   useEffect(() => { pobierzKlientow() }, [page])
 
@@ -27,6 +27,7 @@ export default function Klienci() {
       setEdytowany(klient)
       setForm({
         nazwa: klient.nazwa || '',
+        adres: klient.adres || '',
         kontakt: klient.kontakt || '',
         email: klient.email || '',
         telefon: klient.telefon || '',
@@ -34,7 +35,7 @@ export default function Klienci() {
       })
     } else {
       setEdytowany(null)
-      setForm({ nazwa: '', kontakt: '', email: '', telefon: '', uwagi: '' })
+      setForm({ nazwa: '', adres: '', kontakt: '', email: '', telefon: '', uwagi: '' })
     }
     setModal(true)
   }
@@ -122,6 +123,14 @@ export default function Klienci() {
                 value={form.nazwa}
                 onChange={e => setForm({...form, nazwa: e.target.value})}
                 placeholder="np. Jan Kowalski"
+              />
+            </div>
+            <div className="form-group">
+              <label>Adres</label>
+              <input
+                value={form.adres}
+                onChange={e => setForm({...form, adres: e.target.value})}
+                placeholder="np. ul. Kwiatowa 15, 00-001 Warszawa"
               />
             </div>
             <div className="form-group">
