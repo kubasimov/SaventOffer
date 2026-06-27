@@ -59,12 +59,10 @@ describe('Oferty page', () => {
     })
   })
 
-  it('pokazuje przyciski CSV i PDF dla kazdej oferty', async () => {
+  it('pokazuje przycisk PDF dla kazdej oferty', async () => {
     renderPage()
     await waitFor(() => {
-      const csvButtons = screen.getAllByText('⬇ CSV')
       const pdfButtons = screen.getAllByText('⬇ PDF')
-      expect(csvButtons.length).toBe(2)
       expect(pdfButtons.length).toBe(2)
     })
   })

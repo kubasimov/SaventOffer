@@ -408,7 +408,11 @@ tr:hover td { background: #fafafa; }
   .oferty-table td:last-child .btn { flex: 1; text-align: center; }
 
   /* Klienci / Uzytkownicy: karta z rozwijaniem */
-  .mobile-card-table,
+  .mobile-card-table {
+    display: block;
+    min-width: 0 !important;
+    width: 100%;
+  }
   .mobile-card-table thead,
   .mobile-card-table tbody,
   .mobile-card-table tr,
@@ -443,6 +447,16 @@ tr:hover td { background: #fafafa; }
     font-size: 14px;
   }
   .mobile-card-table td:last-child {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+  }
+
+  /* Cennik: przyciski pod opisem */
+  .cennik-table td:last-child {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;

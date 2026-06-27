@@ -63,7 +63,7 @@ export default function Cennik() {
         <button className="btn btn-primary" onClick={() => otworzModal()}>+ Dodaj pozycję</button>
       </div>
       <div className="card">
-        <table>
+        <table className="cennik-table">
           <thead>
             <tr>
               <th>Nazwa</th>
