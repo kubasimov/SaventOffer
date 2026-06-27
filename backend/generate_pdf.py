@@ -123,7 +123,7 @@ def generuj_warstwe_klienta(klient):
     w_wazn = c.stringWidth(waznosc, 'Poppins', 30)
     linie.append(('single', waznosc, 'Poppins', 30, w_wazn))
     # Znajdź najszerszą linię
-    max_w = max(l[1 if l[0] == 'single' else 7] for l in linie) if linie else 0
+    max_w = max(l[4 if l[0] == 'single' else 7] for l in linie) if linie else 0
     start_x = (PAGE_W - max_w) / 2
     # Rysuj
     for linia in linie:
