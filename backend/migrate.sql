@@ -15,8 +15,9 @@ CREATE TABLE clients (
     nazwa VARCHAR(200) NOT NULL,
     kontakt VARCHAR(100),
     email VARCHAR(100),
-    telefon VARCHAR(30),
-    uwagi TEXT,
+        telefon VARCHAR(30),
+        adres VARCHAR(300),
+        uwagi TEXT,
     utworzony TIMESTAMP DEFAULT NOW()
 );
 
