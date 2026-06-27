@@ -101,6 +101,7 @@ def generuj_warstwe_klienta(klient):
     if nazwa_inwestycji:
         c.setFillColorRGB(*TEXT_COLOR)
         c.setFont('Poppins', 75)
+        c._charSpace = 3
         text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 75)
         c.drawString((PAGE_W - text_w) / 2, PAGE_H - 340, nazwa_inwestycji)
     # Reszta danych: blok wyśrodkowany, linie wyrównane do lewej
