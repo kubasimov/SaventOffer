@@ -64,7 +64,7 @@ export default function Uzytkownicy() {
                     onChange={e => zmienRole(u, e.target.value)}
                     style={{
                       padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd',
-                      fontSize: 13, background: 'white', cursor: 'pointer'
+                      fontSize: 13, background: '#fff', color: '#333', cursor: 'pointer'
                     }}
                   >
                     <option value="pracownik">Pracownik</option>
