@@ -97,33 +97,45 @@ def generuj_warstwe_klienta(klient):
     adres = klient.get('adres', '')
     nazwa_inwestycji = klient.get('nazwa_inwestycji', '')
     data = datetime.now().strftime('%d.%m.%Y')
-    # Nazwa inwestycji: 12cm od góry (10 + 2), środek, Poppins 75
+    # Nazwa inwestycji: 12cm od góry, środek, Poppins 75
     if nazwa_inwestycji:
         c.setFillColorRGB(*TEXT_COLOR)
         c.setFont('Poppins', 75)
         text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 75)
         c.drawString((PAGE_W - text_w) / 2, PAGE_H - 340, nazwa_inwestycji)
-    # Reszta danych: 22cm od góry (20 + 2), środek
+    # Reszta danych: blok wyśrodkowany, linie wyrównane do lewej
     y = PAGE_H - 624
+    waznosc = 'Ważność oferty: 5 dni od daty wystawienia'
+    # Zbierz linie i oblicz najszerszą
+    linie = []
     if nazwa:
-        c.setFont('Poppins', 30)
-        label = 'Inwestor: '
-        label_w = c.stringWidth(label, 'Poppins', 30)
-        full_text_w = label_w + c.stringWidth(nazwa, 'PoppinsBold', 36)
-        start_x = (PAGE_W - full_text_w) / 2
-        c.drawString(start_x, y, label)
-        c.setFont('PoppinsBold', 36)
-        c.drawString(start_x + label_w, y, nazwa)
-        y -= 60
+        label_inw = 'Inwestor: '
+        w_label = c.stringWidth(label_inw, 'Poppins', 30)
+        w_nazwa = c.stringWidth(nazwa, 'PoppinsBold', 36)
+        linie.append(('mix', label_inw, 'Poppins', 30, nazwa, 'PoppinsBold', 36, w_label + w_nazwa))
     if adres:
-        c.setFont('Poppins', 30)
-        text_w = c.stringWidth(f'Lokalizacja: {adres}', 'Poppins', 30)
-        c.drawString((PAGE_W - text_w) / 2, y, f'Lokalizacja: {adres}')
+        tekst = f'Lokalizacja: {adres}'
+        w = c.stringWidth(tekst, 'Poppins', 30)
+        linie.append(('single', tekst, 'Poppins', 30, w))
+    tekst_data = f'Data wystawienia: {data}'
+    w_data = c.stringWidth(tekst_data, 'Poppins', 30)
+    linie.append(('single', tekst_data, 'Poppins', 30, w_data))
+    w_wazn = c.stringWidth(waznosc, 'Poppins', 30)
+    linie.append(('single', waznosc, 'Poppins', 30, w_wazn))
+    # Znajdź najszerszą linię
+    max_w = max(l[1 if l[0] == 'single' else 7] for l in linie) if linie else 0
+    start_x = (PAGE_W - max_w) / 2
+    # Rysuj
+    for linia in linie:
+        if linia[0] == 'single':
+            c.setFont(linia[2], linia[3])
+            c.drawString(start_x, y, linia[1])
+        else:
+            c.setFont('Poppins', 30)
+            c.drawString(start_x, y, linia[1])
+            c.setFont('PoppinsBold', 36)
+            c.drawString(start_x + c.stringWidth(linia[1], 'Poppins', 30), y, linia[4])
         y -= 50
-    c.setFont('Poppins', 30)
-    c.drawCentredString(PAGE_W / 2, y, f'Data wystawienia: {data}')
-    y -= 50
-    c.drawCentredString(PAGE_W / 2, y, 'Ważność oferty: 5 dni od daty wystawienia')
     c.save()
     buf.seek(0)
     return buf
