@@ -30,14 +30,15 @@ router.get('/kategorie', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// Pobierz domyślny tekst założeń z pliku
+// Pobierz domyślny tekst założeń z bazy danych
 router.get('/zalozenia-domyslne', async (req, res) => {
   try {
-    const fs = require('fs')
-    const path = '/opt/savento/backend/obrazy/ZALOZENIA.txt'
-    if (!fs.existsSync(path)) return res.json({ tekst: '' })
-    const tekst = fs.readFileSync(path, 'utf8')
-    res.json({ tekst: tekst.trim() })
+    const pool = require('../db/pool');
+    const result = await pool.query(
+      "SELECT wartosc FROM ustawienia WHERE klucz = $1", ['domyslne_zalozenia']
+    );
+    const tekst = result.rows[0]?.wartosc || '';
+    res.json({ tekst });
   } catch (err) { res.status(500).json({ error: err.message }) }
 })
 

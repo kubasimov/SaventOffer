@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom'
-import Cennik from './pages/Cennik'
 import Klienci from './pages/Klienci'
 import Oferty from './pages/Oferty'
 import EdytorOferty from './pages/EdytorOferty'
@@ -35,7 +34,6 @@ function AppInner() {
           <div className="navbar-links">
             <NavLink to="/" end>Oferty</NavLink>
             {isAdmin && <NavLink to="/klienci">Klienci</NavLink>}
-            {isAdmin && <NavLink to="/cennik">Cennik</NavLink>}
             {isAdmin && <NavLink to="/import">Import</NavLink>}
             {isAdmin && <NavLink to="/uzytkownicy">Użytkownicy</NavLink>}
             {isAdmin && <NavLink to="/ustawienia">Ustawienia</NavLink>}
@@ -63,7 +61,6 @@ function AppInner() {
               <Route path="/" element={<Oferty />} />
               {isAdmin && <Route path="/oferty/:id" element={<EdytorOferty />} />}
               {isAdmin && <Route path="/klienci" element={<Klienci />} />}
-              {isAdmin && <Route path="/cennik" element={<Cennik />} />}
               {isAdmin && <Route path="/import" element={<Import />} />}
               {isAdmin && <Route path="/uzytkownicy" element={<Uzytkownicy />} />}
               {isAdmin && <Route path="/ustawienia" element={<Ustawienia />} />}

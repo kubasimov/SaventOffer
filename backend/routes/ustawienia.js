@@ -34,13 +34,17 @@ router.put('/:klucz', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Zapisz domyślne założenia do pliku txt
+// Zapisz domyślne założenia do bazy danych
 router.post('/zapisz-zalozenia', async (req, res) => {
   try {
-    const nodeFs = require('fs')
-    const { tekst } = req.body
-    nodeFs.writeFileSync('/opt/savento/backend/obrazy/ZALOZENIA.txt', tekst || '', 'utf8')
-    res.json({ success: true })
+    const pool = require('../db/pool');
+    const { tekst } = req.body;
+    await pool.query(
+      `INSERT INTO ustawienia (klucz, wartosc) VALUES ($1, $2)
+       ON CONFLICT (klucz) DO UPDATE SET wartosc = $2, zaktualizowany = NOW()`,
+      ['domyslne_zalozenia', tekst || '']
+    );
+    res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }) }
 });
 
