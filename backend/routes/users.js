@@ -65,3 +65,12 @@ router.put("/:id", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
+// Usuń użytkownika
+router.delete('/:id', requireAdmin, async (req, res) => {
+  try {
+    const r = await pool.query("DELETE FROM users WHERE id=$1 RETURNING id, email, imie_nazwisko", [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
+    res.json({ success: true, usuniety: r.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});

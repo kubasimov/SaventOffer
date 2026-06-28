@@ -60,7 +60,7 @@ def rysuj_liste_z_checkbox(c, punkty, start_y, line_h, font_size, inter_line):
     for i, punkt in enumerate(punkty):
         y = start_y - i * line_h
         if y < 40:
-            break
+            return punkty[i:]  # zwróć pozostałe punkty
         if os.path.exists(checkbox_path):
             try:
                 img = ImageReader(checkbox_path)
@@ -88,6 +88,7 @@ def rysuj_liste_z_checkbox(c, punkty, start_y, line_h, font_size, inter_line):
         c.drawString(text_x, y + 6, lines[0])
         for j, extra in enumerate(lines[1:], 1):
             c.drawString(text_x, y + 6 - j * inter_line, extra)
+    return None  # wszystkie punkty zmieściły się
 
 
 def generuj_warstwe_klienta(klient):
@@ -148,7 +149,13 @@ def generuj_warstwe_zalozen(zalozenia_tekst):
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
     punkty = [p.strip() for p in zalozenia_tekst.strip().split('\n') if p.strip()]
     start_y = PAGE_H - 162 - FONT_SIZE_ZAL * 2
-    rysuj_liste_z_checkbox(c, punkty, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
+    pozostale = rysuj_liste_z_checkbox(c, punkty, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
+    # Jeśli są pozostałe punkty, dodaj kolejne strony
+    page_num = 1
+    while pozostale:
+        c.showPage()
+        page_num += 1
+        pozostale = rysuj_liste_z_checkbox(c, pozostale, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
     c.save()
     buf.seek(0)
     return buf
@@ -159,7 +166,10 @@ def generuj_warstwe_specyfikacji(specyfikacja):
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
     punkty = [p.strip() for p in specyfikacja if p.strip()]
     start_y = PAGE_H - 162 - FONT_SIZE_ZAL * 2
-    rysuj_liste_z_checkbox(c, punkty, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
+    pozostale = rysuj_liste_z_checkbox(c, punkty, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
+    while pozostale:
+        c.showPage()
+        pozostale = rysuj_liste_z_checkbox(c, pozostale, start_y, LINE_H_ZAL, FONT_SIZE_ZAL, INTER_LINE_ZAL)
     c.save()
     buf.seek(0)
     return buf
@@ -372,16 +382,20 @@ def generuj_pdf(dane, output_path):
     podklad_info = os.path.join(OBRAZY, 'podklad_informacje.pdf')
     if zalozenia and os.path.exists(podklad_info):
         warstwa = generuj_warstwe_zalozen(zalozenia)
-        tlo = szablon('podklad_informacje.pdf')
-        tlo.merge_page(PdfReader(warstwa).pages[0])
-        writer.add_page(tlo)
+        warstwa_pdf = PdfReader(warstwa)
+        for strona in warstwa_pdf.pages:
+            tlo = szablon('podklad_informacje.pdf')
+            tlo.merge_page(strona)
+            writer.add_page(tlo)
     specyfikacja = dane.get('specyfikacja', [])
     podklad_spec = os.path.join(OBRAZY, 'podklad_specyfikacja.pdf')
     if specyfikacja and os.path.exists(podklad_spec):
         warstwa = generuj_warstwe_specyfikacji(specyfikacja)
-        tlo = PdfReader(podklad_spec).pages[0]
-        tlo.merge_page(PdfReader(warstwa).pages[0])
-        writer.add_page(tlo)
+        warstwa_pdf = PdfReader(warstwa)
+        for strona in warstwa_pdf.pages:
+            tlo = PdfReader(podklad_spec).pages[0]
+            tlo.merge_page(strona)
+            writer.add_page(tlo)
     for tabela in dane.get('tabele', []):
         tabela_buf = generuj_strone_tabeli(tabela)
         tlo = szablon('podklad_oferta_cenowa.pdf')

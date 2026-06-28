@@ -37,6 +37,16 @@ export default function Uzytkownicy() {
     pobierz()
   }
 
+  async function usunUzytkownika(u) {
+    if (!confirm(`Usunąć użytkownika "${u.imie_nazwisko || u.email}"?`)) return
+    try {
+      await axios.delete(`/api/users/${u.id}`)
+      pobierz()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Błąd usuwania')
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -90,6 +100,9 @@ export default function Uzytkownicy() {
                   <button className="btn btn-secondary btn-sm" onClick={() => toggleAktywny(u)}>
                     {u.aktywny ? 'Zablokuj' : 'Odblokuj'}
                   </button>
+                  {' '}
+                  <button className="btn btn-sm" style={{background:'#e53935', color:'white', border:'none', padding:'4px 10px', borderRadius:6, cursor:'pointer', fontSize:12}}
+                    onClick={() => usunUzytkownika(u)}>Usuń</button>
                 </td>
               </tr>
             ))}
