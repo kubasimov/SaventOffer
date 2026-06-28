@@ -32,7 +32,7 @@ TEXT_WHITE = (1, 1, 1)
 TEXT_COLOR = (0.15, 0.12, 0.15)
 BULLET_COLOR = (0.35, 0.28, 0.35)
 FONT_SIZE_ZAL = 22
-LINE_H_ZAL = 82
+LINE_H_ZAL = 41
 INTER_LINE_ZAL = int(FONT_SIZE_ZAL * 1.58)
 FONT_SIZE_TAB = 19
 FONT_SIZE_TAB_BOLD = 22
@@ -64,13 +64,13 @@ def rysuj_liste_z_checkbox(c, punkty, start_y, line_h, font_size, inter_line):
         if os.path.exists(checkbox_path):
             try:
                 img = ImageReader(checkbox_path)
-                c.drawImage(img, bullet_x, y - 4, width=checkbox_size, height=checkbox_size, mask='auto')
+                c.drawImage(img, bullet_x, y - 7, width=checkbox_size, height=checkbox_size, mask='auto')
             except Exception:
                 c.setFillColorRGB(*BULLET_COLOR)
-                c.circle(bullet_x + 10, y + 10, 6, fill=1, stroke=0)
+                c.circle(bullet_x + 10, y + 7, 6, fill=1, stroke=0)
         else:
             c.setFillColorRGB(*BULLET_COLOR)
-            c.circle(bullet_x + 10, y + 10, 6, fill=1, stroke=0)
+            c.circle(bullet_x + 10, y + 7, 6, fill=1, stroke=0)
         lines = zawijaj_tekst(c, punkt, font_size, max_text_w)
         c.setFillColorRGB(*TEXT_COLOR)
         c.drawString(text_x, y + 6, lines[0])
@@ -122,7 +122,7 @@ def generuj_warstwe_klienta(klient):
         text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 77)
         c.drawString((PAGE_W - text_w) / 2, PAGE_H - 340, nazwa_inwestycji)
     # Reszta danych: blok wyśrodkowany, linie wyrównane do lewej
-    y = PAGE_H - 567
+    y = PAGE_H - 595
     waznosc = 'Ważność oferty: 5 dni od daty wystawienia'
     # Zbierz linie i oblicz najszerszą
     linie = []
@@ -135,7 +135,7 @@ def generuj_warstwe_klienta(klient):
         tekst = f'Lokalizacja: {adres}'
         w = c.stringWidth(tekst, 'Poppins', 30)
         linie.append(('single', tekst, 'Poppins', 30, w))
-        linie.append(('single', '', 'Poppins', 20, 0))  # pusta linia przed Data
+        linie.append(('spacer', 33))  # pusta linia przed Data (zmniejszona o 1/3)
     tekst_data = f'Data wystawienia: {data}'
     w_data = c.stringWidth(tekst_data, 'Poppins', 30)
     linie.append(('single', tekst_data, 'Poppins', 30, w_data))
@@ -146,7 +146,9 @@ def generuj_warstwe_klienta(klient):
     start_x = (PAGE_W - max_w) / 2
     # Rysuj
     for linia in linie:
-        if linia[0] == 'single':
+        if linia[0] == 'spacer':
+            y -= linia[1]
+        elif linia[0] == 'single':
             c.setFont(linia[2], linia[3])
             c.drawString(start_x, y, linia[1])
         else:
