@@ -71,24 +71,40 @@ def rysuj_liste_z_checkbox(c, punkty, start_y, line_h, font_size, inter_line):
         else:
             c.setFillColorRGB(*BULLET_COLOR)
             c.circle(bullet_x + 10, y + 10, 6, fill=1, stroke=0)
-        words = punkt.split()
-        lines = []
-        line = ''
-        for word in words:
-            test = (line + ' ' + word).strip()
-            if c.stringWidth(test, 'Poppins', font_size) < max_text_w:
-                line = test
-            else:
-                if line:
-                    lines.append(line)
-                line = word
-        if line:
-            lines.append(line)
+        lines = zawijaj_tekst(c, punkt, font_size, max_text_w)
         c.setFillColorRGB(*TEXT_COLOR)
         c.drawString(text_x, y + 6, lines[0])
         for j, extra in enumerate(lines[1:], 1):
             c.drawString(text_x, y + 6 - j * inter_line, extra)
     return None  # wszystkie punkty zmieściły się
+
+
+def zawijaj_tekst(c, punkt, font_size, max_text_w):
+    """Zawijaj tekst z ochroną przed sierotami (pojedynczy wyraz na końcu)."""
+    words = punkt.split()
+    lines = []
+    current = ''
+    for w in words:
+        test = (current + ' ' + w).strip()
+        if c.stringWidth(test, 'Poppins', font_size) <= max_text_w:
+            current = test
+        else:
+            if current:
+                lines.append(current)
+            current = w
+    if current:
+        # Ochrona przed sierotami: jeśli ostatnia linia ma 1 krótki wyraz i poprzednia istnieje
+        words_in_last = current.split()
+        if len(words_in_last) == 1 and len(words_in_last[0]) <= 3 and lines:
+            prev = lines[-1]
+            test = prev + ' ' + current
+            if c.stringWidth(test, 'Poppins', font_size) <= max_text_w:
+                lines[-1] = test
+            else:
+                lines.append(current)
+        else:
+            lines.append(current)
+    return lines
 
 
 def generuj_warstwe_klienta(klient):
@@ -98,13 +114,13 @@ def generuj_warstwe_klienta(klient):
     adres = klient.get('adres', '')
     nazwa_inwestycji = klient.get('nazwa_inwestycji', '')
     data = datetime.now().strftime('%d.%m.%Y')
-    # Nazwa inwestycji: 10cm od góry, środek, Poppins 77
+    # Nazwa inwestycji: 12cm od góry, środek, Poppins 77
     if nazwa_inwestycji:
         c.setFillColorRGB(*TEXT_COLOR)
         c.setFont('Poppins', 77)
         c._charSpace = 3
         text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 77)
-        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 283, nazwa_inwestycji)
+        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 340, nazwa_inwestycji)
     # Reszta danych: blok wyśrodkowany, linie wyrównane do lewej
     y = PAGE_H - 567
     waznosc = 'Ważność oferty: 5 dni od daty wystawienia'

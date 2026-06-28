@@ -51,6 +51,16 @@ export default function Klienci() {
     pobierzKlientow()
   }
 
+  async function usunKlienta(klient) {
+    if (!confirm(`Usunąć klienta "${klient.nazwa}"?`)) return
+    try {
+      await axios.delete(`/api/klienci/${klient.id}`)
+      pobierzKlientow()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Błąd usuwania')
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -89,6 +99,9 @@ export default function Klienci() {
                   <td className="mobile-hide" style={{textAlign:'right'}}
                     onClick={e => e.stopPropagation()}>
                     <button className="btn btn-secondary btn-sm" onClick={() => otworzModal(k)}>Edytuj</button>
+                    {' '}
+                    <button className="btn btn-sm" style={{background:'#e53935', color:'white', border:'none', padding:'4px 10px', borderRadius:6, cursor:'pointer', fontSize:12}}
+                      onClick={() => usunKlienta(k)}>Usuń</button>
                   </td>
                 </tr>
               ))}

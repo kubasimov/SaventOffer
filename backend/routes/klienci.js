@@ -72,4 +72,18 @@ router.get('/:id', async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// Usuń klienta
+router.delete('/:id', async (req, res) => {
+  try {
+    const refs = await pool.query('SELECT COUNT(*) FROM offers WHERE klient_id=$1', [req.params.id]);
+    if (parseInt(refs.rows[0].count) > 0) {
+      return res.status(400).json({ error: 'Nie można usunąć klienta, który ma przypisane oferty' });
+    }
+    const r = await pool.query("DELETE FROM clients WHERE id=$1 RETURNING id, nazwa", [req.params.id]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
+    res.json({ success: true, usuniety: r.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
