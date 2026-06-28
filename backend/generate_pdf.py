@@ -35,7 +35,7 @@ FONT_SIZE_ZAL = 22
 LINE_H_ZAL = 82
 INTER_LINE_ZAL = int(FONT_SIZE_ZAL * 1.58)
 FONT_SIZE_TAB = 19
-FONT_SIZE_TAB_BOLD = 20
+FONT_SIZE_TAB_BOLD = 22
 
 
 def formatPLN(val):
@@ -97,15 +97,15 @@ def generuj_warstwe_klienta(klient):
     adres = klient.get('adres', '')
     nazwa_inwestycji = klient.get('nazwa_inwestycji', '')
     data = datetime.now().strftime('%d.%m.%Y')
-    # Nazwa inwestycji: 12cm od góry, środek, Poppins 75
+    # Nazwa inwestycji: 10cm od góry, środek, Poppins 77
     if nazwa_inwestycji:
         c.setFillColorRGB(*TEXT_COLOR)
-        c.setFont('Poppins', 75)
+        c.setFont('Poppins', 77)
         c._charSpace = 3
-        text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 75)
-        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 340, nazwa_inwestycji)
+        text_w = c.stringWidth(nazwa_inwestycji, 'Poppins', 77)
+        c.drawString((PAGE_W - text_w) / 2, PAGE_H - 283, nazwa_inwestycji)
     # Reszta danych: blok wyśrodkowany, linie wyrównane do lewej
-    y = PAGE_H - 624
+    y = PAGE_H - 567
     waznosc = 'Ważność oferty: 5 dni od daty wystawienia'
     # Zbierz linie i oblicz najszerszą
     linie = []
@@ -195,7 +195,7 @@ def generuj_strone_tabeli(tabela):
         c.setFillColorRGB(*TEXT_DARK)
         c.setFont('Poppins', FONT_SIZE_TAB)
         c.drawString(table_x + 12, current_y + 12, nazwa)
-        c.setFont('PoppinsBold', FONT_SIZE_TAB)
+        c.setFont('Poppins', FONT_SIZE_TAB)
         c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(wartosc))
         c.setStrokeColorRGB(0.75, 0.75, 0.75)
         c.setLineWidth(0.5)
@@ -293,7 +293,7 @@ def generuj_strone_podsumowania(tabele):
         c.setFillColorRGB(*TEXT_DARK)
         c.setFont('Poppins', FONT_SIZE_TAB)
         c.drawString(table_x + 12, current_y + 12, nazwa)
-        c.setFont('PoppinsBold', FONT_SIZE_TAB)
+        c.setFont('Poppins', FONT_SIZE_TAB)
         c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(wartosc))
         c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + ROW_H)
         current_y -= ROW_H
