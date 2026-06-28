@@ -62,7 +62,7 @@ describe('Oferty page', () => {
   it('pokazuje przycisk PDF dla kazdej oferty', async () => {
     renderPage()
     await waitFor(() => {
-      const pdfButtons = screen.getAllByText('⬇ PDF')
+      const pdfButtons = screen.getAllByText('📄 PDF')
       expect(pdfButtons.length).toBe(2)
     })
   })

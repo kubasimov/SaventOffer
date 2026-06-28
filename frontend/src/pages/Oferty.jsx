@@ -112,55 +112,62 @@ export default function Oferty() {
         {oferty.length === 0 ? (
           <div className="empty-state">Brak ofert — utwórz pierwszą</div>
         ) : (
-          <table className="oferty-table">
-            <thead>
-              <tr>
-                <th>Numer</th>
-                <th>Klient</th>
-                <th>Data</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {oferty.map(o => (
-                <tr key={o.id}>
-                  <td><strong>{o.numer}</strong></td>
-                  <td>{o.klient_nazwa || '—'}</td>
-                  <td>{formatData(o.data_oferty)}</td>
-                  <td>
-                    <span style={{
-                      color: statusKolor[o.status],
-                      fontWeight: 500,
-                      fontSize: 13
-                    }}>
+          <div className="oferty-grid">
+            {oferty.map(o => (
+              <div key={o.id} className="oferta-card">
+                <div className="oferta-card-header">
+                  <div className="oferta-card-title">
+                    <strong>{o.numer}</strong>
+                  </div>
+                  <div className={`oferta-card-status status-${o.status}`}>
+                    <span className="status-dot" />
+                    {statusLabel[o.status]}
+                  </div>
+                </div>
+                <div className="oferta-card-body">
+                  <div className="oferta-card-row">
+                    <span className="oferta-card-label">Klient:</span>
+                    <span className="oferta-card-value">{o.klient_nazwa || '—'}</span>
+                  </div>
+                  <div className="oferta-card-row">
+                    <span className="oferta-card-label">Data:</span>
+                    <span className="oferta-card-value">{formatData(o.data_oferty)}</span>
+                  </div>
+                  <div className="oferta-card-row">
+                    <span className="oferta-card-label">Status:</span>
+                    <span className="oferta-card-value" style={{ color: statusKolor[o.status], fontWeight: 500 }}>
                       {statusLabel[o.status]}
                     </span>
-                  </td>
-                  <td style={{textAlign:'right'}}>
+                  </div>
+                </div>
+                <div className="oferta-card-actions">
                   <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setModalPDF({ id: o.id, numer: o.numer, klientId: o.klient_id, nazwa: o.nazwa })}
-                    >
-                      ⬇ PDF
-                    </button>
-                    {isAdmin && <button
-                      className="btn btn-secondary btn-sm"
+                    className="btn btn-sm btn-pdf"
+                    onClick={() => setModalPDF({ id: o.id, numer: o.numer, klientId: o.klient_id, nazwa: o.nazwa })}
+                    title="Generuj PDF"
+                  >
+                    📄 PDF
+                  </button>
+                  {isAdmin && (
+                    <button
+                      className="btn btn-sm btn-secondary"
                       onClick={() => navigate(`/oferty/${o.id}`)}
                     >
                       Otwórz
-                    </button>}
-                  {isAdmin && <button
-                      className="btn btn-danger btn-sm"
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      className="btn btn-sm btn-danger"
                       onClick={() => usunOferte(o.id, o.numer)}
                     >
                       Usuń
-                    </button>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
         {/* Paginacja */}
         {oferty.length > 0 && (

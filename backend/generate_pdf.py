@@ -32,7 +32,7 @@ TEXT_WHITE = (1, 1, 1)
 TEXT_COLOR = (0.15, 0.12, 0.15)
 BULLET_COLOR = (0.35, 0.28, 0.35)
 FONT_SIZE_ZAL = 22
-LINE_H_ZAL = 41
+LINE_H_ZAL = 62
 INTER_LINE_ZAL = int(FONT_SIZE_ZAL * 1.58)
 FONT_SIZE_TAB = 19
 FONT_SIZE_TAB_BOLD = 22
@@ -56,11 +56,14 @@ def rysuj_liste_z_checkbox(c, punkty, start_y, line_h, font_size, inter_line):
     bullet_x = 65
     text_x = 108
     max_text_w = PAGE_W - text_x - 80
+    y = start_y
     c.setFont('Poppins', font_size)
     for i, punkt in enumerate(punkty):
-        y = start_y - i * line_h
-        if y < 40:
-            return punkty[i:]  # zwróć pozostałe punkty
+        lines = zawijaj_tekst(c, punkt, font_size, max_text_w)
+        n = len(lines)
+        spacing = 50 * n
+        if y - spacing < 40:
+            return punkty[i:]
         if os.path.exists(checkbox_path):
             try:
                 img = ImageReader(checkbox_path)
@@ -71,11 +74,11 @@ def rysuj_liste_z_checkbox(c, punkty, start_y, line_h, font_size, inter_line):
         else:
             c.setFillColorRGB(*BULLET_COLOR)
             c.circle(bullet_x + 10, y + 7, 6, fill=1, stroke=0)
-        lines = zawijaj_tekst(c, punkt, font_size, max_text_w)
         c.setFillColorRGB(*TEXT_COLOR)
         c.drawString(text_x, y + 6, lines[0])
         for j, extra in enumerate(lines[1:], 1):
             c.drawString(text_x, y + 6 - j * inter_line, extra)
+        y -= spacing
     return None  # wszystkie punkty zmieściły się
 
 
@@ -135,14 +138,14 @@ def generuj_warstwe_klienta(klient):
         tekst = f'Lokalizacja: {adres}'
         w = c.stringWidth(tekst, 'Poppins', 30)
         linie.append(('single', tekst, 'Poppins', 30, w))
-        linie.append(('spacer', 33))  # pusta linia przed Data (zmniejszona o 1/3)
+        linie.append(('spacer', 5))  # pusta linia przed Data (1cm wyżej)
     tekst_data = f'Data wystawienia: {data}'
     w_data = c.stringWidth(tekst_data, 'Poppins', 30)
     linie.append(('single', tekst_data, 'Poppins', 30, w_data))
     w_wazn = c.stringWidth(waznosc, 'Poppins', 30)
     linie.append(('single', waznosc, 'Poppins', 30, w_wazn))
     # Znajdź najszerszą linię
-    max_w = max(l[4 if l[0] == 'single' else 7] for l in linie) if linie else 0
+    max_w = max((l[4 if l[0] == 'single' else 7] for l in linie if l[0] != 'spacer'), default=0)
     start_x = (PAGE_W - max_w) / 2
     # Rysuj
     for linia in linie:

@@ -346,12 +346,97 @@ tr:hover td { background: #fafafa; }
   .pagination-controls { justify-content: center; }
 }
 
-/* Oferty table mobile actions */
+/* === Oferty — Karty === */
+.oferty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+.oferta-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s;
+}
+.oferta-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+}
+.oferta-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 0;
+}
+.oferta-card-title {
+  font-size: 15px;
+}
+.oferta-card-title strong {
+  color: #333;
+}
+.oferta-card-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: #f5f5f5;
+  color: #666;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #888;
+}
+.status-szkic .status-dot { background: #888; }
+.status-wyslana .status-dot { background: #1565c0; }
+.status-zaakceptowana .status-dot { background: #2e7d32; }
+.status-anulowana .status-dot { background: #c62828; }
+.oferta-card-body {
+  padding: 12px 16px;
+  flex: 1;
+}
+.oferta-card-row {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.oferta-card-label {
+  color: #888;
+  min-width: 48px;
+}
+.oferta-card-value {
+  color: #333;
+}
+.oferta-card-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px 12px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+.btn-pdf {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  color: #555;
+  font-size: 12px;
+}
+.btn-pdf:hover {
+  background: #eee;
+}
 @media (max-width: 600px) {
-  .oferty-table td:last-child {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+  .oferty-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
   }
 }
 
