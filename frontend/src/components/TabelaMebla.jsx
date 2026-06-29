@@ -362,6 +362,7 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
   const [pozycje, setPozycje] = useState(tabela.pozycje || [])
   const [korekta, setKorekta] = useState(parseFloat(tabela.korekta_pct) || 0)
   const [modalPozycja, setModalPozycja] = useState(false)
+  const [openNarzedzia, setOpenNarzedzia] = useState(false)
   const [edytujNazwe, setEdytujNazwe] = useState(false)
   const [nowaNazwa, setNowaNazwa] = useState(tabela.nazwa_mebla)
   const [form, setForm] = useState({
@@ -563,10 +564,21 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
           )}
         </div>
         <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
-          <MikrofonCiagly tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
-          <HistoriaDyktowania tabelaId={tabela.id} />
-          <AudioUpload tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
-          <WklejTekst tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
+          <div className="btn-group" style={{position:'relative', display:'inline-block'}}>
+            <button className="btn btn-secondary btn-sm" onClick={e => {e.stopPropagation(); setOpenNarzedzia(!openNarzedzia)}}>
+              🛠️ Narzędzia {openNarzedzia ? '▲' : '▼'}
+            </button>
+            {openNarzedzia && (
+              <div style={{position:'absolute', top:'100%', left:0, zIndex:100, background:'#2b2b2b',
+                border:'1px solid #3a3a3a', borderRadius:8, padding:10, marginTop:4,
+                display:'flex', flexDirection:'column', gap:8, minWidth:200}}>
+                <MikrofonCiagly tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
+                <HistoriaDyktowania tabelaId={tabela.id} />
+                <AudioUpload tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
+                <WklejTekst tabelaId={tabela.id} cennik={cennik} onDodano={odswiezPoMikrofonie} />
+              </div>
+            )}
+          </div>
           <button className="btn btn-secondary btn-sm" onClick={kopiujTabele}>⧉ Kopiuj</button>
           <button className="btn btn-secondary btn-sm" onClick={() => setModalPozycja(true)}>+ Pozycja</button>
           <button className="btn btn-danger btn-sm" onClick={() => onUsun(tabela.id)}>Usuń tabelę</button>
