@@ -132,7 +132,7 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
   return (
     <>
       <tr
-        style={{cursor:'pointer', background: rozwiniety ? '#faf7ff' : undefined}}
+        style={{cursor:'pointer', background: rozwiniety ? '#2b2b2b' : undefined}}
         onClick={() => setRozwiniety(!rozwiniety)}
       >
         <td>
@@ -144,8 +144,8 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                   value={nowaNazwaPoz}
                   onChange={e => setNowaNazwaPoz(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && zapiszNazwePozycji()}
-                  style={{padding:'2px 6px', border:'1px solid #582A48', borderRadius:4,
-                    fontSize:13, width:180, background:'white', color:'#333'}}
+                  style={{padding:'2px 6px', border:'1.5px solid #555', borderRadius:4,
+                    fontSize:13, width:180, background:'#3a3a3a', color:'white'}}
                   autoFocus
                 />
                 <button className="btn btn-primary btn-sm"
@@ -177,8 +177,8 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                 value={nowaCena}
                 onChange={e => setNowaCena(e.target.value)}
                 onKeyDown={e => { if(e.key==='Enter') zapiszCene(); if(e.key==='Escape') setEdytujCene(false) }}
-                style={{width:80, padding:'2px 6px', border:'1px solid #582A48',
-                  borderRadius:4, fontSize:13, background:'white', color:'#333'}}
+                style={{width:80, padding:'2px 6px', border:'1.5px solid #555',
+                  borderRadius:4, fontSize:13, background:'#3a3a3a', color:'white'}}
                 autoFocus
               />
               <button className="btn btn-primary btn-sm" onClick={zapiszCene}>✓</button>
@@ -201,7 +201,7 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
 
       {rozwiniety && (
         <tr>
-          <td colSpan={5} style={{padding:0, background:'#f8f5ff'}}>
+          <td colSpan={5} style={{padding:0, background:'#2b2b2b'}}>
             <div style={{padding:'12px 16px 16px 32px'}}>
               {wymiary.length > 0 && (
                 <table style={{width:'100%', marginBottom:12}}>
@@ -209,16 +209,16 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                     <tr>
                       {pozycja.jednostka === 'm2' ? (
                         <>
-                          <th style={{fontSize:12, color:'#888', fontWeight:500}}>Wym. X (m)</th>
-                          <th style={{fontSize:12, color:'#888', fontWeight:500}}>Wym. Y (m)</th>
-                          <th style={{fontSize:12, color:'#888', fontWeight:500}}>m²</th>
+                          <th style={{fontSize:12, color:'#aaa', fontWeight:500}}>Wym. X (m)</th>
+                          <th style={{fontSize:12, color:'#aaa', fontWeight:500}}>Wym. Y (m)</th>
+                          <th style={{fontSize:12, color:'#aaa', fontWeight:500}}>m²</th>
                         </>
                       ) : (
-                        <th style={{fontSize:12, color:'#888', fontWeight:500}}>
+                        <th style={{fontSize:12, color:'#aaa', fontWeight:500}}>
                           Ilość ({pozycja.jednostka})
                         </th>
                       )}
-                      <th style={{fontSize:12, color:'#888', fontWeight:500, textAlign:'right'}}>Wartość</th>
+                      <th style={{fontSize:12, color:'#aaa', fontWeight:500, textAlign:'right'}}>Wartość</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -239,19 +239,19 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                                     <input type="number" step="0.01"
                                       defaultValue={parseFloat(d.wymiar_x)}
                                       onChange={e => setEdytWartosci(v => ({...v, wymiar_x: e.target.value}))}
-                                      style={{width:65, padding:'3px 5px', border:'1px solid #582A48',
-                                        borderRadius:4, fontSize:12, background:'white', color:'#333'}}
+                                      style={{width:65, padding:'3px 5px', border:'1.5px solid #555',
+                                        borderRadius:4, fontSize:12, background:'#3a3a3a', color:'white'}}
                                     />
                                   </td>
                                   <td>
                                     <input type="number" step="0.01"
                                       defaultValue={parseFloat(d.wymiar_y)}
                                       onChange={e => setEdytWartosci(v => ({...v, wymiar_y: e.target.value}))}
-                                      style={{width:65, padding:'3px 5px', border:'1px solid #582A48',
-                                        borderRadius:4, fontSize:12, background:'white', color:'#333'}}
+                                      style={{width:65, padding:'3px 5px', border:'1.5px solid #555',
+                                        borderRadius:4, fontSize:12, background:'#3a3a3a', color:'white'}}
                                     />
                                   </td>
-                                  <td style={{fontSize:12, color:'#888'}}>
+                                  <td style={{fontSize:12, color:'#aaa'}}>
                                     {round2(parseFloat(edytWartosci.wymiar_x || d.wymiar_x) *
                                       parseFloat(edytWartosci.wymiar_y || d.wymiar_y)).toFixed(2)}
                                   </td>
@@ -261,8 +261,8 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                                   <input type="number" step="0.01"
                                     defaultValue={parseFloat(d.ilosc)}
                                     onChange={e => setEdytWartosci(v => ({...v, ilosc: e.target.value}))}
-                                    style={{width:80, padding:'3px 5px', border:'1px solid #582A48',
-                                      borderRadius:4, fontSize:12, background:'white', color:'#333'}}
+                                    style={{width:80, padding:'3px 5px', border:'1.5px solid #555',
+                                      borderRadius:4, fontSize:12, background:'#3a3a3a', color:'white'}}
                                   />
                                 </td>
                               )}
@@ -547,8 +547,8 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
                 value={nowaNazwa}
                 onChange={e => setNowaNazwa(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && zapiszNazweMebla()}
-                style={{padding:'4px 8px', border:'1px solid #582A48', borderRadius:6,
-                  fontSize:15, fontWeight:600, width:220, background:'white', color:'#333'}}
+                style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
+                  fontSize:15, fontWeight:600, width:220, background:'#3a3a3a', color:'white'}}
                 autoFocus
               />
               <button className="btn btn-primary btn-sm" onClick={zapiszNazweMebla}>✓</button>
@@ -556,7 +556,7 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
             </>
           ) : (
             <>
-              <h2 style={{fontSize:16, fontWeight:600, color:'#222'}}>{nowaNazwa}</h2>
+              <h2 style={{fontSize:16, fontWeight:600, color:'white'}}>{nowaNazwa}</h2>
               <button onClick={() => setEdytujNazwe(true)}
                 style={{background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#aaa'}}>
                 ✏️
@@ -606,15 +606,15 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
         </tbody>
       </table>
 
-      <div style={{marginTop:16, paddingTop:12, borderTop:'2px solid #eee',
+      <div style={{marginTop:16, paddingTop:12, borderTop:'2px solid #3a3a3a',
         display:'flex', justifyContent:'space-between', alignItems:'center'}}>
         <div style={{display:'flex', alignItems:'center', gap:12}}>
-          <span style={{fontSize:13, color:'#666'}}>Korekta %</span>
+          <span style={{fontSize:13, color:'#aaa'}}>Korekta %</span>
           <input type="number" step="1" value={korekta}
             onChange={e => setKorekta(parseFloat(e.target.value) || 0)}
             onBlur={() => zapiszKorekteDoDb(korekta)}
-            style={{width:80, padding:'4px 8px', border:'1px solid #ddd',
-              borderRadius:6, fontSize:14, textAlign:'center', background:'white', color:'#333'}}
+            style={{width:80, padding:'4px 8px', border:'1.5px solid #555',
+              borderRadius:6, fontSize:14, textAlign:'center', background:'#3a3a3a', color:'white'}}
           />
           {korekta !== 0 && (
             <span style={{fontSize:13, color: korekta < 0 ? '#c62828' : '#2e7d32'}}>
@@ -624,16 +624,16 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
         </div>
         <div style={{textAlign:'right'}}>
           {kortLaczna !== 0 && (
-            <div style={{fontSize:12, color:'#999', marginBottom:2}}>
+            <div style={{fontSize:12, color:'#aaa', marginBottom:2}}>
               Przed: {formatPLN(sumaRaw)}
               {kortGlob !== 0 && (
-                <span style={{marginLeft:8, color:'#582A48'}}>
+                <span style={{marginLeft:8, color:'#c6bec4'}}>
                   (glob: {kortGlob > 0 ? '+' : ''}{kortGlob}%)
                 </span>
               )}
             </div>
           )}
-          <div style={{fontSize:18, fontWeight:700, color:'#582A48'}}>
+          <div style={{fontSize:18, fontWeight:700, color:'#c6bec4'}}>
             RAZEM: {formatPLN(razem)}
           </div>
         </div>
@@ -645,7 +645,7 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
             <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16}}>
               <h2 style={{margin:0}}>Dodaj pozycję</h2>
               {dodanoCount > 0 && (
-                <span style={{fontSize:13, color:'#2e7d32', fontWeight:500}}>
+                <span style={{fontSize:13, color:'#81c784', fontWeight:500}}>
                   ✓ Dodano: {dodanoCount} {dodanoCount === 1 ? 'wiersz' : 'wierszy'}
                 </span>
               )}
@@ -681,13 +681,13 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
                   onChange={e => setForm({...form, cena_jedn: e.target.value})} />
               </div>
             </div>
-            <div style={{background:'#f8f5ff', border:'1px solid #e0d6f5',
+            <div style={{background:'#2b2b2b', border:'1px solid #3a3a3a',
               borderRadius:8, padding:'12px 14px', marginBottom:16}}>
-              <div style={{fontSize:12, color:'#582A48', fontWeight:600, marginBottom:10}}>
+              <div style={{fontSize:12, color:'#c6bec4', fontWeight:600, marginBottom:10}}>
                 {form.jednostka === 'm2' ? 'Wymiary' : 'Ilość'}
                 {czyIstnieje && (
                   <span style={{marginLeft:8, fontSize:11, fontWeight:400,
-                    background:'#582A48', color:'white', padding:'1px 8px', borderRadius:10}}>
+                    background:'#5f2f4d', color:'white', padding:'1px 8px', borderRadius:10}}>
                     doda do istniejącej pozycji
                   </span>
                 )}
@@ -695,28 +695,28 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
               {form.jednostka === 'm2' ? (
                 <div style={{display:'flex', gap:10, alignItems:'center'}}>
                   <div>
-                    <div style={{fontSize:11, color:'#888', marginBottom:3}}>Wym. X (m)</div>
+                    <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. X (m)</div>
                     <input type="number" step="0.01" value={form.wymiar_x}
                       ref={modalFirstInputRef}
                       onChange={e => setForm({...form, wymiar_x: e.target.value})}
                       onKeyDown={e => e.key === 'Enter' && dodajPozycje()}
-                      style={{width:90, padding:'6px 8px', border:'1px solid #ddd',
-                        borderRadius:6, fontSize:14, background:'white', color:'#333'}} />
+                      style={{width:90, padding:'6px 8px', border:'1.5px solid #555',
+                        borderRadius:6, fontSize:14, background:'#3a3a3a', color:'white'}} />
                   </div>
-                  <div style={{fontSize:18, color:'#ccc', marginTop:16}}>×</div>
+                  <div style={{fontSize:18, color:'#666', marginTop:16}}>×</div>
                   <div>
-                    <div style={{fontSize:11, color:'#888', marginBottom:3}}>Wym. Y (m)</div>
+                    <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. Y (m)</div>
                     <input type="number" step="0.01" value={form.wymiar_y}
                       onChange={e => setForm({...form, wymiar_y: e.target.value})}
                       onKeyDown={e => e.key === 'Enter' && dodajPozycje()}
-                      style={{width:90, padding:'6px 8px', border:'1px solid #ddd',
-                        borderRadius:6, fontSize:14, background:'white', color:'#333'}} />
+                      style={{width:90, padding:'6px 8px', border:'1.5px solid #555',
+                        borderRadius:6, fontSize:14, background:'#3a3a3a', color:'white'}} />
                   </div>
                   {m2Preview !== null && (
-                    <div style={{marginTop:16, fontSize:14, color:'#582A48', fontWeight:600}}>
+                    <div style={{marginTop:16, fontSize:14, color:'#c6bec4', fontWeight:600}}>
                       = {m2Preview.toFixed(2)} m²
                       {form.cena_jedn && (
-                        <div style={{fontSize:12, color:'#888', fontWeight:400}}>
+                        <div style={{fontSize:12, color:'#aaa', fontWeight:400}}>
                           {formatPLN(round2(m2Preview * parseFloat(form.cena_jedn)))}
                         </div>
                       )}
@@ -725,15 +725,15 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
                 </div>
               ) : (
                 <div>
-                  <div style={{fontSize:11, color:'#888', marginBottom:3}}>Ilość ({form.jednostka})</div>
+                  <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Ilość ({form.jednostka})</div>
                   <input type="number" step="1" value={form.ilosc}
                     ref={modalFirstInputRef}
                     onChange={e => setForm({...form, ilosc: e.target.value})}
                     onKeyDown={e => e.key === 'Enter' && dodajPozycje()}
-                    style={{width:100, padding:'6px 8px', border:'1px solid #ddd',
-                      borderRadius:6, fontSize:14, background:'white', color:'#333'}} />
+                    style={{width:100, padding:'6px 8px', border:'1.5px solid #555',
+                      borderRadius:6, fontSize:14, background:'#3a3a3a', color:'white'}} />
                   {form.cena_jedn && form.ilosc && (
-                    <div style={{fontSize:12, color:'#888', marginTop:4}}>
+                    <div style={{fontSize:12, color:'#aaa', marginTop:4}}>
                       = {formatPLN(parseFloat(form.ilosc) * parseFloat(form.cena_jedn))}
                     </div>
                   )}

@@ -139,8 +139,8 @@ body {
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-.btn-primary { background: #c6bec4; color: #222; }
-.btn-primary:hover:not(:disabled) { background: #b8b0b6; }
+.btn-primary { background: #5f2f4d; color: white; }
+.btn-primary:hover:not(:disabled) { background: #4d2540; }
 
 .btn-secondary { background: #2b2b2b; color: #c6bec4; border: 2px solid #c6bec4; }
 .btn-secondary:hover:not(:disabled) { background: #3a3a3a; }
