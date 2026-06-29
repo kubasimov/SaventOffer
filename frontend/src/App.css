@@ -5,8 +5,8 @@ html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: #f4f4f6;
-  color: #222;
+  background: #2b2b2b;
+  color: white;
   line-height: 1.5;
   min-height: 100vh;
 }
@@ -113,7 +113,7 @@ body {
 .page-header h1 {
   font-size: 22px;
   font-weight: 700;
-  color: #222;
+  color: white;
 }
 
 @media (max-width: 600px) {
@@ -142,8 +142,8 @@ body {
 .btn-primary { background: #582A48; color: white; }
 .btn-primary:hover:not(:disabled) { background: #462439; }
 
-.btn-secondary { background: #eaeaec; color: #333; }
-.btn-secondary:hover:not(:disabled) { background: #dddde0; }
+.btn-secondary { background: #3a3a3a; color: #c6bec4; border: 1px solid #555; }
+.btn-secondary:hover:not(:disabled) { background: #4a4a4a; }
 
 .btn-danger { background: #e53935; color: white; }
 .btn-danger:hover:not(:disabled) { background: #c62828; }
@@ -157,11 +157,11 @@ body {
 
 /* Cards */
 .card {
-  background: white;
+  background: #2b2b2b;
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  border: 1px solid #eee;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  border: 1px solid #3a3a3a;
 }
 
 @media (max-width: 600px) {
@@ -186,23 +186,23 @@ th {
   text-align: left;
   padding: 10px 10px;
   font-size: 12px;
-  color: #888;
+  color: #aaa;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #eee;
+  border-bottom: 2px solid #3a3a3a;
   white-space: nowrap;
 }
 
 td {
   padding: 10px;
   font-size: 14px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #3a3a3a;
   vertical-align: middle;
 }
 
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: #fafafa; }
+tr:hover td { background: #333; }
 
 @media (max-width: 600px) {
   th { padding: 8px 6px; font-size: 11px; }
@@ -219,9 +219,9 @@ tr:hover td { background: #fafafa; }
   line-height: 1.5;
 }
 
-.badge-m2 { background: #e8f5e9; color: #2e7d32; }
-.badge-szt { background: #e3f2fd; color: #1565c0; }
-.badge-mb { background: #fff3e0; color: #e65100; }
+.badge-m2 { background: #1a3a1a; color: #81c784; }
+.badge-szt { background: #1a2a3a; color: #64b5f6; }
+.badge-mb { background: #3a2a1a; color: #ffb74d; }
 
 /* Modal overlay */
 .modal-overlay {
@@ -247,18 +247,19 @@ tr:hover td { background: #fafafa; }
 }
 
 .modal {
-  background: white;
+  background: #2b2b2b;
+  border: 1px solid #3a3a3a;
   border-radius: 12px;
   padding: 24px 20px;
   width: 100%;
   max-width: 460px;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
   animation: slideUp 0.2s;
 }
 
-.modal h2 { margin-bottom: 16px; font-size: 18px; color: #222; font-weight: 600; }
+.modal h2 { margin-bottom: 16px; font-size: 18px; color: white; font-weight: 600; }
 
 .modal-actions {
   display: flex;
@@ -275,7 +276,7 @@ tr:hover td { background: #fafafa; }
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #555;
+  color: #ccc;
   margin-bottom: 5px;
 }
 
@@ -284,20 +285,20 @@ tr:hover td { background: #fafafa; }
 .form-group textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1.5px solid #ddd;
+  border: 1.5px solid #555;
   border-radius: 8px;
   font-size: 15px;
   outline: none;
   transition: border 0.15s;
-  background: white;
-  color: #333;
+  background: #3a3a3a;
+  color: white;
   -webkit-appearance: none;
   appearance: none;
   font-family: inherit;
 }
 
 .form-group input:focus,
-.form-group select:focus { border-color: #582A48; box-shadow: 0 0 0 3px rgba(88,42,72,0.1); }
+.form-group select:focus { border-color: #582A48; box-shadow: 0 0 0 3px rgba(95,47,77,0.3); }
 
 @media (max-width: 600px) {
   .form-group input,
@@ -309,7 +310,7 @@ tr:hover td { background: #fafafa; }
 .empty-state {
   text-align: center;
   padding: 48px 16px;
-  color: #999;
+  color: #aaa;
   font-size: 14px;
   line-height: 1.6;
 }
@@ -337,7 +338,7 @@ tr:hover td { background: #fafafa; }
 
 .pagination-controls span {
   font-size: 13px;
-  color: #666;
+  color: #aaa;
   padding: 0 8px;
 }
 
@@ -354,16 +355,18 @@ tr:hover td { background: #fafafa; }
   padding: 16px;
 }
 .oferta-card {
-  background: #fff;
+  background: #2b2b2b;
   border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid #3a3a3a;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.2s;
 }
 .oferta-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+  border-color: #555;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 .oferta-card-header {
   display: flex;
@@ -375,7 +378,7 @@ tr:hover td { background: #fafafa; }
   font-size: 15px;
 }
 .oferta-card-title strong {
-  color: #333;
+  color: white;
 }
 .oferta-card-status {
   display: flex;
@@ -385,8 +388,8 @@ tr:hover td { background: #fafafa; }
   font-weight: 500;
   padding: 2px 10px;
   border-radius: 12px;
-  background: #f5f5f5;
-  color: #666;
+  background: #3a3a3a;
+  color: #aaa;
 }
 .status-dot {
   width: 8px;
@@ -414,23 +417,23 @@ tr:hover td { background: #fafafa; }
   min-width: 48px;
 }
 .oferta-card-value {
-  color: #333;
+  color: white;
 }
 .oferta-card-actions {
   display: flex;
   gap: 6px;
   padding: 8px 16px 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #3a3a3a;
   flex-wrap: wrap;
 }
 .btn-pdf {
-  background: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  color: #555;
+  background: #c6bec4;
+  border: 1px solid #c6bec4;
+  color: #222;
   font-size: 12px;
 }
 .btn-pdf:hover {
-  background: #eee;
+  background: #b8b0b6;
 }
 @media (max-width: 600px) {
   .oferty-grid {
@@ -454,11 +457,11 @@ tr:hover td { background: #fafafa; }
   .oferty-table { min-width: 0 !important; width: 100%; }
   .oferty-table thead { display: none; }
   .oferty-table tr {
-    background: #f8f8fa;
+    background: #2b2b2b;
     border-radius: 10px;
     margin-bottom: 10px;
     padding: 12px;
-    border: 1px solid #eee;
+    border: 1px solid #3a3a3a;
   }
   .oferty-table tr:hover td { background: transparent; }
   .oferty-table td {
@@ -473,7 +476,7 @@ tr:hover td { background: #fafafa; }
     gap: 6px;
     margin-top: 8px;
     padding-top: 10px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #3a3a3a;
   }
   .oferty-table td:last-child .btn { flex: 1; text-align: center; }
 
@@ -492,14 +495,14 @@ tr:hover td { background: #fafafa; }
   }
   .mobile-card-table thead { display: none; }
   .mobile-card-table tr {
-    background: white;
+    background: #2b2b2b;
     border-radius: 10px;
     margin-bottom: 10px;
     padding: 12px;
-    border: 1px solid #eee;
+    border: 1px solid #3a3a3a;
     cursor: pointer;
   }
-  .mobile-card-table tr:hover { background: #fafafa; }
+  .mobile-card-table tr:hover { background: #333; }
   .mobile-card-table td {
     border: none;
     padding: 4px 0;
@@ -522,7 +525,7 @@ tr:hover td { background: #fafafa; }
     flex-wrap: wrap;
     margin-top: 8px;
     padding-top: 10px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #3a3a3a;
   }
 
   /* Cennik: przyciski pod opisem, aliasy ukryte, karty */
@@ -535,11 +538,11 @@ tr:hover td { background: #fafafa; }
   .cennik-table { min-width: 0 !important; width: 100%; }
   .cennik-table thead { display: none; }
   .cennik-table tr {
-    background: white;
+    background: #2b2b2b;
     border-radius: 10px;
     margin-bottom: 10px;
     padding: 12px;
-    border: 1px solid #eee;
+    border: 1px solid #3a3a3a;
   }
   .cennik-table td {
     border: none;
@@ -559,6 +562,6 @@ tr:hover td { background: #fafafa; }
     flex-wrap: wrap;
     margin-top: 8px;
     padding-top: 10px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #3a3a3a;
   }
 }
