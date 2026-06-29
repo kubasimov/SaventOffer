@@ -201,11 +201,11 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
             <div key={i} style={{ flex: 1, textAlign: 'center' }}>
               <div style={{
                 height: 4, borderRadius: 2, marginBottom: 6,
-                background: i <= krok ? '#582A48' : '#ddd',
+                background: i <= krok ? '#5f2f4d' : '#3a3a3a',
                 transition: 'background 0.2s'
               }} />
               <span style={{
-                fontSize: 11, color: i === krok ? '#582A48' : '#aaa',
+                fontSize: 11, color: i === krok ? '#c6bec4' : '#666',
                 fontWeight: i === krok ? 600 : 400
               }}>{nazwa}</span>
             </div>
@@ -276,16 +276,16 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         {krok === 1 && (
           <div>
             <h2 style={{ marginBottom: 8 }}>Założenia oferty</h2>
-            <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
+            <p style={{ fontSize: 13, color: '#aaa', marginBottom: 12 }}>
               Każda linia = osobny punkt listy. Puste pole = brak strony założeń.
             </p>
             <textarea
               value={zalozenia}
               onChange={e => setZalozenia(e.target.value)}
               rows={12}
-              style={{ width: '100%', padding: '10px 12px', border: '1px solid #ddd',
+              style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #555',
                 borderRadius: 8, fontSize: 13, resize: 'vertical',
-                background: 'white', color: '#333', fontFamily: 'inherit', lineHeight: 1.6 }}
+                background: '#3a3a3a', color: 'white', fontFamily: 'inherit', lineHeight: 1.6 }}
             />
           </div>
         )}
@@ -294,26 +294,26 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         {krok === 2 && (
           <div>
             <h2 style={{ marginBottom: 8 }}>Specyfikacja materiałowa</h2>
-            <p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>
+            <p style={{ fontSize: 13, color: '#aaa', marginBottom: 16 }}>
               Zaznacz punkty do uwzględnienia w PDF. Możesz dodać własne.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {specyfikacja.map((p, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 12px', background: p.zaznaczony ? '#f8f5ff' : '#f5f5f5',
-                  borderRadius: 8, border: `1px solid ${p.zaznaczony ? '#c4a8d8' : '#eee'}` }}>
+                  padding: '8px 12px', background: p.zaznaczony ? '#2b2b2b' : '#2b2b2b',
+                  borderRadius: 8, border: `1px solid ${p.zaznaczony ? '#3a3a3a' : '#3a3a3a'}` }}>
                   <input
                     type="checkbox"
                     checked={p.zaznaczony}
                     onChange={() => togglePunkt(i)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#582A48' }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#5f2f4d' }}
                   />
-                  <span style={{ flex: 1, fontSize: 13, color: p.zaznaczony ? '#333' : '#aaa' }}>
+                  <span style={{ flex: 1, fontSize: 13, color: p.zaznaczony ? 'white' : '#aaa' }}>
                     {p.tekst}
                   </span>
                   <button onClick={() => usunPunkt(i)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#ccc', fontSize: 16, padding: '0 4px' }}>✕</button>
+                      color: '#666', fontSize: 16, padding: '0 4px' }}>✕</button>
                 </div>
               ))}
             </div>
@@ -323,8 +323,8 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                 onChange={e => setNowyPunkt(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && dodajPunkt()}
                 placeholder="Dodaj własny punkt..."
-                style={{ flex: 1, padding: '8px 12px', border: '1px solid #ddd',
-                  borderRadius: 8, fontSize: 13, background: 'white', color: '#333' }}
+                style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #555',
+                  borderRadius: 8, fontSize: 13, background: '#3a3a3a', color: 'white' }}
               />
               <button className="btn btn-primary btn-sm" onClick={dodajPunkt}>+ Dodaj</button>
             </div>
@@ -335,34 +335,34 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         {krok === 3 && (
           <div>
             <h2 style={{ marginBottom: 8 }}>Obrazy realizacji</h2>
-            <p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>
+            <p style={{ fontSize: 13, color: '#aaa', marginBottom: 16 }}>
               Wybierz kategorię obrazów do wstawienia po specyfikacji.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
-                border: `2px solid ${kategoria === '' ? '#582A48' : '#eee'}`,
-                background: kategoria === '' ? '#f8f5ff' : 'white' }}>
+                border: `2px solid ${kategoria === '' ? '#5f2f4d' : '#3a3a3a'}`,
+                background: kategoria === '' ? '#2b2b2b' : '#2b2b2b' }}>
                 <input type="radio" name="kategoria" value=""
                   checked={kategoria === ''}
                   onChange={() => setKategoria('')}
-                  style={{ accentColor: '#582A48' }} />
+                  style={{ accentColor: '#5f2f4d' }} />
                 <div>
-                  <div style={{ fontWeight: 500, fontSize: 14 }}>Bez obrazów</div>
+                  <div style={{ fontWeight: 500, fontSize: 14, color:'white' }}>Bez obrazów</div>
                   <div style={{ fontSize: 12, color: '#aaa' }}>Pomiń sekcję z realizacjami</div>
                 </div>
               </label>
               {kategorie.map(k => (
                 <label key={k.nazwa} style={{ display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
-                  border: `2px solid ${kategoria === k.nazwa ? '#582A48' : '#eee'}`,
-                  background: kategoria === k.nazwa ? '#f8f5ff' : 'white' }}>
+                  border: `2px solid ${kategoria === k.nazwa ? '#5f2f4d' : '#3a3a3a'}`,
+                  background: kategoria === k.nazwa ? '#2b2b2b' : '#2b2b2b' }}>
                   <input type="radio" name="kategoria" value={k.nazwa}
                     checked={kategoria === k.nazwa}
                     onChange={() => setKategoria(k.nazwa)}
-                    style={{ accentColor: '#582A48' }} />
+                    style={{ accentColor: '#5f2f4d' }} />
                   <div>
-                    <div style={{ fontWeight: 500, fontSize: 14 }}>{k.nazwa}</div>
+                    <div style={{ fontWeight: 500, fontSize: 14, color:'white' }}>{k.nazwa}</div>
                     <div style={{ fontSize: 12, color: '#aaa' }}>{k.pliki} {k.pliki === 1 ? 'strona' : 'stron'}</div>
                   </div>
                 </label>
@@ -375,8 +375,8 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
               )}
 
               {/* Własne obrazy */}
-              <div style={{marginTop:12, paddingTop:12, borderTop:'1px solid #eee'}}>
-                <div style={{fontSize:13, fontWeight:500, color:'#555', marginBottom:8}}>
+              <div style={{marginTop:12, paddingTop:12, borderTop:'1px solid #3a3a3a'}}>
+                <div style={{fontSize:13, fontWeight:500, color:'#aaa', marginBottom:8}}>
                   lub wgraj własne pliki JPG/PNG:
                 </div>
                 <label className="btn btn-secondary btn-sm" style={{cursor:'pointer'}}>
@@ -393,21 +393,21 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                   <div style={{marginTop:10}}>
                     <label style={{display:'flex', alignItems:'center', gap:12,
                       padding:'10px 14px', borderRadius:8, cursor:'pointer',
-                      border: `2px solid ${kategoria === '__wlasne__' ? '#582A48' : '#eee'}`,
-                      background: kategoria === '__wlasne__' ? '#f8f5ff' : 'white',
+                      border: `2px solid ${kategoria === '__wlasne__' ? '#5f2f4d' : '#3a3a3a'}`,
+                      background: kategoria === '__wlasne__' ? '#2b2b2b' : '#2b2b2b',
                       marginBottom:8}}>
                       <input type="radio" name="kategoria" value="__wlasne__"
                         checked={kategoria === '__wlasne__'}
                         onChange={() => setKategoria('__wlasne__')}
-                        style={{accentColor:'#582A48'}}
+                        style={{accentColor:'#5f2f4d'}}
                       />
                       <div>
-                        <div style={{fontWeight:500, fontSize:14}}>Wgrane pliki</div>
-                        <div style={{fontSize:12, color:'#888'}}>{wlasneObrazy.length} {wlasneObrazy.length === 1 ? 'plik' : 'pliki'}: {wlasneObrazy.map(o => typeof o === 'string' ? o : o.name).join(', ')}</div>
+                        <div style={{fontWeight:500, fontSize:14, color:'white'}}>Wgrane pliki</div>
+                        <div style={{fontSize:12, color:'#aaa'}}>{wlasneObrazy.length} {wlasneObrazy.length === 1 ? 'plik' : 'pliki'}: {wlasneObrazy.map(o => typeof o === 'string' ? o : o.name).join(', ')}</div>
                       </div>
                       <button onClick={e => {e.preventDefault(); setWlasneObrazy([]); setKategoria('')}}
                         style={{marginLeft:'auto', background:'none', border:'none',
-                          cursor:'pointer', color:'#aaa', fontSize:18}}>✕</button>
+                          cursor:'pointer', color:'#666', fontSize:18}}>✕</button>
                     </label>
                   </div>
                 )}
@@ -431,27 +431,28 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                 { ikona: '📎', label: 'Strony końcowe', opis: 'zawsze' },
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 14px', background: '#f8f8f8', borderRadius: 8 }}>
+                  padding: '10px 14px', background: '#2b2b2b', borderRadius: 8, border:'1px solid #3a3a3a' }}>
                   <span style={{ fontSize: 20 }}>{item.ikona}</span>
                   <div>
-                    <div style={{ fontWeight: 500, fontSize: 13 }}>{item.label}</div>
-                    <div style={{ fontSize: 12, color: '#888' }}>{item.opis}</div>
+                    <div style={{ fontWeight: 500, fontSize: 13, color:'white' }}>{item.label}</div>
+                    <div style={{ fontSize: 12, color: '#aaa' }}>{item.opis}</div>
                   </div>
                 </div>
               ))}
             </div>
             {/* Checkbox podglądu */}
             <label style={{ display:'flex', alignItems:'center', gap:10, marginTop:16,
-              padding:'10px 14px', background:'#f0ebf8', borderRadius:8, cursor:'pointer' }}>
+              padding:'10px 14px', background:'#2b2b2b', borderRadius:8, cursor:'pointer',
+              border:'1px solid #3a3a3a' }}>
               <input
                 type="checkbox"
                 checked={podglad}
                 onChange={e => setPodglad(e.target.checked)}
-                style={{ width:18, height:18, cursor:'pointer', accentColor:'#582A48' }}
+                style={{ width:18, height:18, cursor:'pointer', accentColor:'#5f2f4d' }}
               />
               <div>
-                <div style={{ fontWeight:500, fontSize:13, color:'#582A48' }}>Podgląd przed pobraniem</div>
-                <div style={{ fontSize:12, color:'#888' }}>
+                <div style={{ fontWeight:500, fontSize:13, color:'#c6bec4' }}>Podgląd przed pobraniem</div>
+                <div style={{ fontSize:12, color:'#aaa' }}>
                   {podglad ? 'PDF otworzy się w nowej karcie' : 'PDF zostanie pobrany automatycznie'}
                 </div>
               </div>
@@ -462,7 +463,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         {/* Nawigacja */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, gap: 10 }}>
           <button
-            style={{ ...btnStyle, background: '#eee', color: '#555' }}
+            style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
             onClick={krok === 0 ? onClose : () => setKrok(k => k - 1)}
           >
             {krok === 0 ? 'Anuluj' : '← Wstecz'}
@@ -471,25 +472,25 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
             {krok === 4 ? (
               <>
                 <button
-                  style={{ ...btnStyle, background: '#eee', color: '#555' }}
-                  onClick={() => generuj()}
-                  disabled={loading}
-                >
-                  {loading ? '⏳' : 'Bez założeń i danych'}
-                </button>
-                <button
-                  style={{ ...btnStyle, background: '#582A48', color: 'white' }}
-                  onClick={generuj}
-                  disabled={loading}
-                >
-                  {loading ? <span className="spin">⏳</span> : '⬇ Generuj PDF'}
-                </button>
-              </>
-            ) : (
-              <button
-                style={{ ...btnStyle, background: '#582A48', color: 'white' }}
-                onClick={() => setKrok(k => k + 1)}
-              >
+                                  style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
+                                  onClick={() => generuj()}
+                                  disabled={loading}
+                                >
+                                  {loading ? <span className="spin">⏳</span> : 'Bez założeń i danych'}
+                                </button>
+                                <button
+                                  style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
+                                  onClick={generuj}
+                                  disabled={loading}
+                                >
+                                  {loading ? <span className="spin">⏳</span> : '⬇ Generuj PDF'}
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
+                                onClick={() => setKrok(k => k + 1)}
+                              >
                 Dalej →
               </button>
             )}
