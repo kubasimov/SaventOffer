@@ -165,28 +165,59 @@ export default function EdytorOferty() {
           >
             ← Wróć do listy
           </button>
-          {edytujNumer ? (
-            <div style={{display:'flex', gap:8, alignItems:'center'}}>
-              <input
-                value={nowyNumer}
-                onChange={e => setNowyNumer(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && zapiszNumerOferty()}
-                style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
-                  fontSize:16, fontWeight:600, width:280, background:'#3a3a3a', color:'white'}}
-                autoFocus
-              />
-              <button className="btn btn-primary btn-sm" onClick={zapiszNumerOferty}>✓</button>
-              <button className="btn btn-secondary btn-sm" onClick={() => { setEdytujNumer(false); setNowyNumer(oferta.numer) }}>✕</button>
+          <div style={{display:'flex', gap:24, alignItems:'flex-start', flexWrap:'wrap'}}>
+            <div>
+              <div style={{fontSize:11, color:'#aaa', fontWeight:500, marginBottom:2, textTransform:'uppercase', letterSpacing:0.5}}>Numer oferty</div>
+              {edytujNumer ? (
+                <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                  <input
+                    value={nowyNumer}
+                    onChange={e => setNowyNumer(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && zapiszNumerOferty()}
+                    style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
+                      fontSize:16, fontWeight:600, width:280, background:'#3a3a3a', color:'white'}}
+                    autoFocus
+                  />
+                  <button className="btn btn-primary btn-sm" onClick={zapiszNumerOferty}>✓</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setEdytujNumer(false); setNowyNumer(oferta.numer) }}>✕</button>
+                </div>
+              ) : (
+                <div style={{display:'flex', alignItems:'center', gap:8}}>
+                  <h1 style={{fontSize: 18, color:'white'}}>{oferta.numer}</h1>
+                  <button onClick={() => setEdytujNumer(true)}
+                    style={{background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#aaa'}}>
+                    ✏️
+                  </button>
+                </div>
+              )}
             </div>
-          ) : (
-            <div style={{display:'flex', alignItems:'center', gap:8}}>
-              <h1 style={{fontSize: 18, color:'white'}}>{oferta.numer}</h1>
-              <button onClick={() => setEdytujNumer(true)}
-                style={{background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#aaa'}}>
-                ✏️
-              </button>
+            <div>
+              <div style={{fontSize:11, color:'#aaa', fontWeight:500, marginBottom:2, textTransform:'uppercase', letterSpacing:0.5}}>Nazwa inwestycji</div>
+              {edytujNazwe ? (
+                <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                  <input
+                    value={nowaNazwaOferty}
+                    onChange={e => setNowaNazwaOferty(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && zapiszNazweOferty()}
+                    placeholder="np. Zabudowa kuchenna"
+                    style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
+                      fontSize:16, fontWeight:600, width:280, background:'#3a3a3a', color:'white'}}
+                    autoFocus
+                  />
+                  <button className="btn btn-primary btn-sm" onClick={zapiszNazweOferty}>✓</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEdytujNazwe(false)}>✕</button>
+                </div>
+              ) : (
+                <div style={{display:'flex', alignItems:'center', gap:8}}>
+                  <h1 style={{fontSize: 18, color: nowaNazwaOferty ? 'white' : '#666'}}>{nowaNazwaOferty || 'Brak nazwy'}</h1>
+                  <button onClick={() => setEdytujNazwe(true)}
+                    style={{background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#aaa'}}>
+                    ✏️
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
         <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
           <button className="btn btn-secondary" onClick={eksportCSV}>
@@ -217,33 +248,6 @@ export default function EdytorOferty() {
                 <option key={k.id} value={k.id}>{k.nazwa}</option>
               ))}
             </select>
-          </div>
-          <div style={{flex:1}}>
-            {edytujNazwe ? (
-              <div style={{display:'flex', gap:8, alignItems:'center', marginBottom:8}}>
-                <input
-                  value={nowaNazwaOferty}
-                  onChange={e => setNowaNazwaOferty(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && zapiszNazweOferty()}
-                  placeholder="np. Zabudowa kuchenna"
-                  style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
-                    fontSize:14, width:260, background:'#3a3a3a', color:'white'}}
-                  autoFocus
-                />
-                <button className="btn btn-primary btn-sm" onClick={zapiszNazweOferty}>✓</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => setEdytujNazwe(false)}>✕</button>
-              </div>
-            ) : (
-              <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:8}}>
-                <span style={{fontSize:15, color: nowaNazwaOferty ? 'white' : '#aaa'}}>
-                  {nowaNazwaOferty || 'Brak nazwy inwestycji'}
-                </span>
-                <button onClick={() => setEdytujNazwe(true)}
-                  style={{background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#aaa'}}>
-                  ✏️
-                </button>
-              </div>
-            )}
           </div>
           <div style={{fontSize:13, color:'#aaa', minWidth:120}}>
             <div>Data: <strong>{new Date(oferta.data_oferty).toLocaleDateString('pl-PL')}</strong></div>
