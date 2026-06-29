@@ -171,8 +171,8 @@ export default function EdytorOferty() {
                 value={nowyNumer}
                 onChange={e => setNowyNumer(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && zapiszNumerOferty()}
-                style={{padding:'4px 8px', border:'1px solid #582A48', borderRadius:6,
-                  fontSize:16, fontWeight:600, width:280, background:'white', color:'#333'}}
+                style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
+                  fontSize:16, fontWeight:600, width:280, background:'#3a3a3a', color:'white'}}
                 autoFocus
               />
               <button className="btn btn-primary btn-sm" onClick={zapiszNumerOferty}>✓</button>
@@ -180,7 +180,7 @@ export default function EdytorOferty() {
             </div>
           ) : (
             <div style={{display:'flex', alignItems:'center', gap:8}}>
-              <h1 style={{fontSize: 18, color:'#222'}}>{oferta.numer}</h1>
+              <h1 style={{fontSize: 18, color:'white'}}>{oferta.numer}</h1>
               <button onClick={() => setEdytujNumer(true)}
                 style={{background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#aaa'}}>
                 ✏️
@@ -226,8 +226,8 @@ export default function EdytorOferty() {
                   onChange={e => setNowaNazwaOferty(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && zapiszNazweOferty()}
                   placeholder="np. Zabudowa kuchenna"
-                  style={{padding:'4px 8px', border:'1px solid #582A48', borderRadius:6,
-                    fontSize:14, width:260, background:'white', color:'#333'}}
+                  style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
+                    fontSize:14, width:260, background:'#3a3a3a', color:'white'}}
                   autoFocus
                 />
                 <button className="btn btn-primary btn-sm" onClick={zapiszNazweOferty}>✓</button>
@@ -235,7 +235,7 @@ export default function EdytorOferty() {
               </div>
             ) : (
               <div style={{display:'flex', alignItems:'center', gap:6, marginBottom:8}}>
-                <span style={{fontSize:15, color: nowaNazwaOferty ? '#333' : '#aaa'}}>
+                <span style={{fontSize:15, color: nowaNazwaOferty ? 'white' : '#aaa'}}>
                   {nowaNazwaOferty || 'Brak nazwy inwestycji'}
                 </span>
                 <button onClick={() => setEdytujNazwe(true)}
@@ -245,7 +245,7 @@ export default function EdytorOferty() {
               </div>
             )}
           </div>
-          <div style={{fontSize:13, color:'#888', minWidth:120}}>
+          <div style={{fontSize:13, color:'#aaa', minWidth:120}}>
             <div>Data: <strong>{new Date(oferta.data_oferty).toLocaleDateString('pl-PL')}</strong></div>
             <div style={{marginTop:4, display:'flex', alignItems:'center', gap:6}}>
               <span>Status:</span>
@@ -253,8 +253,8 @@ export default function EdytorOferty() {
                 value={oferta.status}
                 onChange={e => zmienStatus(e.target.value)}
                 style={{
-                  padding:'3px 8px', border:'1px solid #ddd', borderRadius:6,
-                  fontSize:13, fontWeight:600, background:'white', color:'#333',
+                  padding:'3px 8px', border:'1.5px solid #555', borderRadius:6,
+                  fontSize:13, fontWeight:600, background:'#3a3a3a', color:'white',
                   cursor:'pointer'
                 }}
               >
@@ -266,16 +266,16 @@ export default function EdytorOferty() {
             </div>
           </div>
           <div style={{display:'flex', alignItems:'center', gap:8, padding:'8px 12px',
-            background:'#f8f5ff', borderRadius:8, border:'1px solid #e0d6f5'}}>
-            <span style={{fontSize:13, color:'#582A48', fontWeight:500}}>Korekta globalna %</span>
+            background:'#2b2b2b', borderRadius:8, border:'1px solid #3a3a3a'}}>
+            <span style={{fontSize:13, color:'#c6bec4', fontWeight:500}}>Korekta globalna %</span>
             <input
               type="number" step="1"
               value={kortGlobalna}
               onChange={e => setKortGlobalna(parseFloat(e.target.value) || 0)}
               onBlur={e => zapiszKortGlobalna(e.target.value)}
-              style={{width:70, padding:'4px 8px', border:'1px solid #c4a8d8',
+              style={{width:70, padding:'4px 8px', border:'1.5px solid #555',
                 borderRadius:6, fontSize:14, textAlign:'center',
-                background:'white', color:'#333'}}
+                background:'#3a3a3a', color:'white'}}
             />
             {kortGlobalna !== 0 && (
               <span style={{fontSize:12, color: kortGlobalna < 0 ? '#c62828' : '#2e7d32', fontWeight:500}}>
@@ -320,20 +320,20 @@ export default function EdytorOferty() {
           <div className="modal" style={{maxWidth:560}} onClick={e => e.stopPropagation()}>
             <h2>Historia zmian statusu</h2>
             {loadingHistoria ? (
-              <div style={{padding:20, textAlign:'center', color:'#999'}}>Ładowanie...</div>
+              <div style={{padding:20, textAlign:'center', color:'#aaa'}}>Ładowanie...</div>
             ) : historia.length === 0 ? (
               <div className="empty-state">Brak historii zmian</div>
             ) : (
               <div style={{maxHeight:'50vh', overflowY:'auto'}}>
                 {historia.map(h => (
                   <div key={h.id} style={{display:'flex', justifyContent:'space-between',
-                    alignItems:'center', padding:'10px 12px', borderBottom:'1px solid #f0f0f0'}}>
+                    alignItems:'center', padding:'10px 12px', borderBottom:'1px solid #3a3a3a'}}>
                     <div>
-                      <span style={{fontSize:13, color:'#888'}}>{h.uzytkownik || '?'}</span>
+                      <span style={{fontSize:13, color:'#aaa'}}>{h.uzytkownik || '?'}</span>
                       <div style={{marginTop:2}}>
-                        <span style={{fontSize:12, color:'#c62828', fontWeight:500}}>{h.stary_status || '—'}</span>
-                        <span style={{margin:'0 8px', color:'#ccc'}}>→</span>
-                        <span style={{fontSize:12, color:'#2e7d32', fontWeight:500}}>{h.nowy_status}</span>
+                        <span style={{fontSize:12, color:'#ef5350', fontWeight:500}}>{h.stary_status || '—'}</span>
+                        <span style={{margin:'0 8px', color:'#666'}}>→</span>
+                        <span style={{fontSize:12, color:'#81c784', fontWeight:500}}>{h.nowy_status}</span>
                       </div>
                     </div>
                     <span style={{fontSize:11, color:'#aaa', whiteSpace:'nowrap'}}>
