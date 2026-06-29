@@ -139,14 +139,14 @@ body {
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-.btn-primary { background: #582A48; color: white; }
-.btn-primary:hover:not(:disabled) { background: #462439; }
+.btn-primary { background: #c6bec4; color: #222; }
+.btn-primary:hover:not(:disabled) { background: #b8b0b6; }
 
-.btn-secondary { background: #3a3a3a; color: #c6bec4; border: 1px solid #555; }
-.btn-secondary:hover:not(:disabled) { background: #4a4a4a; }
+.btn-secondary { background: #2b2b2b; color: #c6bec4; border: 2px solid #c6bec4; }
+.btn-secondary:hover:not(:disabled) { background: #3a3a3a; }
 
-.btn-danger { background: #e53935; color: white; }
-.btn-danger:hover:not(:disabled) { background: #c62828; }
+.btn-danger { background: #5f2f4d; color: #c6bec4; border: 2px solid #5f2f4d; }
+.btn-danger:hover:not(:disabled) { background: #4d2540; }
 
 .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
 
@@ -357,7 +357,7 @@ tr:hover td { background: #333; }
 .oferta-card {
   background: #2b2b2b;
   border-radius: 12px;
-  border: 1px solid #3a3a3a;
+  border: 3px solid #c6bec4;
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   overflow: hidden;
   display: flex;
@@ -365,7 +365,7 @@ tr:hover td { background: #333; }
   transition: box-shadow 0.2s;
 }
 .oferta-card:hover {
-  border-color: #555;
+  border-color: #c6bec4;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 .oferta-card-header {
@@ -427,13 +427,13 @@ tr:hover td { background: #333; }
   flex-wrap: wrap;
 }
 .btn-pdf {
-  background: #c6bec4;
-  border: 1px solid #c6bec4;
-  color: #222;
+  background: #2b2b2b;
+  border: 2px solid #c6bec4;
+  color: #c6bec4;
   font-size: 12px;
 }
 .btn-pdf:hover {
-  background: #b8b0b6;
+  background: #3a3a3a;
 }
 @media (max-width: 600px) {
   .oferty-grid {

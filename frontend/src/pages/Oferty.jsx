@@ -171,8 +171,8 @@ export default function Oferty() {
         )}
         {/* Paginacja */}
         {oferty.length > 0 && (
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 16px', borderTop:'1px solid #eee'}}>
-            <span style={{fontSize:13, color:'#888'}}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 16px', borderTop:'1px solid #3a3a3a'}}>
+            <span style={{fontSize:13, color:'#aaa'}}>
               {total} {total === 1 ? 'oferta' : (total >= 2 && total <= 4 ? 'oferty' : 'ofert')}
             </span>
             <div style={{display:'flex', gap:6, alignItems:'center'}}>
@@ -183,7 +183,7 @@ export default function Oferty() {
               >
                 ← Poprzednia
               </button>
-              <span style={{fontSize:13, color:'#666', padding:'0 8px'}}>
+              <span style={{fontSize:13, color:'#aaa', padding:'0 8px'}}>
                 Strona {page} z {pages}
               </span>
               <button

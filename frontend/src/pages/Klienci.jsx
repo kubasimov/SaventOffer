@@ -69,7 +69,7 @@ export default function Klienci() {
       </div>
       <div className="card">
         {loading ? (
-          <div className="empty-state" style={{color:'#999'}}>
+          <div className="empty-state" style={{color:'#aaa'}}>
             <div style={{fontSize:32, marginBottom:8}}>⏳</div>
             <div>Ładowanie klientów...</div>
           </div>
@@ -100,7 +100,7 @@ export default function Klienci() {
                     onClick={e => e.stopPropagation()}>
                     <button className="btn btn-secondary btn-sm" onClick={() => otworzModal(k)}>Edytuj</button>
                     {' '}
-                    <button className="btn btn-sm" style={{background:'#e53935', color:'white', border:'none', padding:'4px 10px', borderRadius:6, cursor:'pointer', fontSize:12}}
+                    <button className="btn btn-danger btn-sm"
                       onClick={() => usunKlienta(k)}>Usuń</button>
                   </td>
                 </tr>
@@ -108,15 +108,15 @@ export default function Klienci() {
             </tbody>
           </table>
           {/* Paginacja */}
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 16px', borderTop:'1px solid #eee'}}>
-            <span style={{fontSize:13, color:'#888'}}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 16px', borderTop:'1px solid #3a3a3a'}}>
+            <span style={{fontSize:13, color:'#aaa'}}>
               {total} {total === 1 ? 'klient' : (total >= 2 && total <= 4 ? 'klientów' : 'klientów')}
             </span>
             <div style={{display:'flex', gap:6, alignItems:'center'}}>
               <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
                 ← Poprzednia
               </button>
-              <span style={{fontSize:13, color:'#666', padding:'0 8px'}}>Strona {page} z {pages}</span>
+              <span style={{fontSize:13, color:'#aaa', padding:'0 8px'}}>Strona {page} z {pages}</span>
               <button className="btn btn-secondary btn-sm" disabled={page >= pages} onClick={() => setPage(p => Math.min(pages, p + 1))}>
                 Następna →
               </button>
