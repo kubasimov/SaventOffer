@@ -75,10 +75,6 @@ export default function Uzytkownicy() {
                   <select
                     value={u.rola}
                     onChange={e => zmienRole(u, e.target.value)}
-                    style={{
-                      padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd',
-                      fontSize: 13, background: '#fff', color: '#333', cursor: 'pointer'
-                    }}
                     onClick={e => e.stopPropagation()}
                   >
                     <option value="pracownik">Pracownik</option>
@@ -89,8 +85,8 @@ export default function Uzytkownicy() {
                   <span style={{
                     display:'inline-block', padding:'2px 10px', borderRadius:12,
                     fontSize:12, fontWeight:500,
-                    background: u.aktywny ? '#e8f5e9' : '#fce4e4',
-                    color: u.aktywny ? '#2e7d32' : '#c62828'
+                    background: u.aktywny ? '#1a3a1a' : '#3a1a1a',
+                    color: u.aktywny ? '#81c784' : '#ef5350'
                   }}>
                     {u.aktywny ? 'Aktywny' : 'Zablokowany'}
                   </span>
@@ -101,8 +97,8 @@ export default function Uzytkownicy() {
                     {u.aktywny ? 'Zablokuj' : 'Odblokuj'}
                   </button>
                   {' '}
-                  <button className="btn btn-sm" style={{background:'#e53935', color:'white', border:'none', padding:'4px 10px', borderRadius:6, cursor:'pointer', fontSize:12}}
-                    onClick={() => usunUzytkownika(u)}>Usuń</button>
+                  <button className="btn btn-danger btn-sm"
+                                        onClick={() => usunUzytkownika(u)}>Usuń</button>
                 </td>
               </tr>
             ))}
@@ -131,7 +127,6 @@ export default function Uzytkownicy() {
               <select
                 value={form.rola}
                 onChange={e => setForm({...form, rola: e.target.value})}
-                style={{width:'100%', padding:'8px 12px', borderRadius:8, border:'1px solid #ddd', fontSize:14}}
               >
                 <option value="pracownik">Pracownik</option>
                 <option value="admin">Admin</option>
