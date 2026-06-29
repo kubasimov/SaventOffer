@@ -3,13 +3,14 @@ import axios from 'axios'
 import Cennik from './Cennik'
 import Uzytkownicy from './Uzytkownicy'
 import Import from './Import'
+import ListaPunktow from '../components/ListaPunktow'
 
 const ZAKLADKI = ['Cennik', 'Założenia', 'Specyfikacja', 'Użytkownicy', 'Import']
 
 export default function Ustawienia() {
   const [aktywna, setAktywna] = useState(0)
-  const [zalozenia, setZalozenia] = useState('')
-  const [specyfikacja, setSpecyfikacja] = useState('')
+  const [zalozenia, setZalozenia] = useState([])
+  const [specyfikacja, setSpecyfikacja] = useState([])
   const [zapisano, setZapisano] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -18,20 +19,24 @@ export default function Ustawienia() {
       axios.get('/api/ustawienia/specyfikacja_domyslna').catch(() => ({ data: { wartosc: '' } })),
       axios.get('/api/pdf/zalozenia-domyslne').catch(() => ({ data: { tekst: '' } }))
     ]).then(([spec, zal]) => {
-      setSpecyfikacja(spec.data.wartosc || '')
-      setZalozenia(zal.data.tekst || '')
+      const specRaw = spec.data.wartosc || ''
+      const zalRaw = zal.data.tekst || ''
+      setSpecyfikacja(specRaw.split('\n').filter(Boolean).map(t => ({ tekst: t.trim(), zaznaczony: true })))
+      setZalozenia(zalRaw.split('\n').filter(Boolean).map(t => ({ tekst: t.trim(), zaznaczony: true })))
       setLoading(false)
     })
   }, [])
 
   async function zapiszSpecyfikacje() {
-    await axios.put('/api/ustawienia/specyfikacja_domyslna', { wartosc: specyfikacja })
+    const txt = specyfikacja.map(p => p.tekst).join('\n')
+    await axios.put('/api/ustawienia/specyfikacja_domyslna', { wartosc: txt })
     setZapisano('specyfikacja')
     setTimeout(() => setZapisano(null), 2000)
   }
 
   async function zapiszZalozenia() {
-    await axios.post('/api/ustawienia/zapisz-zalozenia', { tekst: zalozenia })
+    const txt = zalozenia.map(p => p.tekst).join('\n')
+    await axios.post('/api/ustawienia/zapisz-zalozenia', { tekst: txt })
     setZapisano('zalozenia')
     setTimeout(() => setZapisano(null), 2000)
   }
@@ -69,64 +74,44 @@ export default function Ustawienia() {
 
       {/* Zakładka: Założenia */}
       {aktywna === 1 && (
-        <div className="card">
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
-            <div>
-              <h2 style={{fontSize:16, marginBottom:4}}>Domyślne założenia oferty</h2>
-              <p style={{fontSize:13, color:'#aaa'}}>
-                Tekst wczytywany automatycznie w kreatorze PDF. Każda linia = osobny punkt.
-              </p>
-            </div>
-            {zapisano === 'zalozenia' && (
-              <span style={{color:'#81c784', fontSize:13}}>✓ Zapisano</span>
-            )}
-          </div>
-          <textarea
-            value={zalozenia}
-            onChange={e => setZalozenia(e.target.value)}
-            rows={12}
-            style={{width:'100%', padding:'10px 12px', border:'1.5px solid #555',
-              borderRadius:8, fontSize:13, resize:'vertical',
-              background:'#3a3a3a', color:'white', fontFamily:'inherit', lineHeight:1.6,
-              marginBottom:12}}
+        <>
+          <ListaPunktow
+            punkty={zalozenia}
+            setPunkty={setZalozenia}
+            label="Domyślne założenia oferty"
+            opis="Punkty wczytywane automatycznie w kreatorze PDF. Przeciągaj by zmienić kolejność."
+            placeholder="Dodaj założenie..."
           />
-          <div style={{display:'flex', justifyContent:'flex-end'}}>
+          <div style={{display:'flex', justifyContent:'flex-end', marginTop:12}}>
+            {zapisano === 'zalozenia' && (
+              <span style={{color:'#81c784', fontSize:13, marginRight:12, alignSelf:'center'}}>✓ Zapisano</span>
+            )}
             <button className="btn btn-primary" onClick={zapiszZalozenia}>
               Zapisz założenia
             </button>
           </div>
-        </div>
+        </>
       )}
 
       {/* Zakładka: Specyfikacja */}
       {aktywna === 2 && (
-        <div className="card">
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
-            <div>
-              <h2 style={{fontSize:16, marginBottom:4}}>Domyślna specyfikacja materiałowa</h2>
-              <p style={{fontSize:13, color:'#aaa'}}>
-                Punkty wczytywane w kreatorze PDF. Każda linia = osobny punkt listy.
-              </p>
-            </div>
-            {zapisano === 'specyfikacja' && (
-              <span style={{color:'#81c784', fontSize:13}}>✓ Zapisano</span>
-            )}
-          </div>
-          <textarea
-            value={specyfikacja}
-            onChange={e => setSpecyfikacja(e.target.value)}
-            rows={12}
-            style={{width:'100%', padding:'10px 12px', border:'1.5px solid #555',
-              borderRadius:8, fontSize:13, resize:'vertical',
-              background:'#3a3a3a', color:'white', fontFamily:'inherit', lineHeight:1.6,
-              marginBottom:12}}
+        <>
+          <ListaPunktow
+            punkty={specyfikacja}
+            setPunkty={setSpecyfikacja}
+            label="Domyślna specyfikacja materiałowa"
+            opis="Punkty wczytywane w kreatorze PDF. Przeciągaj by zmienić kolejność."
+            placeholder="Dodaj punkt specyfikacji..."
           />
-          <div style={{display:'flex', justifyContent:'flex-end'}}>
+          <div style={{display:'flex', justifyContent:'flex-end', marginTop:12}}>
+            {zapisano === 'specyfikacja' && (
+              <span style={{color:'#81c784', fontSize:13, marginRight:12, alignSelf:'center'}}>✓ Zapisano</span>
+            )}
             <button className="btn btn-primary" onClick={zapiszSpecyfikacje}>
               Zapisz specyfikację
             </button>
           </div>
-        </div>
+        </>
       )}
 
       {/* Zakładka: Użytkownicy */}

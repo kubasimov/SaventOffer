@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-
-// Dane ładowane z API
+import ListaPunktow from './ListaPunktow'
 
 const KROKI = ['Dane klienta', 'Założenia', 'Specyfikacja', 'Obrazy', 'Generuj']
 
@@ -17,47 +16,38 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
   })
 
   // Krok 2 — założenia
-  const [zalozenia, setZalozenia] = useState('')
+  const [zalozenia, setZalozenia] = useState([])
 
   // Krok 3 — specyfikacja
   const [specyfikacja, setSpecyfikacja] = useState([])
-  const [nowyPunkt, setNowyPunkt] = useState('')
-  const [edytowanyPunkt, setEdytowanyPunkt] = useState(null) // index | null
-  const [edytowanyTekst, setEdytowanyTekst] = useState('')
 
   // Krok 4 — obrazy
   const [kategoria, setKategoria] = useState('')
-  // Lista klientów do dropdownu
   const [klienci, setKlienci] = useState([])
   const [recznyWpis, setRecznyWpis] = useState(false)
-  // Własne obrazy
   const [wlasneObrazy, setWlasneObrazy] = useState([])
   const [uploadujac, setUploadujac] = useState(false)
-
-  // Podgląd przed pobraniem (dla każdej oferty osobno)
   const [podglad, setPodglad] = useState(false)
 
   useEffect(() => {
-    // Wczytaj zapisane ustawienia PDF dla tej oferty
-    let savedFound = false;
+    let savedFound = false
     axios.get(`/api/ustawienia/pdf_settings_${ofertaId}`)
       .then(r => {
         if (r.data?.wartosc) {
           try {
-            const s = JSON.parse(r.data.wartosc);
-            if (s.zalozenia) setZalozenia(s.zalozenia);
-            if (s.specyfikacja) setSpecyfikacja(s.specyfikacja);
-            if (s.kategoria) setKategoria(s.kategoria);
-            if (s.klientDane) setKlientDane(prev => ({ ...prev, ...s.klientDane }));
-            if (s.nazwaInwestycji) setNazwaInwestycji(s.nazwaInwestycji);
-            if (s.podglad !== undefined) setPodglad(s.podglad);
-            savedFound = true;
+            const s = JSON.parse(r.data.wartosc)
+            if (s.zalozenia) setZalozenia(s.zalozenia)
+            if (s.specyfikacja) setSpecyfikacja(s.specyfikacja)
+            if (s.kategoria) setKategoria(s.kategoria)
+            if (s.klientDane) setKlientDane(prev => ({ ...prev, ...s.klientDane }))
+            if (s.nazwaInwestycji) setNazwaInwestycji(s.nazwaInwestycji)
+            if (s.podglad !== undefined) setPodglad(s.podglad)
+            savedFound = true
           } catch (e) {}
         }
       })
       .catch(() => {})
 
-    // Pobierz dane klienta z bazy
     if (klientId) {
       axios.get(`/api/klienci/${klientId}`)
         .then(r => {
@@ -72,15 +62,14 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         })
         .catch(() => {})
     }
-    // Pobierz kategorie obrazów
     axios.get('/api/pdf/kategorie')
       .then(r => setKategorie(r.data))
       .catch(() => {})
-    // Pobierz domyślne założenia — tylko gdy nie ma zapisanych
     axios.get('/api/pdf/zalozenia-domyslne')
-      .then(r => { if (r.data.tekst && !savedFound) setZalozenia(r.data.tekst) })
+      .then(r => { if (r.data.tekst && !savedFound) {
+        setZalozenia(r.data.tekst.split('\n').filter(Boolean).map(t => ({ tekst: t.trim(), zaznaczony: true })))
+      }})
       .catch(() => {})
-    // Pobierz domyślną specyfikację — tylko gdy nie ma zapisanych
     axios.get('/api/ustawienia/specyfikacja_domyslna')
       .then(r => {
         if (r.data.wartosc && !savedFound) {
@@ -89,11 +78,10 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         }
       })
       .catch(() => {})
-    // Pobierz listę klientów
     axios.get('/api/klienci?all=true')
       .then(r => setKlienci(r.data))
       .catch(() => {})
-  }, [klientId])
+  }, [klientId, ofertaId])
 
   async function wgrajObraz(e) {
     const pliki = Array.from(e.target.files)
@@ -102,45 +90,16 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
     setKategoria('__wlasne__')
   }
 
-  function dodajPunkt() {
-    if (!nowyPunkt.trim()) return
-    setSpecyfikacja(prev => [...prev, { tekst: nowyPunkt.trim(), zaznaczony: true }])
-    setNowyPunkt('')
-  }
-
-  function togglePunkt(i) {
-    setSpecyfikacja(prev => prev.map((p, idx) =>
-      idx === i ? { ...p, zaznaczony: !p.zaznaczony } : p
-    ))
-  }
-
-  function usunPunkt(i) {
-    setSpecyfikacja(prev => prev.filter((_, idx) => idx !== i))
-  }
-
-  function edytujPunkt(i) {
-    setEdytowanyPunkt(i)
-    setEdytowanyTekst(specyfikacja[i].tekst)
-  }
-
-  function zapiszEdytowanyPunkt() {
-    if (edytowanyPunkt === null) return
-    setSpecyfikacja(prev => prev.map((p, i) =>
-      i === edytowanyPunkt ? { ...p, tekst: edytowanyTekst.trim() || p.tekst } : p
-    ))
-    setEdytowanyPunkt(null)
-    setEdytowanyTekst('')
-  }
-
   async function generuj() {
     setLoading(true)
     try {
+      const zalozeniaTekst = zalozenia.filter(p => p.zaznaczony).map(p => p.tekst).join('\n')
       const specAktywna = specyfikacja.filter(p => p.zaznaczony).map(p => p.tekst)
 
       let res
       if (kategoria === '__wlasne__' && wlasneObrazy.length > 0) {
         const formData = new FormData()
-        formData.append('zalozenia', zalozenia)
+        formData.append('zalozenia', zalozeniaTekst)
         formData.append('klient_dane', JSON.stringify({ ...klientDane, nazwa_inwestycji: nazwaInwestycji }))
         formData.append('specyfikacja', JSON.stringify(specAktywna))
         formData.append('kategoria', '')
@@ -151,23 +110,19 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         })
       } else {
         res = await axios.post(`/api/pdf/${ofertaId}`, {
-          zalozenia,
+          zalozenia: zalozeniaTekst,
           klient_dane: { ...klientDane, nazwa_inwestycji: nazwaInwestycji },
           specyfikacja: specAktywna,
           kategoria
         }, { responseType: 'blob' })
       }
 
-      // Zapisz ustawienia PDF
       zapiszUstawienia(specAktywna)
-
       const url = URL.createObjectURL(res.data)
       if (podglad) {
-        // Podgląd — otwórz w nowej karcie
         window.open(url, '_blank')
         setTimeout(() => URL.revokeObjectURL(url), 30000)
       } else {
-        // Auto-download
         const a = document.createElement('a')
         a.href = url
         a.download = `${ofertaNumer}.pdf`
@@ -185,7 +140,6 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
     setLoading(false)
   }
 
-  // Zapisz ustawienia PDF do bazy
   async function zapiszUstawienia(specAktywna) {
     try {
       await axios.put(`/api/ustawienia/pdf_settings_${ofertaId}`, {
@@ -197,7 +151,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
           kategoria,
           podglad
         })
-      });
+      })
     } catch (e) { /* ignoruj */ }
   }
 
@@ -232,22 +186,14 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         {krok === 0 && (
           <div>
             <h2 style={{ marginBottom: 16 }}>Dane klienta</h2>
-
             <div className="form-group">
               <label>Nazwa inwestycji (np. Zabudowa kuchenna)</label>
-              <input
-                value={nazwaInwestycji}
-                onChange={e => setNazwaInwestycji(e.target.value)}
-                placeholder="np. Zabudowa kuchenna"
-              />
+              <input value={nazwaInwestycji} onChange={e => setNazwaInwestycji(e.target.value)} placeholder="np. Zabudowa kuchenna" />
             </div>
-
-            {/* Wybór klienta z bazy lub ręczny wpis */}
             <div className="form-group">
               <label>Wybierz klienta</label>
               <div style={{display:'flex', gap:8}}>
-                <select
-                  value={recznyWpis ? '__reczny__' : (klienci.find(k => k.nazwa === klientDane.nazwa)?.id || '')}
+                <select value={recznyWpis ? '__reczny__' : (klienci.find(k => k.nazwa === klientDane.nazwa)?.id || '')}
                   onChange={e => {
                     if (e.target.value === '__reczny__') {
                       setRecznyWpis(true)
@@ -255,34 +201,20 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                     } else if (e.target.value) {
                       setRecznyWpis(false)
                       const k = klienci.find(c => c.id === e.target.value)
-                      if (k) setKlientDane({
-                        nazwa: k.nazwa || '', adres: k.adres || '',
-                        telefon: k.telefon || '', email: k.email || '', uwagi: ''
-                      })
+                      if (k) setKlientDane({ nazwa: k.nazwa || '', adres: k.adres || '', telefon: k.telefon || '', email: k.email || '', uwagi: '' })
                     }
                   }}
-                  style={{flex:1}}
-                >
+                  style={{flex:1}}>
                   <option value="">— wybierz klienta z bazy —</option>
-                  {klienci.map(k => (
-                    <option key={k.id} value={k.id}>{k.nazwa}</option>
-                  ))}
+                  {klienci.map(k => (<option key={k.id} value={k.id}>{k.nazwa}</option>))}
                   <option value="__reczny__">✏️ Wpisz ręcznie...</option>
                 </select>
               </div>
             </div>
-
-            {/* Pola danych */}
-            {[
-              ['Imię i nazwisko / Firma', 'nazwa'],
-              ['Adres', 'adres'],
-            ].map(([label, field]) => (
+            {[['Imię i nazwisko / Firma', 'nazwa'], ['Adres', 'adres']].map(([label, field]) => (
               <div className="form-group" key={field}>
                 <label>{label}</label>
-                <input
-                  value={klientDane[field]}
-                  onChange={e => setKlientDane(prev => ({ ...prev, [field]: e.target.value }))}
-                />
+                <input value={klientDane[field]} onChange={e => setKlientDane(prev => ({ ...prev, [field]: e.target.value }))} />
               </div>
             ))}
           </div>
@@ -290,78 +222,24 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
 
         {/* Krok 2 — Założenia */}
         {krok === 1 && (
-          <div>
-            <h2 style={{ marginBottom: 8 }}>Założenia oferty</h2>
-            <p style={{ fontSize: 13, color: '#aaa', marginBottom: 12 }}>
-              Każda linia = osobny punkt listy. Puste pole = brak strony założeń.
-            </p>
-            <textarea
-              value={zalozenia}
-              onChange={e => setZalozenia(e.target.value)}
-              rows={12}
-              style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #555',
-                borderRadius: 8, fontSize: 13, resize: 'vertical',
-                background: '#3a3a3a', color: 'white', fontFamily: 'inherit', lineHeight: 1.6 }}
-            />
-          </div>
+          <ListaPunktow
+            punkty={zalozenia}
+            setPunkty={setZalozenia}
+            label="Założenia oferty"
+            opis="Zaznacz punkty do uwzględnienia. Przeciągaj by zmienić kolejność."
+            placeholder="Dodaj założenie..."
+          />
         )}
 
         {/* Krok 3 — Specyfikacja */}
         {krok === 2 && (
-          <div>
-            <h2 style={{ marginBottom: 8 }}>Specyfikacja materiałowa</h2>
-            <p style={{ fontSize: 13, color: '#aaa', marginBottom: 16 }}>
-              Zaznacz punkty do uwzględnienia w PDF. Możesz dodać własne.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-              {specyfikacja.map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 12px', background: p.zaznaczony ? '#2b2b2b' : '#2b2b2b',
-                  borderRadius: 8, border: `1px solid ${p.zaznaczony ? '#3a3a3a' : '#3a3a3a'}` }}>
-                  <input
-                    type="checkbox"
-                    checked={p.zaznaczony}
-                    onChange={() => togglePunkt(i)}
-                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#5f2f4d' }}
-                  />
-                  {edytowanyPunkt === i ? (
-                    <span onClick={e => e.stopPropagation()} style={{flex:1, display:'flex', gap:4}}>
-                      <input
-                        value={edytowanyTekst}
-                        onChange={e => setEdytowanyTekst(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') zapiszEdytowanyPunkt(); if (e.key === 'Escape') { setEdytowanyPunkt(null); } }}
-                        autoFocus
-                        style={{flex:1, padding:'4px 8px', border:'1.5px solid #5f2f4d', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
-                      />
-                      <button className="btn btn-primary btn-sm" onClick={zapiszEdytowanyPunkt}>✓</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => setEdytowanyPunkt(null)}>✕</button>
-                    </span>
-                  ) : (
-                    <span style={{ flex: 1, fontSize: 13, color: p.zaznaczony ? 'white' : '#aaa' }}>
-                      {p.tekst}
-                    </span>
-                  )}
-                  <button onClick={() => edytujPunkt(i)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#666', fontSize: 13, padding: '0 4px' }}>✏️</button>
-                  <button onClick={() => usunPunkt(i)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer',
-                      color: '#666', fontSize: 16, padding: '0 4px' }}>✕</button>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                value={nowyPunkt}
-                onChange={e => setNowyPunkt(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && dodajPunkt()}
-                placeholder="Dodaj własny punkt..."
-                style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #555',
-                  borderRadius: 8, fontSize: 13, background: '#3a3a3a', color: 'white' }}
-              />
-              <button className="btn btn-primary btn-sm" onClick={dodajPunkt}>+ Dodaj</button>
-            </div>
-          </div>
+          <ListaPunktow
+            punkty={specyfikacja}
+            setPunkty={setSpecyfikacja}
+            label="Specyfikacja materiałowa"
+            opis="Zaznacz punkty do uwzględnienia w PDF. Przeciągaj by zmienić kolejność."
+            placeholder="Dodaj własny punkt..."
+          />
         )}
 
         {/* Krok 4 — Obrazy */}
@@ -375,10 +253,9 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
               <label style={{ display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
                 border: `2px solid ${kategoria === '' ? '#5f2f4d' : '#3a3a3a'}`,
-                background: kategoria === '' ? '#2b2b2b' : '#2b2b2b' }}>
+                background: '#2b2b2b' }}>
                 <input type="radio" name="kategoria" value=""
-                  checked={kategoria === ''}
-                  onChange={() => setKategoria('')}
+                  checked={kategoria === ''} onChange={() => setKategoria('')}
                   style={{ accentColor: '#5f2f4d' }} />
                 <div>
                   <div style={{ fontWeight: 500, fontSize: 14, color:'white' }}>Bez obrazów</div>
@@ -389,10 +266,9 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                 <label key={k.nazwa} style={{ display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
                   border: `2px solid ${kategoria === k.nazwa ? '#5f2f4d' : '#3a3a3a'}`,
-                  background: kategoria === k.nazwa ? '#2b2b2b' : '#2b2b2b' }}>
+                  background: '#2b2b2b' }}>
                   <input type="radio" name="kategoria" value={k.nazwa}
-                    checked={kategoria === k.nazwa}
-                    onChange={() => setKategoria(k.nazwa)}
+                    checked={kategoria === k.nazwa} onChange={() => setKategoria(k.nazwa)}
                     style={{ accentColor: '#5f2f4d' }} />
                   <div>
                     <div style={{ fontWeight: 500, fontSize: 14, color:'white' }}>{k.nazwa}</div>
@@ -406,20 +282,13 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                   <code style={{ fontSize: 12 }}>/opt/savento/backend/obrazy/</code>
                 </div>
               )}
-
-              {/* Własne obrazy */}
               <div style={{marginTop:12, paddingTop:12, borderTop:'1px solid #3a3a3a'}}>
                 <div style={{fontSize:13, fontWeight:500, color:'#aaa', marginBottom:8}}>
                   lub wgraj własne pliki JPG/PNG:
                 </div>
                 <label className="btn btn-secondary btn-sm" style={{cursor:'pointer'}}>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/jpg"
-                    multiple
-                    onChange={wgrajObraz}
-                    style={{display:'none'}}
-                  />
+                  <input type="file" accept="image/jpeg,image/png,image/jpg" multiple
+                    onChange={wgrajObraz} style={{display:'none'}} />
                   Wybierz obrazy (JPG/PNG)
                 </label>
                 {wlasneObrazy.length > 0 && (
@@ -427,20 +296,16 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                     <label style={{display:'flex', alignItems:'center', gap:12,
                       padding:'10px 14px', borderRadius:8, cursor:'pointer',
                       border: `2px solid ${kategoria === '__wlasne__' ? '#5f2f4d' : '#3a3a3a'}`,
-                      background: kategoria === '__wlasne__' ? '#2b2b2b' : '#2b2b2b',
-                      marginBottom:8}}>
+                      background: '#2b2b2b', marginBottom:8}}>
                       <input type="radio" name="kategoria" value="__wlasne__"
-                        checked={kategoria === '__wlasne__'}
-                        onChange={() => setKategoria('__wlasne__')}
-                        style={{accentColor:'#5f2f4d'}}
-                      />
+                        checked={kategoria === '__wlasne__'} onChange={() => setKategoria('__wlasne__')}
+                        style={{accentColor:'#5f2f4d'}} />
                       <div>
                         <div style={{fontWeight:500, fontSize:14, color:'white'}}>Wgrane pliki</div>
                         <div style={{fontSize:12, color:'#aaa'}}>{wlasneObrazy.length} {wlasneObrazy.length === 1 ? 'plik' : 'pliki'}: {wlasneObrazy.map(o => typeof o === 'string' ? o : o.name).join(', ')}</div>
                       </div>
                       <button onClick={e => {e.preventDefault(); setWlasneObrazy([]); setKategoria('')}}
-                        style={{marginLeft:'auto', background:'none', border:'none',
-                          cursor:'pointer', color:'#666', fontSize:18}}>✕</button>
+                        style={{marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'#666', fontSize:18}}>✕</button>
                     </label>
                   </div>
                 )}
@@ -457,7 +322,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
               {[
                 { ikona: '📄', label: 'Okładka', opis: 'zawsze' },
                 { ikona: '👤', label: 'Dane klienta', opis: klientDane.nazwa || '(puste)' },
-                { ikona: '📋', label: 'Założenia', opis: zalozenia.trim() ? `${zalozenia.split('\n').filter(Boolean).length} punktów` : 'pominięte' },
+                { ikona: '📋', label: 'Założenia', opis: zalozenia.filter(p => p.zaznaczony).length > 0 ? `${zalozenia.filter(p => p.zaznaczony).length} punktów` : 'pominięte' },
                 { ikona: '🔩', label: 'Specyfikacja', opis: specyfikacja.filter(p => p.zaznaczony).length > 0 ? `${specyfikacja.filter(p => p.zaznaczony).length} pozycji` : 'pominięta' },
                 { ikona: '🖼️', label: 'Obrazy', opis: kategoria ? `Kategoria: ${kategoria} (${kategorie.find(k => k.nazwa === kategoria)?.pliki || 0} stron)` : 'pominięte' },
                 { ikona: '📊', label: 'Wycena', opis: 'tabele mebli' },
@@ -473,16 +338,11 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                 </div>
               ))}
             </div>
-            {/* Checkbox podglądu */}
             <label style={{ display:'flex', alignItems:'center', gap:10, marginTop:16,
               padding:'10px 14px', background:'#2b2b2b', borderRadius:8, cursor:'pointer',
               border:'1px solid #3a3a3a' }}>
-              <input
-                type="checkbox"
-                checked={podglad}
-                onChange={e => setPodglad(e.target.checked)}
-                style={{ width:18, height:18, cursor:'pointer', accentColor:'#5f2f4d' }}
-              />
+              <input type="checkbox" checked={podglad} onChange={e => setPodglad(e.target.checked)}
+                style={{ width:18, height:18, cursor:'pointer', accentColor:'#5f2f4d' }} />
               <div>
                 <div style={{ fontWeight:500, fontSize:13, color:'#c6bec4' }}>Podgląd przed pobraniem</div>
                 <div style={{ fontSize:12, color:'#aaa' }}>
@@ -496,44 +356,23 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         {/* Nawigacja */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, gap: 10 }}>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
-              onClick={onClose}
-            >
-              Anuluj
-            </button>
+            <button style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }} onClick={onClose}>Anuluj</button>
             {krok > 0 && (
-              <button
-                style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
-                onClick={() => setKrok(k => k - 1)}
-              >
-                ← Wstecz
-              </button>
+              <button style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }} onClick={() => setKrok(k => k - 1)}>← Wstecz</button>
             )}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {krok === 4 ? (
               <>
-                <button
-                  style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
-                  onClick={() => generuj()}
-                  disabled={loading}
-                >
+                <button style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }} onClick={() => generuj()} disabled={loading}>
                   {loading ? <span className="spin">⏳</span> : 'Bez założeń i danych'}
                 </button>
-                <button
-                  style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
-                  onClick={generuj}
-                  disabled={loading}
-                >
+                <button style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }} onClick={generuj} disabled={loading}>
                   {loading ? <span className="spin">⏳</span> : '⬇ Generuj PDF'}
                 </button>
               </>
             ) : (
-              <button
-                style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
-                onClick={() => setKrok(k => k + 1)}
-              >
+              <button style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }} onClick={() => setKrok(k => k + 1)}>
                 Dalej →
               </button>
             )}
