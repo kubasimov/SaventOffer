@@ -22,6 +22,8 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
   // Krok 3 — specyfikacja
   const [specyfikacja, setSpecyfikacja] = useState([])
   const [nowyPunkt, setNowyPunkt] = useState('')
+  const [edytowanyPunkt, setEdytowanyPunkt] = useState(null) // index | null
+  const [edytowanyTekst, setEdytowanyTekst] = useState('')
 
   // Krok 4 — obrazy
   const [kategoria, setKategoria] = useState('')
@@ -114,6 +116,20 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
 
   function usunPunkt(i) {
     setSpecyfikacja(prev => prev.filter((_, idx) => idx !== i))
+  }
+
+  function edytujPunkt(i) {
+    setEdytowanyPunkt(i)
+    setEdytowanyTekst(specyfikacja[i].tekst)
+  }
+
+  function zapiszEdytowanyPunkt() {
+    if (edytowanyPunkt === null) return
+    setSpecyfikacja(prev => prev.map((p, i) =>
+      i === edytowanyPunkt ? { ...p, tekst: edytowanyTekst.trim() || p.tekst } : p
+    ))
+    setEdytowanyPunkt(null)
+    setEdytowanyTekst('')
   }
 
   async function generuj() {
@@ -308,9 +324,26 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                     onChange={() => togglePunkt(i)}
                     style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#5f2f4d' }}
                   />
-                  <span style={{ flex: 1, fontSize: 13, color: p.zaznaczony ? 'white' : '#aaa' }}>
-                    {p.tekst}
-                  </span>
+                  {edytowanyPunkt === i ? (
+                    <span onClick={e => e.stopPropagation()} style={{flex:1, display:'flex', gap:4}}>
+                      <input
+                        value={edytowanyTekst}
+                        onChange={e => setEdytowanyTekst(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') zapiszEdytowanyPunkt(); if (e.key === 'Escape') { setEdytowanyPunkt(null); } }}
+                        autoFocus
+                        style={{flex:1, padding:'4px 8px', border:'1.5px solid #5f2f4d', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
+                      />
+                      <button className="btn btn-primary btn-sm" onClick={zapiszEdytowanyPunkt}>✓</button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => setEdytowanyPunkt(null)}>✕</button>
+                    </span>
+                  ) : (
+                    <span style={{ flex: 1, fontSize: 13, color: p.zaznaczony ? 'white' : '#aaa' }}>
+                      {p.tekst}
+                    </span>
+                  )}
+                  <button onClick={() => edytujPunkt(i)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer',
+                      color: '#666', fontSize: 13, padding: '0 4px' }}>✏️</button>
                   <button onClick={() => usunPunkt(i)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer',
                       color: '#666', fontSize: 16, padding: '0 4px' }}>✕</button>
@@ -462,35 +495,45 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
 
         {/* Nawigacja */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, gap: 10 }}>
-          <button
-            style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
-            onClick={krok === 0 ? onClose : () => setKrok(k => k - 1)}
-          >
-            {krok === 0 ? 'Anuluj' : '← Wstecz'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
+              onClick={onClose}
+            >
+              Anuluj
+            </button>
+            {krok > 0 && (
+              <button
+                style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
+                onClick={() => setKrok(k => k - 1)}
+              >
+                ← Wstecz
+              </button>
+            )}
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {krok === 4 ? (
               <>
                 <button
-                                  style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
-                                  onClick={() => generuj()}
-                                  disabled={loading}
-                                >
-                                  {loading ? <span className="spin">⏳</span> : 'Bez założeń i danych'}
-                                </button>
-                                <button
-                                  style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
-                                  onClick={generuj}
-                                  disabled={loading}
-                                >
-                                  {loading ? <span className="spin">⏳</span> : '⬇ Generuj PDF'}
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
-                                onClick={() => setKrok(k => k + 1)}
-                              >
+                  style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }}
+                  onClick={() => generuj()}
+                  disabled={loading}
+                >
+                  {loading ? <span className="spin">⏳</span> : 'Bez założeń i danych'}
+                </button>
+                <button
+                  style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
+                  onClick={generuj}
+                  disabled={loading}
+                >
+                  {loading ? <span className="spin">⏳</span> : '⬇ Generuj PDF'}
+                </button>
+              </>
+            ) : (
+              <button
+                style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }}
+                onClick={() => setKrok(k => k + 1)}
+              >
                 Dalej →
               </button>
             )}
