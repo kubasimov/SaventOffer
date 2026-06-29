@@ -79,7 +79,7 @@ router.put('/:id', async (req, res) => {
   const { klient_id, status, uwagi, korekta_globalna, numer, nazwa } = req.body;
   try {
     // Pobierz stary status dla auditu
-    const stary = (await pool.query('SELECT status FROM offers WHERE id=$1', [req.params.id])).rows[0];
+    const stary = (await pool.query('SELECT status, nazwa, numer, klient_id, korekta_globalna, uwagi FROM offers WHERE id=$1', [req.params.id])).rows[0];
 
     const result = await pool.query(`
       UPDATE offers SET klient_id=$1, status=$2, uwagi=$3,
