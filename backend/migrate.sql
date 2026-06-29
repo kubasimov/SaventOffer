@@ -84,3 +84,14 @@ CREATE TABLE IF NOT EXISTS offer_log (
     utworzony TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX idx_offer_log_oferta ON offer_log(oferta_id);
+
+CREATE TABLE IF NOT EXISTS offer_changelog (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    oferta_id UUID REFERENCES offers(id) ON DELETE CASCADE,
+    uzytkownik_id UUID REFERENCES users(id),
+    pole VARCHAR(50) NOT NULL,
+    stara_wartosc TEXT,
+    nowa_wartosc TEXT,
+    utworzony TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_offer_changelog_oferta ON offer_changelog(oferta_id);

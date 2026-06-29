@@ -303,30 +303,58 @@ export default function EdytorOferty() {
       {/* Modal historii */}
       {modalHistoria && (
         <div className="modal-overlay" onClick={() => setModalHistoria(false)}>
-          <div className="modal" style={{maxWidth:560}} onClick={e => e.stopPropagation()}>
-            <h2>Historia zmian statusu</h2>
+          <div className="modal" style={{maxWidth:620}} onClick={e => e.stopPropagation()}>
+            <h2>Historia zmian</h2>
             {loadingHistoria ? (
               <div style={{padding:20, textAlign:'center', color:'#aaa'}}>Ładowanie...</div>
             ) : historia.length === 0 ? (
               <div className="empty-state">Brak historii zmian</div>
             ) : (
-              <div style={{maxHeight:'50vh', overflowY:'auto'}}>
-                {historia.map(h => (
-                  <div key={h.id} style={{display:'flex', justifyContent:'space-between',
-                    alignItems:'center', padding:'10px 12px', borderBottom:'1px solid #3a3a3a'}}>
-                    <div>
-                      <span style={{fontSize:13, color:'#aaa'}}>{h.uzytkownik || '?'}</span>
-                      <div style={{marginTop:2}}>
-                        <span style={{fontSize:12, color:'#ef5350', fontWeight:500}}>{h.stary_status || '—'}</span>
-                        <span style={{margin:'0 8px', color:'#666'}}>→</span>
-                        <span style={{fontSize:12, color:'#81c784', fontWeight:500}}>{h.nowy_status}</span>
+              <div style={{maxHeight:'55vh', overflowY:'auto', padding:'4px 0'}}>
+                {/* Oś czasu */}
+                <div style={{position:'relative', paddingLeft:28}}>
+                  {/* Linia pionowa */}
+                  <div style={{position:'absolute', left:10, top:6, bottom:6, width:2,
+                    background:'#3a3a3a', borderRadius:1}} />
+                  {historia.map((h, idx) => (
+                    <div key={idx} style={{position:'relative', paddingBottom:16}}>
+                      {/* Kropka na linii */}
+                      <div style={{position:'absolute', left:-20, top:4, width:12, height:12,
+                        borderRadius:'50%', background: h.pole === 'status' ? '#5f2f4d' : '#3a3a3a',
+                        border:'2px solid #2b2b2b', zIndex:1}} />
+                      <div style={{border:'1px solid #3a3a3a', borderRadius:8, padding:'10px 14px',
+                        background:'#2b2b2b'}}>
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4}}>
+                          <span style={{fontSize:12, color:'#c6bec4', fontWeight:500}}>
+                            {h.pole === 'numer' ? 'Numer oferty' :
+                             h.pole === 'nazwa' ? 'Nazwa inwestycji' :
+                             h.pole === 'klient_id' ? 'Klient' :
+                             h.pole === 'korekta_globalna' ? 'Korekta globalna' :
+                             h.pole === 'status' ? 'Status' :
+                             h.pole === 'uwagi' ? 'Uwagi' : h.pole}
+                          </span>
+                          <span style={{fontSize:11, color:'#aaa'}}>
+                            {new Date(h.utworzony).toLocaleString('pl-PL')}
+                          </span>
+                        </div>
+                        {h.pole === 'status' ? (
+                          <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
+                            <span style={{fontSize:12, color:'#ef5350', fontWeight:500, background:'#3a1a1a', padding:'2px 10px', borderRadius:10}}>{h.stara_wartosc || '—'}</span>
+                            <span style={{color:'#666'}}>→</span>
+                            <span style={{fontSize:12, color:'#81c784', fontWeight:500, background:'#1a3a1a', padding:'2px 10px', borderRadius:10}}>{h.nowa_wartosc}</span>
+                          </div>
+                        ) : (
+                          <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', fontSize:13}}>
+                            <span style={{color:'#aaa'}}>{h.stara_wartosc || '(puste)'}</span>
+                            <span style={{color:'#666'}}>→</span>
+                            <span style={{color:'white'}}>{h.nowa_wartosc || '(puste)'}</span>
+                          </div>
+                        )}
+                        <div style={{fontSize:11, color:'#666', marginTop:4}}>{h.uzytkownik || '?'}</div>
                       </div>
                     </div>
-                    <span style={{fontSize:11, color:'#aaa', whiteSpace:'nowrap'}}>
-                      {new Date(h.utworzony).toLocaleString('pl-PL')}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
             <div className="modal-actions">

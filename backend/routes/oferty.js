@@ -93,13 +93,33 @@ router.put('/:id', async (req, res) => {
         nazwa !== undefined ? nazwa : null,
         req.params.id]);
 
-    // Audit log: zapisz kto i kiedy zmienił status
-    if (stary && status && stary.status !== status) {
-      await pool.query(
-        `INSERT INTO offer_log (oferta_id, uzytkownik_id, stary_status, nowy_status)
-         VALUES ($1, $2, $3, $4)`,
-        [req.params.id, req.user.id, stary.status, status]
-      ).catch(() => {}); // Table moze nie isniec — log opcjonalny
+    // Audit log: zapisz wszystkie zmienione pola
+    if (stary) {
+      const zmiany = [];
+      const pola = [
+        { pole: 'status', stara: stary.status, nowa: status },
+        { pole: 'klient_id', stara: stary.klient_id, nowa: klient_id },
+        { pole: 'nazwa', stara: stary.nazwa, nowa: nazwa },
+        { pole: 'numer', stara: stary.numer, nowa: numer },
+        { pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: korekta_globalna },
+        { pole: 'uwagi', stara: stary.uwagi, nowa: uwagi },
+      ];
+      for (const p of pola) {
+        if (String(p.stara || '') !== String(p.nowa || '')) {
+          zmiany.push(p);
+        }
+      }
+      if (zmiany.length > 0) {
+        const vals = zmiany.map((_, i) => `($${i*4+1},$${i*4+2},$${i*4+3},$${i*4+4},$${i*4+5})`).join(',');
+        const params = [];
+        for (const z of zmiany) {
+          params.push(req.params.id, req.user.id, z.pole, z.stara || null, z.nowa || null);
+        }
+        await pool.query(
+          `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, stara_wartosc, nowa_wartosc) VALUES ${vals}`,
+          params
+        ).catch(() => {});
+      }
     }
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -361,17 +381,30 @@ router.get('/tabele/:tabela_id/dyktowanie', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Pobierz historię zmian statusu oferty (audit log)
+// Pobierz historię zmian oferty (changelog + statusy)
 router.get('/:id/historia', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT ol.*, u.imie_nazwisko as uzytkownik
+    const wynik = await pool.query(`
+      SELECT cl.utworzony, u.imie_nazwisko as uzytkownik,
+        cl.pole, cl.stara_wartosc, cl.nowa_wartosc,
+        NULL as stary_status, NULL as nowy_status
+      FROM offer_changelog cl
+      LEFT JOIN users u ON cl.uzytkownik_id = u.id
+      WHERE cl.oferta_id = $1
+      UNION ALL
+      SELECT ol.utworzony, u.imie_nazwisko as uzytkownik,
+        'status' as pole, ol.stary_status as stara_wartosc, ol.nowy_status as nowa_wartosc,
+        ol.stary_status, ol.nowy_status
       FROM offer_log ol
       LEFT JOIN users u ON ol.uzytkownik_id = u.id
-      WHERE ol.oferta_id = $1
-      ORDER BY ol.utworzony DESC
+      WHERE ol.oferta_id = $1 AND NOT EXISTS (
+        SELECT 1 FROM offer_changelog cl2
+        WHERE cl2.oferta_id = ol.oferta_id AND cl2.pole = 'status'
+        AND cl2.utworzony = ol.utworzony
+      )
+      ORDER BY utworzony DESC
     `, [req.params.id]);
-    res.json(result.rows);
+    res.json(wynik.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
