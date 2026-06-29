@@ -3,9 +3,7 @@ import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-do
 import Klienci from './pages/Klienci'
 import Oferty from './pages/Oferty'
 import EdytorOferty from './pages/EdytorOferty'
-import Import from './pages/Import'
 import Login from './pages/Login'
-import Uzytkownicy from './pages/Uzytkownicy'
 import Ustawienia from './pages/Ustawienia'
 import Profil from './pages/Profil'
 import { AuthProvider, useAuth } from './AuthContext'
@@ -39,8 +37,6 @@ function AppInner() {
           <div className={'navbar-links' + (menuOpen ? ' open' : '')} onClick={() => setMenuOpen(false)}>
             <NavLink to="/" end>Oferty</NavLink>
             {isAdmin && <NavLink to="/klienci">Klienci</NavLink>}
-            {isAdmin && <NavLink to="/import">Import</NavLink>}
-            {isAdmin && <NavLink to="/uzytkownicy">Użytkownicy</NavLink>}
             {isAdmin && <NavLink to="/ustawienia">Ustawienia</NavLink>}
             <div style={{display:'flex', alignItems:'center', gap:12, marginLeft:'auto'}}>
               <NavLink to="/profil" style={{fontSize:13, color:'rgba(255,255,255,0.7)',
@@ -66,8 +62,6 @@ function AppInner() {
               <Route path="/" element={<Oferty />} />
               {isAdmin && <Route path="/oferty/:id" element={<EdytorOferty />} />}
               {isAdmin && <Route path="/klienci" element={<Klienci />} />}
-              {isAdmin && <Route path="/import" element={<Import />} />}
-              {isAdmin && <Route path="/uzytkownicy" element={<Uzytkownicy />} />}
               {isAdmin && <Route path="/ustawienia" element={<Ustawienia />} />}
               <Route path="/profil" element={<Profil />} />
             </Routes>

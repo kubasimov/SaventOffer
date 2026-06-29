@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import Cennik from './Cennik'
+import Uzytkownicy from './Uzytkownicy'
+import Import from './Import'
 
-const ZAKLADKI = ['Cennik', 'Założenia', 'Specyfikacja']
+const ZAKLADKI = ['Cennik', 'Założenia', 'Specyfikacja', 'Użytkownicy', 'Import']
 
 export default function Ustawienia() {
   const [aktywna, setAktywna] = useState(0)
@@ -43,7 +45,7 @@ export default function Ustawienia() {
       </div>
 
       {/* Zakładki */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #eee' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid #3a3a3a' }}>
         {ZAKLADKI.map((n, i) => (
           <button
             key={n}
@@ -51,9 +53,9 @@ export default function Ustawienia() {
             style={{
               padding: '10px 24px', border: 'none', cursor: 'pointer',
               fontSize: 14, fontWeight: aktywna === i ? 600 : 400,
-              color: aktywna === i ? '#582A48' : '#888',
+              color: aktywna === i ? '#c6bec4' : '#888',
               background: 'none',
-              borderBottom: aktywna === i ? '3px solid #582A48' : '3px solid transparent',
+              borderBottom: aktywna === i ? '3px solid #c6bec4' : '3px solid transparent',
               marginBottom: -2, transition: 'all 0.15s'
             }}
           >
@@ -71,21 +73,21 @@ export default function Ustawienia() {
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
             <div>
               <h2 style={{fontSize:16, marginBottom:4}}>Domyślne założenia oferty</h2>
-              <p style={{fontSize:13, color:'#888'}}>
+              <p style={{fontSize:13, color:'#aaa'}}>
                 Tekst wczytywany automatycznie w kreatorze PDF. Każda linia = osobny punkt.
               </p>
             </div>
             {zapisano === 'zalozenia' && (
-              <span style={{color:'#2e7d32', fontSize:13}}>✓ Zapisano</span>
+              <span style={{color:'#81c784', fontSize:13}}>✓ Zapisano</span>
             )}
           </div>
           <textarea
             value={zalozenia}
             onChange={e => setZalozenia(e.target.value)}
             rows={12}
-            style={{width:'100%', padding:'10px 12px', border:'1px solid #ddd',
+            style={{width:'100%', padding:'10px 12px', border:'1.5px solid #555',
               borderRadius:8, fontSize:13, resize:'vertical',
-              background:'white', color:'#333', fontFamily:'inherit', lineHeight:1.6,
+              background:'#3a3a3a', color:'white', fontFamily:'inherit', lineHeight:1.6,
               marginBottom:12}}
           />
           <div style={{display:'flex', justifyContent:'flex-end'}}>
@@ -102,21 +104,21 @@ export default function Ustawienia() {
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
             <div>
               <h2 style={{fontSize:16, marginBottom:4}}>Domyślna specyfikacja materiałowa</h2>
-              <p style={{fontSize:13, color:'#888'}}>
+              <p style={{fontSize:13, color:'#aaa'}}>
                 Punkty wczytywane w kreatorze PDF. Każda linia = osobny punkt listy.
               </p>
             </div>
             {zapisano === 'specyfikacja' && (
-              <span style={{color:'#2e7d32', fontSize:13}}>✓ Zapisano</span>
+              <span style={{color:'#81c784', fontSize:13}}>✓ Zapisano</span>
             )}
           </div>
           <textarea
             value={specyfikacja}
             onChange={e => setSpecyfikacja(e.target.value)}
             rows={12}
-            style={{width:'100%', padding:'10px 12px', border:'1px solid #ddd',
+            style={{width:'100%', padding:'10px 12px', border:'1.5px solid #555',
               borderRadius:8, fontSize:13, resize:'vertical',
-              background:'white', color:'#333', fontFamily:'inherit', lineHeight:1.6,
+              background:'#3a3a3a', color:'white', fontFamily:'inherit', lineHeight:1.6,
               marginBottom:12}}
           />
           <div style={{display:'flex', justifyContent:'flex-end'}}>
@@ -126,6 +128,12 @@ export default function Ustawienia() {
           </div>
         </div>
       )}
+
+      {/* Zakładka: Użytkownicy */}
+      {aktywna === 3 && <Uzytkownicy />}
+
+      {/* Zakładka: Import */}
+      {aktywna === 4 && <Import />}
     </div>
   )
 }
