@@ -309,42 +309,40 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                 {pozycja.jednostka === 'm2' ? (
                   <>
                     <div>
-                      <div style={{fontSize:11, color:'#888', marginBottom:3}}>Wym. X (m)</div>
-                      <input type="number" step="0.01"
-                        value={nowyWymiar.wymiar_x}
-                        ref={firstInputRef}
-                        onChange={e => setNowyWymiar({...nowyWymiar, wymiar_x: e.target.value})}
-                        onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
-                        style={{width:80, padding:'5px 8px', border:'1px solid #ddd',
-                          borderRadius:6, fontSize:13, background:'white', color:'#333'}}
+                                        <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. X (m)</div>
+                                        <input type="number" step="0.01"
+                                          value={nowyWymiar.wymiar_x}
+                                          ref={firstInputRef}
+                                          onChange={e => setNowyWymiar({...nowyWymiar, wymiar_x: e.target.value})}
+                                          onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
+                        style={{width:80, padding:'5px 8px', border:'1.5px solid #555', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
                       />
                     </div>
                     <div>
-                      <div style={{fontSize:11, color:'#888', marginBottom:3}}>Wym. Y (m)</div>
+                      <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. Y (m)</div>
                       <input type="number" step="0.01"
                         value={nowyWymiar.wymiar_y}
                         onChange={e => setNowyWymiar({...nowyWymiar, wymiar_y: e.target.value})}
                         onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
-                        style={{width:80, padding:'5px 8px', border:'1px solid #ddd',
-                          borderRadius:6, fontSize:13, background:'white', color:'#333'}}
+                        style={{width:80, padding:'5px 8px', border:'1.5px solid #555', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
                       />
                     </div>
                     {nowyWymiar.wymiar_x && nowyWymiar.wymiar_y && (
-                      <div style={{fontSize:13, color:'#582A48', alignSelf:'center', paddingBottom:2}}>
+                      <div style={{fontSize:13, color:'#c6bec4', alignSelf:'center', paddingBottom:2}}>
                         = {round2(parseFloat(nowyWymiar.wymiar_x) * parseFloat(nowyWymiar.wymiar_y)).toFixed(2)} m²
                       </div>
                     )}
                   </>
                 ) : (
                   <div>
-                    <div style={{fontSize:11, color:'#888', marginBottom:3}}>Ilość ({pozycja.jednostka})</div>
+                    <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Ilość ({pozycja.jednostka})</div>
                     <input type="number" step="1"
                       value={nowyWymiar.ilosc}
                       ref={firstInputRef}
                       onChange={e => setNowyWymiar({...nowyWymiar, ilosc: e.target.value})}
                       onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
-                      style={{width:80, padding:'5px 8px', border:'1px solid #ddd',
-                        borderRadius:6, fontSize:13, background:'white', color:'#333'}}
+                      style={{width:80, padding:'5px 8px', border:'1.5px solid #555',
+                        borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
                     />
                   </div>
                 )}

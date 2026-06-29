@@ -182,8 +182,8 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
         onChange={e => setTryb(e.target.value)}
         disabled={aktywny}
         style={{
-          padding:'4px 8px', borderRadius:6, border:'1px solid #ddd',
-          fontSize:12, color:'#555', background:'white', cursor:'pointer'
+          padding:'4px 8px', borderRadius:6, border:'1.5px solid #555',
+          fontSize:12, color:'white', background:'#3a3a3a', cursor:'pointer'
         }}
       >
         <option value="web">🌐 Web Speech</option>
@@ -196,7 +196,7 @@ export default function MikrofonCiagly({ tabelaId, cennik, onDodano }) {
           display:'flex', alignItems:'center', gap:6,
           padding:'6px 14px', borderRadius:20, border:'none',
           cursor:'pointer', fontSize:13, fontWeight:500,
-          background: aktywny ? '#e53935' : '#582A48',
+          background: aktywny ? '#e53935' : '#5f2f4d',
           color:'white',
           transition: 'all 0.2s'
         }}
