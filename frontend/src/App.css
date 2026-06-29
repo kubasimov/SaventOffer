@@ -282,7 +282,8 @@ tr:hover td { background: #333; }
 
 .form-group input,
 .form-group select,
-.form-group textarea {
+.form-group textarea,
+select {
   width: 100%;
   padding: 10px 12px;
   border: 1.5px solid #555;
@@ -298,7 +299,8 @@ tr:hover td { background: #333; }
 }
 
 .form-group input:focus,
-.form-group select:focus { border-color: #582A48; box-shadow: 0 0 0 3px rgba(95,47,77,0.3); }
+.form-group select:focus,
+select:focus { border-color: #582A48; box-shadow: 0 0 0 3px rgba(95,47,77,0.3); }
 
 @media (max-width: 600px) {
   .form-group input,
