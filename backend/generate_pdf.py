@@ -424,7 +424,7 @@ def generuj_pdf(dane, output_path):
         writer.add_page(tlo)
     # Podsumowanie wszystkich mebli
     tabele = dane.get('tabele', [])
-    if tabele:
+    if len(tabele) > 1:
         podsumowanie_buf = generuj_strone_podsumowania(tabele)
         tlo = szablon('podklad_oferta_cenowa.pdf')
         tlo.merge_page(PdfReader(podsumowanie_buf).pages[0])
