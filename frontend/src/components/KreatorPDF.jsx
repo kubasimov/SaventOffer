@@ -36,8 +36,8 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         if (r.data?.wartosc) {
           try {
             const s = JSON.parse(r.data.wartosc)
-            if (s.zalozenia) setZalozenia(s.zalozenia)
-            if (s.specyfikacja) setSpecyfikacja(s.specyfikacja)
+            if (s.zalozenia) setZalozenia(Array.isArray(s.zalozenia) ? s.zalozenia : s.zalozenia.split('\n').filter(Boolean).map(t => ({ tekst: t.trim(), zaznaczony: true })));
+                        if (s.specyfikacja) setSpecyfikacja(Array.isArray(s.specyfikacja) ? s.specyfikacja : s.specyfikacja.split('\n').filter(Boolean).map(t => ({ tekst: t.trim(), zaznaczony: true })));
             if (s.kategoria) setKategoria(s.kategoria)
             if (s.klientDane) setKlientDane(prev => ({ ...prev, ...s.klientDane }))
             if (s.nazwaInwestycji) setNazwaInwestycji(s.nazwaInwestycji)
