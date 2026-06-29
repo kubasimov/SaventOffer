@@ -37,6 +37,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
 
   useEffect(() => {
     // Wczytaj zapisane ustawienia PDF dla tej oferty
+    let savedFound = false;
     axios.get(`/api/ustawienia/pdf_settings_${ofertaId}`)
       .then(r => {
         if (r.data?.wartosc) {
@@ -48,6 +49,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
             if (s.klientDane) setKlientDane(prev => ({ ...prev, ...s.klientDane }));
             if (s.nazwaInwestycji) setNazwaInwestycji(s.nazwaInwestycji);
             if (s.podglad !== undefined) setPodglad(s.podglad);
+            savedFound = true;
           } catch (e) {}
         }
       })
@@ -72,14 +74,14 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
     axios.get('/api/pdf/kategorie')
       .then(r => setKategorie(r.data))
       .catch(() => {})
-    // Pobierz domyślne założenia
+    // Pobierz domyślne założenia — tylko gdy nie ma zapisanych
     axios.get('/api/pdf/zalozenia-domyslne')
-      .then(r => { if (r.data.tekst) setZalozenia(r.data.tekst) })
+      .then(r => { if (r.data.tekst && !savedFound) setZalozenia(r.data.tekst) })
       .catch(() => {})
-    // Pobierz domyślną specyfikację
+    // Pobierz domyślną specyfikację — tylko gdy nie ma zapisanych
     axios.get('/api/ustawienia/specyfikacja_domyslna')
       .then(r => {
-        if (r.data.wartosc) {
+        if (r.data.wartosc && !savedFound) {
           const punkty = r.data.wartosc.split('\n').filter(Boolean)
           setSpecyfikacja(punkty.map(t => ({ tekst: t.trim(), zaznaczony: true })))
         }
@@ -189,7 +191,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal" style={{ maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}>
 
@@ -473,14 +475,14 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
                   onClick={() => generuj()}
                   disabled={loading}
                 >
-                  Bez założeń i danych
+                  {loading ? '⏳' : 'Bez założeń i danych'}
                 </button>
                 <button
                   style={{ ...btnStyle, background: '#582A48', color: 'white' }}
                   onClick={generuj}
                   disabled={loading}
                 >
-                  {loading ? 'Generowanie...' : '⬇ Generuj PDF'}
+                  {loading ? <span className="spin">⏳</span> : '⬇ Generuj PDF'}
                 </button>
               </>
             ) : (

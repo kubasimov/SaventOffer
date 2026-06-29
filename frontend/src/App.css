@@ -445,6 +445,12 @@ select:focus { border-color: #582A48; box-shadow: 0 0 0 3px rgba(95,47,77,0.3); 
   }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin { display: inline-block; animation: spin 1s linear infinite; }
+
 /* ========== MOBILE CARD VIEW ========== */
 @media (max-width: 768px) {
   /* Oferty: kazdy wiersz = karta */
