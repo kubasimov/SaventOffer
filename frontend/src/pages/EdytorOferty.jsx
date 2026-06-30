@@ -192,11 +192,11 @@ export default function EdytorOferty() {
             </div>
           </div>
         </div>
-        <div style={{display:'flex', gap:8, flexWrap:'wrap'}}>
+        <div style={{display:'flex', gap:8, flexWrap:'wrap', alignItems:'center'}}>
           <button className="btn btn-secondary" onClick={eksportCSV}>
             ⬇ CSV
           </button>
-          <button className="btn btn-secondary" onClick={generujPDF}>
+          <button className="btn btn-pdf" onClick={generujPDF}>
             ⬇ PDF
           </button>
           <button className="btn btn-secondary" onClick={pokazHistorie}>
