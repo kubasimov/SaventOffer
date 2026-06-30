@@ -99,21 +99,35 @@ router.put('/:id', async (req, res) => {
         if (stary) {
           console.log('[CHANGELOG] stary (z DB):', JSON.stringify(stary));
           const zmiany = [];
-          const pola = [
-            { pole: 'status', stara: stary.status, nowa: status },
-            { pole: 'klient_id', stara: stary.klient_id, nowa: klient_id },
-            { pole: 'nazwa', stara: stary.nazwa, nowa: nazwa },
-            { pole: 'numer', stara: stary.numer, nowa: numer },
-            { pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: korekta_globalna },
-            { pole: 'uwagi', stara: stary.uwagi, nowa: uwagi },
-          ];
-          for (const p of pola) {
-            const stra = String(p.stara || '');
-            const nowa = String(p.nowa || '');
-            console.log(`[CHANGELOG] porownanie ${p.pole}: "${stra}" vs "${nowa}" => ${stra !== nowa}`);
-            if (stra !== nowa) {
-              zmiany.push(p);
-            }
+          // Porownuj tylko pola, ktore zostaly wyslane w body
+          if (req.body.status !== undefined && String(stary.status || '') !== String(req.body.status || '')) {
+            zmiany.push({ pole: 'status', stara: stary.status, nowa: req.body.status });
+          }
+          if (req.body.klient_id !== undefined && String(stary.klient_id || '') !== String(req.body.klient_id || '')) {
+            // Pobierz nazwe klienta
+            let nowaNazwa = req.body.klient_id;
+            try {
+              const kr = await pool.query('SELECT nazwa FROM clients WHERE id=$1', [req.body.klient_id]);
+              if (kr.rows.length) nowaNazwa = kr.rows[0].nazwa;
+            } catch(e) {}
+            let staraNazwa = stary.klient_id;
+            try {
+              const kr = await pool.query('SELECT nazwa FROM clients WHERE id=$1', [stary.klient_id]);
+              if (kr.rows.length) staraNazwa = kr.rows[0].nazwa;
+            } catch(e) {}
+            zmiany.push({ pole: 'klient', stara: staraNazwa, nowa: nowaNazwa });
+          }
+          if (req.body.nazwa !== undefined && String(stary.nazwa || '') !== String(req.body.nazwa || '')) {
+            zmiany.push({ pole: 'nazwa', stara: stary.nazwa, nowa: req.body.nazwa });
+          }
+          if (req.body.numer !== undefined && String(stary.numer || '') !== String(req.body.numer || '')) {
+            zmiany.push({ pole: 'numer', stara: stary.numer, nowa: req.body.numer });
+          }
+          if (req.body.korekta_globalna !== undefined && String(stary.korekta_globalna || '') !== String(req.body.korekta_globalna || '')) {
+            zmiany.push({ pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: req.body.korekta_globalna });
+          }
+          if (req.body.uwagi !== undefined && String(stary.uwagi || '') !== String(req.body.uwagi || '')) {
+            zmiany.push({ pole: 'uwagi', stara: stary.uwagi, nowa: req.body.uwagi });
           }
           console.log('[CHANGELOG] zmiany do zapisu:', JSON.stringify(zmiany));
           if (zmiany.length > 0) {

@@ -328,7 +328,7 @@ export default function EdytorOferty() {
                           <span style={{fontSize:12, color:'#c6bec4', fontWeight:500}}>
                             {h.pole === 'numer' ? 'Numer oferty' :
                              h.pole === 'nazwa' ? 'Nazwa inwestycji' :
-                             h.pole === 'klient_id' ? 'Klient' :
+                             h.pole === 'klient' || h.pole === 'klient_id' ? 'Klient' :
                              h.pole === 'korekta_globalna' ? 'Korekta globalna' :
                              h.pole === 'status' ? 'Status' :
                              h.pole === 'uwagi' ? 'Uwagi' : h.pole}
