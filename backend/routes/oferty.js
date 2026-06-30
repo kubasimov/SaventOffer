@@ -71,6 +71,11 @@ router.post('/', async (req, res) => {
     const result = await pool.query(`
       INSERT INTO offers (klient_id, numer, uwagi) VALUES ($1, $2, $3) RETURNING *
     `, [klient_id || null, numer, uwagi || null]);
+    // Log utworzenia
+    await pool.query(
+      `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, nowa_wartosc) VALUES ($1,$2,$3,$4)`,
+      [result.rows[0].id, req.user?.id, 'utworzono', `${numer}`]
+    ).catch(() => {});
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -94,65 +99,73 @@ router.put('/:id', async (req, res) => {
         req.params.id]);
 
     // Audit log: zapisz wszystkie zmienione pola
-        console.log('[CHANGELOG] PUT /:id', req.params.id, 'body:', JSON.stringify(req.body));
-        console.log('[CHANGELOG] req.user:', JSON.stringify(req.user));
-        if (stary) {
-          console.log('[CHANGELOG] stary (z DB):', JSON.stringify(stary));
-          const zmiany = [];
-          // Porownuj tylko pola, ktore zostaly wyslane w body
-          if (req.body.status !== undefined && String(stary.status || '') !== String(req.body.status || '')) {
-            zmiany.push({ pole: 'status', stara: stary.status, nowa: req.body.status });
-          }
-          if (req.body.klient_id !== undefined && String(stary.klient_id || '') !== String(req.body.klient_id || '')) {
-            // Pobierz nazwe klienta
-            let nowaNazwa = req.body.klient_id;
-            try {
-              const kr = await pool.query('SELECT nazwa FROM clients WHERE id=$1', [req.body.klient_id]);
-              if (kr.rows.length) nowaNazwa = kr.rows[0].nazwa;
-            } catch(e) {}
-            let staraNazwa = stary.klient_id;
-            try {
-              const kr = await pool.query('SELECT nazwa FROM clients WHERE id=$1', [stary.klient_id]);
-              if (kr.rows.length) staraNazwa = kr.rows[0].nazwa;
-            } catch(e) {}
-            zmiany.push({ pole: 'klient', stara: staraNazwa, nowa: nowaNazwa });
-          }
-          if (req.body.nazwa !== undefined && String(stary.nazwa || '') !== String(req.body.nazwa || '')) {
-            zmiany.push({ pole: 'nazwa', stara: stary.nazwa, nowa: req.body.nazwa });
-          }
-          if (req.body.numer !== undefined && String(stary.numer || '') !== String(req.body.numer || '')) {
-            zmiany.push({ pole: 'numer', stara: stary.numer, nowa: req.body.numer });
-          }
-          if (req.body.korekta_globalna !== undefined && String(stary.korekta_globalna || '') !== String(req.body.korekta_globalna || '')) {
-            zmiany.push({ pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: req.body.korekta_globalna });
-          }
-          if (req.body.uwagi !== undefined && String(stary.uwagi || '') !== String(req.body.uwagi || '')) {
-            zmiany.push({ pole: 'uwagi', stara: stary.uwagi, nowa: req.body.uwagi });
-          }
-          console.log('[CHANGELOG] zmiany do zapisu:', JSON.stringify(zmiany));
-          if (zmiany.length > 0) {
-            const vals = zmiany.map((_, i) => `($${i*5+1},$${i*5+2},$${i*5+3},$${i*5+4},$${i*5+5})`).join(',');
-            const params = [];
-            for (const z of zmiany) {
-              params.push(req.params.id, req.user?.id, z.pole, z.stara || null, z.nowa || null);
-            }
-            console.log('[CHANGELOG] SQL vals:', vals);
-            console.log('[CHANGELOG] SQL params:', JSON.stringify(params));
-            try {
-              const ins = await pool.query(
-                `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, stara_wartosc, nowa_wartosc) VALUES ${vals}`,
-                params
-              );
-              console.log('[CHANGELOG] INSERT OK, rows:', ins.rowCount);
-            } catch (e) {
-              console.error('[CHANGELOG] BLAD INSERT:', e.message);
-            }
-          } else {
-            console.log('[CHANGELOG] brak zmian, nic nie loguje');
-          }
-        } else {
-          console.log('[CHANGELOG] stary jest null/undefined');
+    console.log('[CHANGELOG] PUT /:id', req.params.id, 'body:', JSON.stringify(req.body));
+    console.log('[CHANGELOG] req.user:', JSON.stringify(req.user));
+    if (stary) {
+      console.log('[CHANGELOG] stary (z DB):', JSON.stringify(stary));
+      const zmiany = [];
+      // Porownuj tylko pola, ktore zostaly wyslane w body
+      if (req.body.status !== undefined && String(stary.status || '') !== String(req.body.status || '')) {
+        zmiany.push({ pole: 'status', stara: stary.status, nowa: req.body.status });
+      }
+      if (req.body.klient_id !== undefined && String(stary.klient_id || '') !== String(req.body.klient_id || '')) {
+        let nowaNazwa = req.body.klient_id;
+        try {
+          const kr = await pool.query('SELECT nazwa FROM clients WHERE id=$1', [req.body.klient_id]);
+          if (kr.rows.length) nowaNazwa = kr.rows[0].nazwa;
+        } catch(e) {}
+        let staraNazwa = stary.klient_id;
+        try {
+          const kr = await pool.query('SELECT nazwa FROM clients WHERE id=$1', [stary.klient_id]);
+          if (kr.rows.length) staraNazwa = kr.rows[0].nazwa;
+        } catch(e) {}
+        zmiany.push({ pole: 'klient', stara: staraNazwa, nowa: nowaNazwa });
+      }
+      if (req.body.nazwa !== undefined && String(stary.nazwa || '') !== String(req.body.nazwa || '')) {
+        zmiany.push({ pole: 'nazwa', stara: stary.nazwa, nowa: req.body.nazwa });
+      }
+      if (req.body.numer !== undefined && String(stary.numer || '') !== String(req.body.numer || '')) {
+        zmiany.push({ pole: 'numer', stara: stary.numer, nowa: req.body.numer });
+      }
+      if (req.body.korekta_globalna !== undefined && String(stary.korekta_globalna || '') !== String(req.body.korekta_globalna || '')) {
+        zmiany.push({ pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: req.body.korekta_globalna });
+      }
+      if (req.body.uwagi !== undefined && String(stary.uwagi || '') !== String(req.body.uwagi || '')) {
+        zmiany.push({ pole: 'uwagi', stara: stary.uwagi, nowa: req.body.uwagi });
+      }
+      // Zawsze sprawdz cala sume oferty (z tabel)
+      try {
+        const sumaRes = await pool.query('SELECT COALESCE(SUM(CAST(razem AS numeric)),0)::text AS suma FROM furniture_tables WHERE oferta_id=$1', [req.params.id]);
+        const nowaSuma = sumaRes.rows[0].suma;
+        const staraSuma = stary.suma_calkowita || '0.00';
+        if (nowaSuma !== staraSuma) {
+          zmiany.push({ pole: 'suma calkowita', stara: staraSuma, nowa: nowaSuma });
         }
+      } catch(e) {}
+      console.log('[CHANGELOG] zmiany do zapisu:', JSON.stringify(zmiany));
+      if (zmiany.length > 0) {
+        const vals = zmiany.map((_, i) => `($${i*5+1},$${i*5+2},$${i*5+3},$${i*5+4},$${i*5+5})`).join(',');
+        const params = [];
+        for (const z of zmiany) {
+          params.push(req.params.id, req.user?.id, z.pole, z.stara || null, z.nowa || null);
+        }
+        console.log('[CHANGELOG] SQL vals:', vals);
+        console.log('[CHANGELOG] SQL params:', JSON.stringify(params));
+        try {
+          const ins = await pool.query(
+            `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, stara_wartosc, nowa_wartosc) VALUES ${vals}`,
+            params
+          );
+          console.log('[CHANGELOG] INSERT OK, rows:', ins.rowCount);
+        } catch (e) {
+          console.error('[CHANGELOG] BLAD INSERT:', e.message);
+        }
+      } else {
+        console.log('[CHANGELOG] brak zmian, nic nie loguje');
+      }
+    } else {
+      console.log('[CHANGELOG] stary jest null/undefined');
+    }
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

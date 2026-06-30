@@ -327,12 +327,14 @@ export default function EdytorOferty() {
                         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4}}>
                           <span style={{fontSize:12, color:'#c6bec4', fontWeight:500}}>
                             {h.pole === 'numer' ? 'Numer oferty' :
-                             h.pole === 'nazwa' ? 'Nazwa inwestycji' :
-                             h.pole === 'klient' || h.pole === 'klient_id' ? 'Klient' :
-                             h.pole === 'korekta_globalna' ? 'Korekta globalna' :
-                             h.pole === 'status' ? 'Status' :
-                             h.pole === 'uwagi' ? 'Uwagi' : h.pole}
-                          </span>
+                                                         h.pole === 'nazwa' ? 'Nazwa inwestycji' :
+                                                         h.pole === 'klient' || h.pole === 'klient_id' ? 'Klient' :
+                                                         h.pole === 'korekta_globalna' ? 'Korekta globalna' :
+                                                         h.pole === 'status' ? 'Status' :
+                                                         h.pole === 'uwagi' ? 'Uwagi' :
+                                                         h.pole === 'utworzono' ? 'Utworzono' :
+                                                         h.pole === 'suma calkowita' ? 'Suma całkowita' :
+                                                         h.pole}
                           <span style={{fontSize:11, color:'#aaa'}}>
                             {new Date(h.utworzony).toLocaleString('pl-PL')}
                           </span>
