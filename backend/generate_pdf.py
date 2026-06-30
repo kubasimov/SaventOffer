@@ -42,6 +42,10 @@ def formatPLN(val):
     return f"{val:,.2f}".replace(',', ' ').replace('.', ',') + " zł"
 
 
+def round2(val):
+    return round(val, 2)
+
+
 def oblicz_razem(tabela):
     return float(tabela.get('razem', 0))
 
@@ -294,55 +298,107 @@ def generuj_strone_z_obrazem(sciezka_obrazu):
 
 
 def generuj_strone_podsumowania(tabele):
-    """Tabelka zestawienia: kazdy mebel + jego cena."""
+    """Tabelka zestawienia z 6 kolumnami: NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO."""
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
     TABLE_BOTTOM = 40
     dostepna_wys = TABLE_TOP - TABLE_BOTTOM
-    n_elementow = 1 + len(tabele) + 1 + 1
+    
+    # Oblicz dane dla kazdego mebla
+    wiersze = []
+    suma_ilosc = 0
+    suma_netto = 0.0
+    suma_brutto = 0.0
+    for tabela in tabele:
+        pozycje = tabela.get('pozycje', [])
+        ilosc = round2(sum(float(p.get('laczna_ilosc', 0)) for p in pozycje))
+        netto = round2(sum(float(p.get('wartosc_bazowa', 0)) for p in pozycje))
+        # Srednia wazona cena jednostkowa
+        cena_jedn = round2(netto / ilosc) if ilosc > 0 else 0
+        brutto = round2(netto * 1.23)
+        wiersze.append({
+            'nazwa': tabela.get('nazwa_mebla', ''),
+            'cena_jedn': cena_jedn,
+            'ilosc': ilosc,
+            'netto': netto,
+            'vat': '23%',
+            'brutto': brutto,
+        })
+        suma_ilosc += ilosc
+        suma_netto += netto
+        suma_brutto += brutto
+    
+    # Kolumny
+    col_x = [0]  # NAZWA
+    col_w = [420, 140, 80, 120, 70, 130]  # NAZWA, CENA JEDN, ILOSC, NETTO, VAT, BRUTTO
+    table_w = sum(col_w)
+    table_x = (PAGE_W - table_w) / 2
+    # Oblicz X kazdej kolumny
+    col_starts = []
+    cx = table_x
+    for w in col_w:
+        col_starts.append(cx)
+        cx += w
+    col_ends = [cs + w for cs, w in zip(col_starts, col_w)]
+    
+    n_elementow = 2 + len(tabele) + 1  # header + data rows + razem
     wys_na_element = dostepna_wys / n_elementow
     ROW_H = min(36, max(18, wys_na_element))
     HEADER_H = min(38, max(20, wys_na_element))
-    table_x = (PAGE_W - TABLE_W) / 2
-    # Nagłówek
+    
+    # Naglowek
     c.setFillColorRGB(*BG_DARK)
-    c.rect(table_x, TABLE_TOP, TABLE_W, HEADER_H, fill=1, stroke=0)
+    c.rect(table_x, TABLE_TOP, table_w, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
     c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
-    c.drawString(table_x + 12, TABLE_TOP + 13, 'Zestawienie')
-    c.drawRightString(table_x + TABLE_W - 12, TABLE_TOP + 13, 'Cena')
-    # Wiersze
+    naglowki = ['NAZWA', 'CENA JEDN. NETTO', 'ILOŚĆ', 'WARTOŚĆ NETTO', 'PODATEK', 'WARTOŚĆ BRUTTO']
+    for i, nag in enumerate(naglowki):
+        if i == 0:
+            c.drawString(col_starts[i] + 8, TABLE_TOP + 11, nag)
+        else:
+            c.drawRightString(col_ends[i] - 8, TABLE_TOP + 11, nag)
+        if i < len(col_w) - 1:
+            c.line(col_ends[i], TABLE_TOP, col_ends[i], TABLE_TOP + HEADER_H)
+    
+    # Wiersze danych
     current_y = TABLE_TOP - ROW_H
-    for i, tabela in enumerate(tabele):
-        nazwa = tabela.get('nazwa_mebla', '')
-        wartosc = oblicz_razem(tabela)
-        c.setFillColorRGB(*(BG_LIGHT if i % 2 == 0 else BG_WHITE))
-        c.rect(table_x, current_y, TABLE_W, ROW_H, fill=1, stroke=0)
+    for i, w in enumerate(wiersze):
+        bg = BG_LIGHT if i % 2 == 0 else BG_WHITE
+        c.setFillColorRGB(*bg)
+        c.rect(table_x, current_y, table_w, ROW_H, fill=1, stroke=0)
         c.setStrokeColorRGB(0.8, 0.8, 0.8)
         c.setLineWidth(0.5)
-        c.line(table_x, current_y, table_x + TABLE_W, current_y)
+        c.line(table_x, current_y, table_x + table_w, current_y)
         c.setFillColorRGB(*TEXT_DARK)
         c.setFont('Poppins', FONT_SIZE_TAB)
-        c.drawString(table_x + 12, current_y + 12, nazwa)
-        c.setFont('Poppins', FONT_SIZE_TAB)
-        c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(wartosc))
-        c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + ROW_H)
+        c.drawString(col_starts[0] + 8, current_y + 12, w['nazwa'])
+        c.drawRightString(col_ends[1] - 8, current_y + 12, formatPLN(w['cena_jedn']))
+        c.drawRightString(col_ends[2] - 8, current_y + 12, str(w['ilosc']))
+        c.drawRightString(col_ends[3] - 8, current_y + 12, formatPLN(w['netto']))
+        c.drawString(col_starts[4] + 8, current_y + 12, w['vat'])
+        c.drawRightString(col_ends[5] - 8, current_y + 12, formatPLN(w['brutto']))
+        # Linie pionowe
+        for j in range(1, len(col_w)):
+            c.line(col_ends[j-1], current_y, col_ends[j-1], current_y + ROW_H)
         current_y -= ROW_H
-    # Razem
-    suma = sum(oblicz_razem(t) for t in tabele)
+    
+    # Wiersz sum
     c.setFillColorRGB(*BG_LIGHT)
-    c.rect(table_x, current_y, TABLE_W, ROW_H, fill=1, stroke=0)
-    current_y -= ROW_H
-    c.setFillColorRGB(*BG_LIGHT)
-    c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=1, stroke=0)
+    c.rect(table_x, current_y, table_w, ROW_H, fill=1, stroke=0)
     c.setStrokeColorRGB(0.7, 0.7, 0.7)
     c.setLineWidth(0.8)
-    c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=0, stroke=1)
     c.setFillColorRGB(*TEXT_DARK)
     c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
-    c.drawString(table_x + 12, current_y + 12, 'RAZEM:')
-    c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(suma))
-    c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + HEADER_H)
+    c.drawString(col_starts[0] + 8, current_y + 12, 'RAZEM:')
+    c.drawRightString(col_ends[1] - 8, current_y + 12, '')
+    c.drawRightString(col_ends[2] - 8, current_y + 12, str(int(suma_ilosc)))
+    c.drawRightString(col_ends[3] - 8, current_y + 12, formatPLN(suma_netto))
+    c.drawRightString(col_ends[4] - 8, current_y + 12, '')
+    c.drawRightString(col_ends[5] - 8, current_y + 12, formatPLN(suma_brutto))
+    for j in range(1, len(col_w)):
+        c.line(col_ends[j-1], current_y, col_ends[j-1], current_y + ROW_H)
+    c.rect(table_x, current_y, table_w, ROW_H, fill=0, stroke=1)
+    
     c.save()
     buf.seek(0)
     return buf
