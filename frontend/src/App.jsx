@@ -34,17 +34,6 @@ function AppInner() {
               <img src="/logo.png" alt="" style={{height:24, width:24, marginRight:8, verticalAlign:'middle'}} />
               SaventOffer
             </div>
-          <div style={{display:'flex', gap:6, marginRight:12}}>
-            {['','_2','_3','_4','_5','_6'].map((suf,i) => (
-              <img key={i} src={`/ikona${suf}.png`} alt=""
-                style={{height:28, width:'auto', borderRadius:4, cursor:'pointer', objectFit:'contain',
-                  transition:'opacity 0.15s'}}
-                title={`Ikona ${i+1}`}
-                onMouseEnter={e => e.target.style.opacity='0.7'}
-                onMouseLeave={e => e.target.style.opacity='1'}
-              />
-            ))}
-          </div>
           <button className="navbar-toggle" onClick={() => setMenuOpen(m => !m)}>
             {menuOpen ? '✕' : '☰'}
           </button>
