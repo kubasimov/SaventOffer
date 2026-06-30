@@ -94,33 +94,51 @@ router.put('/:id', async (req, res) => {
         req.params.id]);
 
     // Audit log: zapisz wszystkie zmienione pola
-    if (stary) {
-      const zmiany = [];
-      const pola = [
-        { pole: 'status', stara: stary.status, nowa: status },
-        { pole: 'klient_id', stara: stary.klient_id, nowa: klient_id },
-        { pole: 'nazwa', stara: stary.nazwa, nowa: nazwa },
-        { pole: 'numer', stara: stary.numer, nowa: numer },
-        { pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: korekta_globalna },
-        { pole: 'uwagi', stara: stary.uwagi, nowa: uwagi },
-      ];
-      for (const p of pola) {
-        if (String(p.stara || '') !== String(p.nowa || '')) {
-          zmiany.push(p);
+        console.log('[CHANGELOG] PUT /:id', req.params.id, 'body:', JSON.stringify(req.body));
+        console.log('[CHANGELOG] req.user:', JSON.stringify(req.user));
+        if (stary) {
+          console.log('[CHANGELOG] stary (z DB):', JSON.stringify(stary));
+          const zmiany = [];
+          const pola = [
+            { pole: 'status', stara: stary.status, nowa: status },
+            { pole: 'klient_id', stara: stary.klient_id, nowa: klient_id },
+            { pole: 'nazwa', stara: stary.nazwa, nowa: nazwa },
+            { pole: 'numer', stara: stary.numer, nowa: numer },
+            { pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: korekta_globalna },
+            { pole: 'uwagi', stara: stary.uwagi, nowa: uwagi },
+          ];
+          for (const p of pola) {
+            const stra = String(p.stara || '');
+            const nowa = String(p.nowa || '');
+            console.log(`[CHANGELOG] porownanie ${p.pole}: "${stra}" vs "${nowa}" => ${stra !== nowa}`);
+            if (stra !== nowa) {
+              zmiany.push(p);
+            }
+          }
+          console.log('[CHANGELOG] zmiany do zapisu:', JSON.stringify(zmiany));
+          if (zmiany.length > 0) {
+            const vals = zmiany.map((_, i) => `($${i*5+1},$${i*5+2},$${i*5+3},$${i*5+4},$${i*5+5})`).join(',');
+            const params = [];
+            for (const z of zmiany) {
+              params.push(req.params.id, req.user?.id, z.pole, z.stara || null, z.nowa || null);
+            }
+            console.log('[CHANGELOG] SQL vals:', vals);
+            console.log('[CHANGELOG] SQL params:', JSON.stringify(params));
+            try {
+              const ins = await pool.query(
+                `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, stara_wartosc, nowa_wartosc) VALUES ${vals}`,
+                params
+              );
+              console.log('[CHANGELOG] INSERT OK, rows:', ins.rowCount);
+            } catch (e) {
+              console.error('[CHANGELOG] BLAD INSERT:', e.message);
+            }
+          } else {
+            console.log('[CHANGELOG] brak zmian, nic nie loguje');
+          }
+        } else {
+          console.log('[CHANGELOG] stary jest null/undefined');
         }
-      }
-      if (zmiany.length > 0) {
-        const vals = zmiany.map((_, i) => `($${i*4+1},$${i*4+2},$${i*4+3},$${i*4+4},$${i*4+5})`).join(',');
-        const params = [];
-        for (const z of zmiany) {
-          params.push(req.params.id, req.user.id, z.pole, z.stara || null, z.nowa || null);
-        }
-        await pool.query(
-          `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, stara_wartosc, nowa_wartosc) VALUES ${vals}`,
-          params
-        ).catch(() => {});
-      }
-    }
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
