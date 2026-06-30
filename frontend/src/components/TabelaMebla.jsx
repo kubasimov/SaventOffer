@@ -362,6 +362,7 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
   const [pozycje, setPozycje] = useState(tabela.pozycje || [])
   const [korekta, setKorekta] = useState(parseFloat(tabela.korekta_pct) || 0)
   const [vatPct, setVatPct] = useState(parseInt(tabela.vat_pct) || 23)
+  const [iloscSztuk, setIloscSztuk] = useState(parseInt(tabela.ilosc_sztuk) || 1)
   const [modalPozycja, setModalPozycja] = useState(false)
   const [openNarzedzia, setOpenNarzedzia] = useState(false)
   const [edytujNazwe, setEdytujNazwe] = useState(false)
@@ -423,9 +424,10 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
     window.location.reload()
   }
 
-  async function zapiszKorekteDoDb(nowaKorekta, noweVat) {
+  async function zapiszKorekteDoDb(nowaKorekta, noweVat, nowaIlosc) {
     const kVat = noweVat !== undefined ? noweVat : vatPct
     const kKor = nowaKorekta !== undefined ? nowaKorekta : korekta
+    const kIl = nowaIlosc !== undefined ? nowaIlosc : iloscSztuk
     const sumaR = obliczSume(pozycje)
     const r = sumaR * (1 + kKor / 100)
     await axios.put(`/api/oferty/tabele/${tabela.id}`, {
@@ -433,11 +435,13 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
       korekta_pct: kKor,
       razem_przed: sumaR,
       razem: r,
-      vat_pct: kVat
+      vat_pct: kVat,
+      ilosc_sztuk: kIl
     })
     if (kVat !== vatPct) setVatPct(kVat)
     if (kKor !== korekta) setKorekta(kKor)
-    onAktualizuj(tabela.id, { korekta_pct: kKor, razem_przed: sumaR, razem: r, vat_pct: kVat })
+    if (kIl !== iloscSztuk) setIloscSztuk(kIl)
+    onAktualizuj(tabela.id, { korekta_pct: kKor, razem_przed: sumaR, razem: r, vat_pct: kVat, ilosc_sztuk: kIl })
   }
 
   async function odswiezPoMikrofonie() {
@@ -645,6 +649,13 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
             <option value={8}>8%</option>
             <option value={23}>23%</option>
           </select>
+          <span style={{fontSize:13, color:'#aaa', marginLeft:8}}>Szt.</span>
+          <input type="number" step="1" min="1" value={iloscSztuk}
+            onChange={e => setIloscSztuk(Math.max(1, parseInt(e.target.value) || 1))}
+            onBlur={() => zapiszKorekteDoDb(korekta, vatPct, iloscSztuk)}
+            style={{width:60, padding:'4px 8px', border:'1.5px solid #555',
+              borderRadius:6, fontSize:14, textAlign:'center', background:'#3a3a3a', color:'white'}}
+          />
         </div>
         <div style={{textAlign:'right'}}>
           {kortLaczna !== 0 && (

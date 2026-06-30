@@ -316,7 +316,7 @@ def generuj_strone_podsumowania(tabele):
     suma_brutto = 0.0
     for idx, tabela in enumerate(tabele):
         pozycje = tabela.get('pozycje', [])
-        ilosc = round2(sum(float(p.get('laczna_ilosc', 0)) for p in pozycje))
+        ilosc = int(tabela.get('ilosc_sztuk', 1))  # ilosc sztuk calej zabudowy
         # Netto = suma wartosci bazowych
         netto = round2(sum(float(p.get('wartosc_bazowa', 0)) for p in pozycje))
         # Cena jedn. netto z korekta
@@ -328,7 +328,6 @@ def generuj_strone_podsumowania(tabele):
         vat_pct = int(tabela.get('vat_pct', 23))
         brutto = round2(wartoscZKorekta * (1 + vat_pct / 100))
         wiersze.append({
-            'nr': idx + 1,
             'nazwa': tabela.get('nazwa_mebla', ''),
             'cena_jedn': cena_jedn,
             'ilosc': ilosc,
@@ -340,9 +339,9 @@ def generuj_strone_podsumowania(tabele):
         suma_netto += wartoscZKorekta
         suma_brutto += brutto
     
-    # Kolumny: NR, NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO
-    col_w = [50, 340, 140, 80, 120, 70, 130]
-    # nr, nazwa, cena, ilosc, netto, vat, brutto
+    # Kolumny: NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO
+    col_w = [390, 140, 80, 120, 70, 130]
+    # nazwa, cena, ilosc, netto, vat, brutto
     table_w = sum(col_w)
     table_x = (PAGE_W - table_w) / 2
     col_starts = []
@@ -368,7 +367,7 @@ def generuj_strone_podsumowania(tabele):
                 line_w += ww
         return lines * (font_size * 1.4) + 6
     
-    HEADER_H = 32
+    HEADER_H = int(32 * 1.1)  # 10% wiekszy naglowek
     ROW_BASE = 32
     ROW_H = ROW_BASE
     # Sprawdz czy zmiesci sie na stronie
@@ -380,17 +379,14 @@ def generuj_strone_podsumowania(tabele):
     c.setFillColorRGB(*BG_DARK)
     c.rect(table_x, TABLE_TOP, table_w, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    naglowki = ['Lp.', 'NAZWA', 'CENA JEDN.\nNETTO', 'ILOŚĆ', 'WARTOŚĆ\nNETTO', 'PODATEK', 'WARTOŚĆ\nBRUTTO']
+    naglowki = ['NAZWA', 'CENA JEDN.\nNETTO', 'ILOŚĆ', 'WARTOŚĆ\nNETTO', 'PODATEK', 'WARTOŚĆ\nBRUTTO']
     for i, nag in enumerate(naglowki):
-        fs = FONT_BOLD if i == 0 else (FONT_MALA if i in (1,2,4,6) else FONT_BOLD)
+        fs = FONT_BOLD if i == 0 else (FONT_MALA if i in (1,3,5) else FONT_BOLD)
         c.setFont('PoppinsBold', fs)
         lines = nag.split('\n')
         y_off = HEADER_H / 2 - (len(lines) * fs * 0.6)
         for li, line in enumerate(lines):
-            if i == 0:
-                c.drawString(col_starts[i] + 6, TABLE_TOP + y_off + li * fs * 1.2, line)
-            else:
-                c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + y_off + li * fs * 1.2, line)
+            c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + y_off + li * fs * 1.2, line)
     # Pionowe linie naglowka
     for j in range(1, len(col_w)):
         c.line(col_ends[j-1], TABLE_TOP, col_ends[j-1], TABLE_TOP + HEADER_H)
@@ -406,37 +402,33 @@ def generuj_strone_podsumowania(tabele):
         c.setLineWidth(0.5)
         c.line(table_x, current_y, table_x + table_w, current_y)
         c.setFillColorRGB(*TEXT_DARK)
-        # Lp.
-        c.setFont('Poppins', FONT_NAZWA)
-        c.drawCentredString(col_starts[0] + col_w[0]/2, current_y + rh/2 - FONT_NAZWA/2, str(w['nr']))
         # Nazwa (zawijana)
         c.setFont('Poppins', FONT_NAZWA)
-        nazwa = f"{w['nr']}. {w['nazwa']}"
-        words = nazwa.split()
+        words = w['nazwa'].split()
         y_t = current_y + rh - 8
         line_w = 0
         line_start = 0
         for wi, word in enumerate(words):
             ww = c.stringWidth(word + ' ', 'Poppins', FONT_NAZWA)
-            if line_w + ww > col_w[1] - 10:
-                c.drawString(col_starts[1] + 6, y_t, ' '.join(words[line_start:wi]))
+            if line_w + ww > col_w[0] - 10:
+                c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:wi]))
                 y_t -= FONT_NAZWA * 1.4
                 line_w = ww
                 line_start = wi
             else:
                 line_w += ww
         if line_start < len(words):
-            c.drawString(col_starts[1] + 6, y_t, ' '.join(words[line_start:]))
+            c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:]))
         elif not words:
-            c.drawString(col_starts[1] + 6, current_y + rh/2 - FONT_NAZWA/2, '')
+            c.drawString(col_starts[0] + 6, current_y + rh/2 - FONT_NAZWA/2, '')
         
-        # Pozostale kolumny (bez zawijania)
-        for ci in range(2, len(col_w)):
-            fs = FONT_MALA if ci in (2, 4, 6) else FONT_NAZWA
+        # Pozostale kolumny
+        for ci in range(1, len(col_w)):
+            fs = FONT_MALA if ci in (1, 3, 5) else FONT_NAZWA
             c.setFont('Poppins', fs)
-            val_map = {2: w['cena_jedn'], 3: w['ilosc'], 4: w['netto'], 5: w['vat'], 6: w['brutto']}
+            val_map = {1: w['cena_jedn'], 2: w['ilosc'], 3: w['netto'], 4: w['vat'], 5: w['brutto']}
             val = val_map[ci]
-            txt = formatPLN(val) if ci in (2, 4, 6) else str(val) if ci == 3 else val
+            txt = formatPLN(val) if ci in (1, 3, 5) else str(val) if ci == 2 else val
             c.drawRightString(col_ends[ci] - 8, current_y + rh/2 - fs/2, txt)
         
         # Linie pionowe
@@ -451,10 +443,10 @@ def generuj_strone_podsumowania(tabele):
     c.setLineWidth(0.8)
     c.setFillColorRGB(*TEXT_DARK)
     c.setFont('PoppinsBold', 20)
-    c.drawString(col_starts[1] + 6, current_y + ROW_H/2 - 10, 'RAZEM:')
-    c.drawRightString(col_ends[3] - 8, current_y + ROW_H/2 - 10, str(int(suma_ilosc)))
-    c.drawRightString(col_ends[4] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_netto))
-    c.drawRightString(col_ends[6] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_brutto))
+    c.drawString(col_starts[0] + 6, current_y + ROW_H/2 - 10, 'RAZEM:')
+    c.drawRightString(col_ends[2] - 8, current_y + ROW_H/2 - 10, str(int(suma_ilosc)))
+    c.drawRightString(col_ends[3] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_netto))
+    c.drawRightString(col_ends[5] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_brutto))
     for j in range(1, len(col_w)):
         c.line(col_ends[j-1], current_y, col_ends[j-1], current_y + ROW_H)
     c.rect(table_x, current_y, table_w, ROW_H, fill=0, stroke=1)
