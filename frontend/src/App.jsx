@@ -31,7 +31,7 @@ function AppInner() {
         {user && (
         <nav className="navbar">
           <div className="navbar-brand">
-              <img src="/logo.png" alt="" style={{height:24, width:24, marginRight:8, verticalAlign:'middle'}} />
+              <img src="/logo.png?v=2" alt="" style={{height:24, width:24, marginRight:8, verticalAlign:'middle'}} />
               SaventOffer
             </div>
           <button className="navbar-toggle" onClick={() => setMenuOpen(m => !m)}>
