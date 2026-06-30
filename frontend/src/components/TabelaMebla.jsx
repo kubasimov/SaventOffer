@@ -361,6 +361,7 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
 export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktualizuj, onUsun }) {
   const [pozycje, setPozycje] = useState(tabela.pozycje || [])
   const [korekta, setKorekta] = useState(parseFloat(tabela.korekta_pct) || 0)
+  const [vatPct, setVatPct] = useState(parseInt(tabela.vat_pct) || 23)
   const [modalPozycja, setModalPozycja] = useState(false)
   const [openNarzedzia, setOpenNarzedzia] = useState(false)
   const [edytujNazwe, setEdytujNazwe] = useState(false)
@@ -422,16 +423,21 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
     window.location.reload()
   }
 
-  async function zapiszKorekteDoDb(nowaKorekta) {
+  async function zapiszKorekteDoDb(nowaKorekta, noweVat) {
+    const kVat = noweVat !== undefined ? noweVat : vatPct
+    const kKor = nowaKorekta !== undefined ? nowaKorekta : korekta
     const sumaR = obliczSume(pozycje)
-    const r = sumaR * (1 + nowaKorekta / 100)
+    const r = sumaR * (1 + kKor / 100)
     await axios.put(`/api/oferty/tabele/${tabela.id}`, {
       nazwa_mebla: nowaNazwa,
-      korekta_pct: nowaKorekta,
+      korekta_pct: kKor,
       razem_przed: sumaR,
-      razem: r
+      razem: r,
+      vat_pct: kVat
     })
-    onAktualizuj(tabela.id, { korekta_pct: nowaKorekta, razem_przed: sumaR, razem: r })
+    if (kVat !== vatPct) setVatPct(kVat)
+    if (kKor !== korekta) setKorekta(kKor)
+    onAktualizuj(tabela.id, { korekta_pct: kKor, razem_przed: sumaR, razem: r, vat_pct: kVat })
   }
 
   async function odswiezPoMikrofonie() {
@@ -627,10 +633,18 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
               borderRadius:6, fontSize:14, textAlign:'center', background:'#3a3a3a', color:'white'}}
           />
           {korekta !== 0 && (
-            <span style={{fontSize:13, color: korekta < 0 ? '#c62828' : '#2e7d32'}}>
+            <span style={{fontSize:13, color: korekta < 0 ? '#ef5350' : '#81c784'}}>
               {korekta > 0 ? '+' : ''}{formatPLN(sumaRaw * korekta / 100)}
             </span>
           )}
+          <span style={{fontSize:13, color:'#aaa', marginLeft:8}}>VAT</span>
+          <select value={vatPct}
+            onChange={e => { const v = parseInt(e.target.value); setVatPct(v); zapiszKorekteDoDb(korekta, v); }}
+            style={{padding:'4px 8px', border:'1.5px solid #555', borderRadius:6,
+              fontSize:13, background:'#3a3a3a', color:'white', cursor:'pointer'}}>
+            <option value={8}>8%</option>
+            <option value={23}>23%</option>
+          </select>
         </div>
         <div style={{textAlign:'right'}}>
           {kortLaczna !== 0 && (

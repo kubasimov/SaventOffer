@@ -182,13 +182,13 @@ router.post('/:id/tabele', async (req, res) => {
 });
 
 router.put('/tabele/:tabela_id', async (req, res) => {
-  const { nazwa_mebla, korekta_pct, razem_przed, razem } = req.body;
+  const { nazwa_mebla, korekta_pct, razem_przed, razem, vat_pct } = req.body;
   try {
     const result = await pool.query(`
       UPDATE furniture_tables
-      SET nazwa_mebla=$1, korekta_pct=$2, razem_przed=$3, razem=$4
-      WHERE id=$5 RETURNING *
-    `, [nazwa_mebla, korekta_pct || 0, razem_przed || 0, razem || 0, req.params.tabela_id]);
+      SET nazwa_mebla=$1, korekta_pct=$2, razem_przed=$3, razem=$4, vat_pct=COALESCE($5, vat_pct)
+      WHERE id=$6 RETURNING *
+    `, [nazwa_mebla, korekta_pct || 0, razem_przed || 0, razem || 0, vat_pct || null, req.params.tabela_id]);
     res.json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
