@@ -405,22 +405,36 @@ def generuj_strone_podsumowania(tabele):
         # Nazwa (zawijana)
         c.setFont('Poppins', FONT_NAZWA)
         words = w['nazwa'].split()
-        y_t = current_y + rh - 8
+        # Oblicz liczbe linii
+        lines_count = 1
         line_w = 0
-        line_start = 0
-        for wi, word in enumerate(words):
+        for word in words:
             ww = c.stringWidth(word + ' ', 'Poppins', FONT_NAZWA)
             if line_w + ww > col_w[0] - 10:
-                c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:wi]))
-                y_t -= FONT_NAZWA * 1.4
+                lines_count += 1
                 line_w = ww
-                line_start = wi
             else:
                 line_w += ww
-        if line_start < len(words):
-            c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:]))
-        elif not words:
-            c.drawString(col_starts[0] + 6, current_y + rh/2 - FONT_NAZWA/2, '')
+        if lines_count == 1:
+            # Srodek w pionie
+            y_t = current_y + rh/2 - FONT_NAZWA/2
+            c.drawString(col_starts[0] + 6, y_t, w['nazwa'])
+        else:
+            # Wiele linii — zacznij od gory
+            y_t = current_y + rh - 8
+            line_w = 0
+            line_start = 0
+            for wi, word in enumerate(words):
+                ww = c.stringWidth(word + ' ', 'Poppins', FONT_NAZWA)
+                if line_w + ww > col_w[0] - 10:
+                    c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:wi]))
+                    y_t -= FONT_NAZWA * 1.4
+                    line_w = ww
+                    line_start = wi
+                else:
+                    line_w += ww
+            if line_start < len(words):
+                c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:]))
         
         # Pozostale kolumny
         for ci in range(1, len(col_w)):
