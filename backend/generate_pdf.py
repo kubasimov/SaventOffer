@@ -304,10 +304,10 @@ def generuj_strone_podsumowania(tabele):
     TABLE_BOTTOM = 40
     dostepna_wys = TABLE_TOP - TABLE_BOTTOM
     
-    # Rozmiary
-    FONT_NAZWA = 18
-    FONT_MALA = int(FONT_NAZWA * 0.8)  # 20% mniejsza
-    FONT_BOLD = 20
+    # Rozmiary (takie same jak w tabelach pojedynczej wyceny)
+    FONT_NAZWA = FONT_SIZE_TAB
+    FONT_MALA = FONT_SIZE_TAB
+    FONT_BOLD = FONT_SIZE_TAB_BOLD
     
     # Oblicz dane dla kazdego mebla
     wiersze = []
@@ -379,14 +379,14 @@ def generuj_strone_podsumowania(tabele):
     c.setFillColorRGB(*BG_DARK)
     c.rect(table_x, TABLE_TOP, table_w, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    naglowki = ['NAZWA', 'CENA JEDN.\nNETTO', 'ILOŚĆ', 'WARTOŚĆ\nNETTO', 'PODATEK', 'WARTOŚĆ\nBRUTTO']
+    naglowki = ['NAZWA', 'NETTO CENA JEDN.', 'ILOŚĆ', 'NETTO WARTOŚĆ', 'PODATEK', 'BRUTTO WARTOŚĆ']
     for i, nag in enumerate(naglowki):
-        fs = FONT_BOLD if i == 0 else (FONT_MALA if i in (1,3,5) else FONT_BOLD)
+        fs = FONT_BOLD if i in (0, 2) else FONT_MALA
         c.setFont('PoppinsBold', fs)
-        lines = nag.split('\n')
-        y_off = HEADER_H / 2 - (len(lines) * fs * 0.6)
-        for li, line in enumerate(lines):
-            c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + y_off + li * fs * 1.2, line)
+        if i == 0:
+            c.drawString(col_starts[i] + 8, TABLE_TOP + HEADER_H/2 - fs/2, nag)
+        else:
+            c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + HEADER_H/2 - fs/2, nag)
     # Pionowe linie naglowka
     for j in range(1, len(col_w)):
         c.line(col_ends[j-1], TABLE_TOP, col_ends[j-1], TABLE_TOP + HEADER_H)
