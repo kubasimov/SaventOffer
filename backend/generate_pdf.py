@@ -340,7 +340,7 @@ def generuj_strone_podsumowania(tabele):
         suma_brutto += brutto
     
     # Kolumny: NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO
-    col_w = [390, 140, 80, 120, 70, 130]
+    col_w = [310, 140, 80, 120, 90, 130]
     # nazwa, cena, ilosc, netto, vat, brutto
     table_w = sum(col_w)
     table_x = (PAGE_W - table_w) / 2
@@ -367,7 +367,7 @@ def generuj_strone_podsumowania(tabele):
                 line_w += ww
         return lines * (font_size * 1.4) + 6
     
-    HEADER_H = int(45)  # wyzszy na 2 wiersze
+    HEADER_H = int(45 * 1.05)  # +5% wyzszy
     ROW_BASE = 32
     ROW_H = ROW_BASE
     # Sprawdz czy zmiesci sie na stronie
