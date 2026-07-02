@@ -367,7 +367,7 @@ def generuj_strone_podsumowania(tabele):
                 line_w += ww
         return lines * (font_size * 1.4) + 6
     
-    HEADER_H = int(32 * 1.1)  # 10% wiekszy naglowek
+    HEADER_H = int(45)  # wyzszy na 2 wiersze
     ROW_BASE = 32
     ROW_H = ROW_BASE
     # Sprawdz czy zmiesci sie na stronie
@@ -381,12 +381,29 @@ def generuj_strone_podsumowania(tabele):
     c.setFillColorRGB(*TEXT_WHITE)
     naglowki = ['NAZWA', 'NETTO CENA JEDN.', 'ILOŚĆ', 'NETTO WARTOŚĆ', 'PODATEK', 'BRUTTO WARTOŚĆ']
     for i, nag in enumerate(naglowki):
+        # Podziel na 2 linie jesli dlugi
+        parts = nag.split(' ')
+        if len(parts) > 2:
+            mid = len(parts) // 2
+            line1 = ' '.join(parts[:mid])
+            line2 = ' '.join(parts[mid:])
+        else:
+            line1 = parts[0] if parts else ''
+            line2 = parts[1] if len(parts) > 1 else ''
         fs = FONT_BOLD if i in (0, 2) else FONT_MALA
         c.setFont('PoppinsBold', fs)
+        y_base = TABLE_TOP + (HEADER_H - fs * 2.2) / 2
         if i == 0:
-            c.drawString(col_starts[i] + 8, TABLE_TOP + HEADER_H/2 - fs/2, nag)
+            c.drawString(col_starts[i] + 8, y_base + fs * 1.2, line1)
+            if line2:
+                c.drawString(col_starts[i] + 8, y_base, line2)
         else:
-            c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + HEADER_H/2 - fs/2, nag)
+            if line2:
+                # 2 linie
+                c.drawCentredString(col_starts[i] + col_w[i]/2, y_base + fs * 1.2, line1)
+                c.drawCentredString(col_starts[i] + col_w[i]/2, y_base, line2)
+            else:
+                c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + HEADER_H/2 - fs/2, line1)
     # Pionowe linie naglowka
     for j in range(1, len(col_w)):
         c.line(col_ends[j-1], TABLE_TOP, col_ends[j-1], TABLE_TOP + HEADER_H)
