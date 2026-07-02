@@ -13,7 +13,7 @@ function parsujArkusz(ws) {
   let obecnaTabela = null
   let pending = null // { nazwa, jednostka, wymiary: [...] }
 
-  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:F1')
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:AF1')
   const maxRow = range.e.r
 
   function finalizePending(cena) {
@@ -33,11 +33,13 @@ function parsujArkusz(ws) {
       return cell ? cell.v : undefined
     }
     const A = get(0), B = get(1), C = get(2), D = get(3), E = get(4), F = get(5)
+    const AD = get(29), AF = get(31)
 
     const hasA = A !== undefined && A !== null && A !== ''
     const hasB = B !== undefined && B !== null
     const hasC = C !== undefined && C !== null
     const hasD = D !== undefined && D !== null
+    const hasAD = AD !== undefined && AD !== null
     const hasE = E !== undefined && E !== null
     const hasF = F !== undefined && F !== null
 
@@ -49,10 +51,19 @@ function parsujArkusz(ws) {
       continue
     }
 
-    // Nagłówek mebla - tylko A wypełnione
+    // Nagłówek mebla - tylko A wypełnione, ewentualnie AD+AF
     if (hasA && typeof A === 'string' && !hasB && !hasC && !hasD && !hasE && !hasF) {
       finalizePending(null)
-      obecnaTabela = { nazwa_mebla: A.trim(), pozycje: [] }
+      const iloscSztuk = (AF !== undefined && AF !== null && AF !== '') ? parseInt(AF) || 1 : 1
+      obecnaTabela = { nazwa_mebla: A.trim(), pozycje: [], ilosc_sztuk: iloscSztuk }
+      tabele.push(obecnaTabela)
+      continue
+    }
+    // Nagłówek z kolumn AD/AF
+    if (hasAD && typeof AD === 'string') {
+      finalizePending(null)
+      const iloscSztuk = (AF !== undefined && AF !== null && AF !== '') ? parseInt(AF) || 1 : 1
+      obecnaTabela = { nazwa_mebla: AD.trim(), pozycje: [], ilosc_sztuk: iloscSztuk }
       tabele.push(obecnaTabela)
       continue
     }
@@ -134,8 +145,8 @@ router.post('/zapisz', upload.single('plik'), async (req, res) => {
       const t = tabele[i]
 
       const tabela = await pool.query(
-        'INSERT INTO furniture_tables (oferta_id, nazwa_mebla, kolejnosc) VALUES ($1,$2,$3) RETURNING *',
-        [ofertaId, t.nazwa_mebla, i + 1]
+        'INSERT INTO furniture_tables (oferta_id, nazwa_mebla, kolejnosc, ilosc_sztuk) VALUES ($1,$2,$3,$4) RETURNING *',
+        [ofertaId, t.nazwa_mebla, i + 1, t.ilosc_sztuk || 1]
       )
       const tabelaId = tabela.rows[0].id
 
