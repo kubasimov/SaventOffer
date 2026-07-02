@@ -367,7 +367,7 @@ def generuj_strone_podsumowania(tabele):
                 line_w += ww
         return lines * (font_size * 1.4) + 6
     
-    HEADER_H = int(45 * 1.05)  # +5% wyzszy
+    HEADER_H = 52
     ROW_BASE = 32
     ROW_H = ROW_BASE
     # Sprawdz czy zmiesci sie na stronie
