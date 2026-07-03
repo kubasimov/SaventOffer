@@ -317,30 +317,30 @@ def generuj_strone_podsumowania(tabele):
     for idx, tabela in enumerate(tabele):
         pozycje = tabela.get('pozycje', [])
         ilosc = int(tabela.get('ilosc_sztuk', 1))  # ilosc sztuk calej zabudowy
-        # Netto = suma wartosci bazowych
-        netto = round2(sum(float(p.get('wartosc_bazowa', 0)) for p in pozycje))
-        # Cena jedn. netto z korekta
+        # Netto = suma wartosci bazowych WSZYSTKICH pozycji (cena 1 mebla)
+        nettoBazowe = round2(sum(float(p.get('wartosc_bazowa', 0)) for p in pozycje))
+        # Korekta (globalna + lokalna) juz zawarta w wartosci z DB
         kortTabeli = float(tabela.get('korekta_pct', 0))
-        # wartosc po korekcie = netto * (1 + korekta/100)
-        wartoscZKorekta = round2(netto * (1 + kortTabeli / 100))
-        # Cena jedn. = wartosc po korekcie / ilosc
-        cena_jedn = round2(wartoscZKorekta / ilosc) if ilosc > 0 else 0
+        # Cena jednostkowa = netto bazowe z korekta (cena 1 mebla, NIE dzielona przez ilosc)
+        cenaJednZKorekta = round2(nettoBazowe * (1 + kortTabeli / 100))
+        # Wartosc netto = cena jednostkowa * ilosc sztuk
+        wartoscNetto = round2(cenaJednZKorekta * ilosc)
         vat_pct = int(tabela.get('vat_pct', 23))
-        brutto = round2(wartoscZKorekta * (1 + vat_pct / 100))
+        brutto = round2(wartoscNetto * (1 + vat_pct / 100))
         wiersze.append({
             'nazwa': tabela.get('nazwa_mebla', ''),
-            'cena_jedn': cena_jedn,
+            'cena_jedn': cenaJednZKorekta,
             'ilosc': ilosc,
-            'netto': wartoscZKorekta,
+            'netto': wartoscNetto,
             'vat': f'{vat_pct}%',
             'brutto': brutto,
         })
         suma_ilosc += ilosc
-        suma_netto += wartoscZKorekta
+        suma_netto += wartoscNetto
         suma_brutto += brutto
     
     # Kolumny: NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO
-    col_w = [310, 140, 80, 120, 90, 130]
+    col_w = [310, 140, 80, 120, 60, 130]
     # nazwa, cena, ilosc, netto, vat, brutto
     table_w = sum(col_w)
     table_x = (PAGE_W - table_w) / 2
@@ -379,7 +379,7 @@ def generuj_strone_podsumowania(tabele):
     c.setFillColorRGB(*BG_DARK)
     c.rect(table_x, TABLE_TOP, table_w, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    naglowki = ['NAZWA', 'NETTO CENA JEDN.', 'ILOŚĆ', 'NETTO WARTOŚĆ', 'PODATEK', 'BRUTTO WARTOŚĆ']
+    naglowki = ['NAZWA', 'NETTO CENA JEDN.', 'ILOŚĆ', 'NETTO WARTOŚĆ', 'VAT', 'BRUTTO WARTOŚĆ']
     for i, nag in enumerate(naglowki):
         # Podziel na 2 linie jesli dlugi
         parts = nag.split(' ')
@@ -390,20 +390,19 @@ def generuj_strone_podsumowania(tabele):
         else:
             line1 = parts[0] if parts else ''
             line2 = parts[1] if len(parts) > 1 else ''
-        fs = FONT_BOLD if i in (0, 2) else FONT_MALA
-        c.setFont('PoppinsBold', fs)
-        y_base = TABLE_TOP + (HEADER_H - fs * 2.2) / 2
+        c.setFont('PoppinsBold', FONT_SIZE_TAB)
+        y_base = TABLE_TOP + (HEADER_H - FONT_SIZE_TAB * 2.2) / 2
         if i == 0:
-            c.drawString(col_starts[i] + 8, y_base + fs * 1.2, line1)
+            c.drawString(col_starts[i] + 8, y_base + FONT_SIZE_TAB * 1.2, line1)
             if line2:
                 c.drawString(col_starts[i] + 8, y_base, line2)
         else:
             if line2:
                 # 2 linie
-                c.drawCentredString(col_starts[i] + col_w[i]/2, y_base + fs * 1.2, line1)
+                c.drawCentredString(col_starts[i] + col_w[i]/2, y_base + FONT_SIZE_TAB * 1.2, line1)
                 c.drawCentredString(col_starts[i] + col_w[i]/2, y_base, line2)
             else:
-                c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + HEADER_H/2 - fs/2, line1)
+                c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + HEADER_H/2 - FONT_SIZE_TAB/2, line1)
     # Pionowe linie naglowka
     for j in range(1, len(col_w)):
         c.line(col_ends[j-1], TABLE_TOP, col_ends[j-1], TABLE_TOP + HEADER_H)
