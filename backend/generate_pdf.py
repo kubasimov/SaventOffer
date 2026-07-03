@@ -216,7 +216,7 @@ def generuj_strone_tabeli(tabela):
     c.setFillColorRGB(*BG_DARK)
     c.rect(table_x, TABLE_TOP, TABLE_W, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
+    c.setFont('Poppins', FONT_SIZE_TAB)
     c.drawString(table_x + 12, TABLE_TOP + 13, nazwa_mebla)
     current_y = TABLE_TOP - ROW_H
     for i, poz in enumerate(pozycje):
@@ -228,9 +228,9 @@ def generuj_strone_tabeli(tabela):
         c.setLineWidth(0.5)
         c.line(table_x, current_y, table_x + TABLE_W, current_y)
         c.setFillColorRGB(*TEXT_DARK)
-        c.setFont('Poppins', FONT_SIZE_TAB)
+        c.setFont('Poppins', 18)
         c.drawString(table_x + 12, current_y + 12, nazwa)
-        c.setFont('Poppins', FONT_SIZE_TAB)
+        c.setFont('Poppins', 18)
         c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(wartosc))
         c.setStrokeColorRGB(0.75, 0.75, 0.75)
         c.setLineWidth(0.5)
@@ -245,8 +245,8 @@ def generuj_strone_tabeli(tabela):
     c.setLineWidth(0.8)
     c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=0, stroke=1)
     c.setFillColorRGB(*TEXT_DARK)
-    c.setFont('PoppinsBold', FONT_SIZE_TAB_BOLD)
-    c.drawString(table_x + 12, current_y + 12, "RAZEM:")
+    c.setFont('Poppins', FONT_SIZE_TAB)
+    c.drawString(table_x + 12, current_y + 12, "RAZEM")
     c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(razem))
     c.setStrokeColorRGB(0.7, 0.7, 0.7)
     c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + HEADER_H)
@@ -305,9 +305,9 @@ def generuj_strone_podsumowania(tabele):
     dostepna_wys = TABLE_TOP - TABLE_BOTTOM
     
     # Rozmiary (takie same jak w tabelach pojedynczej wyceny)
-    FONT_NAZWA = FONT_SIZE_TAB
-    FONT_MALA = FONT_SIZE_TAB
-    FONT_BOLD = FONT_SIZE_TAB_BOLD
+    FONT_NAZWA = 18
+    FONT_MALA = 18
+    FONT_BOLD = FONT_SIZE_TAB
     
     # Oblicz dane dla kazdego mebla
     wiersze = []
@@ -340,7 +340,7 @@ def generuj_strone_podsumowania(tabele):
         suma_brutto += brutto
     
     # Kolumny: NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO
-    col_w = [310, 140, 80, 120, 60, 130]
+    col_w = [370, 140, 80, 120, 60, 130]
     # nazwa, cena, ilosc, netto, vat, brutto
     table_w = sum(col_w)
     table_x = (PAGE_W - table_w) / 2
@@ -390,7 +390,7 @@ def generuj_strone_podsumowania(tabele):
         else:
             line1 = parts[0] if parts else ''
             line2 = parts[1] if len(parts) > 1 else ''
-        c.setFont('PoppinsBold', FONT_SIZE_TAB)
+        c.setFont('Poppins', FONT_SIZE_TAB)
         y_base = TABLE_TOP + (HEADER_H - FONT_SIZE_TAB * 2.2) / 2
         if i == 0:
             c.drawString(col_starts[i] + 8, y_base + FONT_SIZE_TAB * 1.2, line1)
@@ -472,8 +472,8 @@ def generuj_strone_podsumowania(tabele):
     c.setStrokeColorRGB(0.7, 0.7, 0.7)
     c.setLineWidth(0.8)
     c.setFillColorRGB(*TEXT_DARK)
-    c.setFont('PoppinsBold', 20)
-    c.drawString(col_starts[0] + 6, current_y + ROW_H/2 - 10, 'RAZEM:')
+    c.setFont('Poppins', FONT_SIZE_TAB)
+    c.drawString(col_starts[0] + 6, current_y + ROW_H/2 - 10, 'RAZEM')
     c.drawRightString(col_ends[2] - 8, current_y + ROW_H/2 - 10, str(int(suma_ilosc)))
     c.drawRightString(col_ends[3] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_netto))
     c.drawRightString(col_ends[5] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_brutto))
