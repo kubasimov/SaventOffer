@@ -358,7 +358,7 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
   )
 }
 
-export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktualizuj, onUsun }) {
+export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktualizuj, onUsun, zwiniete = false, onToggleZwiięcie }) {
   const [pozycje, setPozycje] = useState(tabela.pozycje || [])
   const [korekta, setKorekta] = useState(parseFloat(tabela.korekta_pct) || 0)
   const [vatPct, setVatPct] = useState(parseInt(tabela.vat_pct) || 23)
@@ -548,10 +548,12 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
 
   return (
     <div className="card" style={{marginBottom: 16}}>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8}}>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: zwiniete ? 0 : 16, flexWrap:'wrap', gap:8, cursor:'pointer'}}
+        onClick={onToggleZwiięcie}>
         <div style={{display:'flex', alignItems:'center', gap:8}}>
+          <span style={{fontSize:14, color:'#aaa', userSelect:'none'}}>{zwiniete ? '▶' : '▼'}</span>
           {edytujNazwe ? (
-            <>
+            <>{/* ... */}
               <input
                 value={nowaNazwa}
                 onChange={e => setNowaNazwa(e.target.value)}
@@ -595,6 +597,7 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
         </div>
       </div>
 
+      {!zwiniete && (<>
       <table>
         <thead>
           <tr>
@@ -782,6 +785,7 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
           </div>
         </div>
       )}
+      </>)}
     </div>
   )
 }

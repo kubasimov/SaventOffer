@@ -78,6 +78,22 @@ export default function EdytorOferty() {
     }))
   }
 
+  const [zwiniete, setZwiniete] = useState({})
+
+  function toggleZwiięcie(id) {
+    setZwiniete(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  function zwinWszystkie() {
+    const all = {}
+    oferta.tabele.forEach(t => { all[t.id] = true })
+    setZwiniete(all)
+  }
+
+  function rozwinWszystkie() {
+    setZwiniete({})
+  }
+
   async function reorderTabele(from, to) {
     const tabele = [...oferta.tabele]
     const [moved] = tabele.splice(from, 1)
@@ -290,7 +306,11 @@ export default function EdytorOferty() {
       <div className="card" style={{marginBottom: 16, padding: 12}}>
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
             <h2 style={{margin:0, fontSize:18, color:'white'}}>Meble ({oferta.tabele?.length || 0})</h2>
-            <button className="btn btn-primary" onClick={dodajTabele}>+ Dodaj mebel</button>
+            <div style={{display:'flex', gap:6}}>
+              <button className="btn btn-secondary btn-sm" onClick={zwinWszystkie}>▲ Zwiń</button>
+              <button className="btn btn-secondary btn-sm" onClick={rozwinWszystkie}>▼ Rozwiń</button>
+              <button className="btn btn-primary" onClick={dodajTabele}>+ Dodaj mebel</button>
+            </div>
           </div>
           {(!oferta.tabele || oferta.tabele.length === 0) ? (
             <div className="empty-state">Brak mebli w ofercie</div>
@@ -311,6 +331,8 @@ export default function EdytorOferty() {
                     kortGlobalna={kortGlobalna}
                     onAktualizuj={aktualizujTabele}
                     onUsun={usunTabele}
+                    zwiniete={zwiniete[tabela.id] || false}
+                    onToggleZwiięcie={() => toggleZwiięcie(tabela.id)}
                   />
                 </div>
               ))}
