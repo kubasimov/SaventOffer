@@ -210,13 +210,13 @@ def generuj_strone_tabeli(tabela):
     dostepna_wys = TABLE_TOP - TABLE_BOTTOM
     n_elementow = 1 + len(pozycje) + 1 + 1
     wys_na_element = dostepna_wys / n_elementow
-    ROW_H = min(36, max(18, wys_na_element))
-    HEADER_H = min(38, max(20, wys_na_element))
+    ROW_H = 30
+    HEADER_H = 38
     table_x = (PAGE_W - TABLE_W) / 2
     c.setFillColorRGB(*BG_DARK)
     c.rect(table_x, TABLE_TOP, TABLE_W, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    c.setFont('Poppins', FONT_SIZE_TAB)
+    c.setFont('PoppinsBold', FONT_SIZE_TAB)
     c.drawString(table_x + 12, TABLE_TOP + 13, nazwa_mebla)
     current_y = TABLE_TOP - ROW_H
     for i, poz in enumerate(pozycje):
@@ -224,20 +224,23 @@ def generuj_strone_tabeli(tabela):
         wartosc = float(poz.get('wartosc_koncowa', 0))
         c.setFillColorRGB(*(BG_LIGHT if i % 2 == 0 else BG_WHITE))
         c.rect(table_x, current_y, TABLE_W, ROW_H, fill=1, stroke=0)
-        c.setStrokeColorRGB(0.8, 0.8, 0.8)
+        c.setStrokeColorRGB(0.75, 0.75, 0.75)
         c.setLineWidth(0.5)
-        c.line(table_x, current_y, table_x + TABLE_W, current_y)
+        c.rect(table_x, current_y, TABLE_W, ROW_H, fill=0, stroke=1)
         c.setFillColorRGB(*TEXT_DARK)
         c.setFont('Poppins', 18)
-        c.drawString(table_x + 12, current_y + 12, nazwa)
+        c.drawString(table_x + 12, current_y + ROW_H/2 - 8, nazwa)
         c.setFont('Poppins', 18)
-        c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(wartosc))
+        c.drawRightString(table_x + TABLE_W - 12, current_y + ROW_H/2 - 8, formatPLN(wartosc))
         c.setStrokeColorRGB(0.75, 0.75, 0.75)
         c.setLineWidth(0.5)
         c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + ROW_H)
         current_y -= ROW_H
     c.setFillColorRGB(*BG_LIGHT)
     c.rect(table_x, current_y, TABLE_W, ROW_H, fill=1, stroke=0)
+    c.setStrokeColorRGB(0.75, 0.75, 0.75)
+    c.setLineWidth(0.5)
+    c.rect(table_x, current_y, TABLE_W, ROW_H, fill=0, stroke=1)
     current_y -= ROW_H
     c.setFillColorRGB(*BG_LIGHT)
     c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=1, stroke=0)
@@ -245,9 +248,9 @@ def generuj_strone_tabeli(tabela):
     c.setLineWidth(0.8)
     c.rect(table_x, current_y, TABLE_W, HEADER_H, fill=0, stroke=1)
     c.setFillColorRGB(*TEXT_DARK)
-    c.setFont('Poppins', FONT_SIZE_TAB)
-    c.drawString(table_x + 12, current_y + 12, "RAZEM")
-    c.drawRightString(table_x + TABLE_W - 12, current_y + 12, formatPLN(razem))
+    c.setFont('PoppinsBold', FONT_SIZE_TAB)
+    c.drawString(table_x + 12, current_y + ROW_H/2 - 8, "RAZEM")
+    c.drawRightString(table_x + TABLE_W - 12, current_y + ROW_H/2 - 8, formatPLN(razem))
     c.setStrokeColorRGB(0.7, 0.7, 0.7)
     c.line(table_x + COL_NAME_W, current_y, table_x + COL_NAME_W, current_y + HEADER_H)
     c.save()
@@ -340,7 +343,7 @@ def generuj_strone_podsumowania(tabele):
         suma_brutto += brutto
     
     # Kolumny: NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO
-    col_w = [370, 140, 80, 120, 60, 130]
+    col_w = [370, 140, 80, 140, 60, 140]
     # nazwa, cena, ilosc, netto, vat, brutto
     table_w = sum(col_w)
     table_x = (PAGE_W - table_w) / 2
@@ -368,18 +371,13 @@ def generuj_strone_podsumowania(tabele):
         return lines * (font_size * 1.4) + 6
     
     HEADER_H = 52
-    ROW_BASE = 32
-    ROW_H = ROW_BASE
-    # Sprawdz czy zmiesci sie na stronie
-    przewidywana_wys = HEADER_H + sum(max(ROW_BASE, wysokosc_wiersza(w['nazwa'], FONT_NAZWA, 340)) for w in wiersze) + ROW_BASE + 20
-    if przewidywana_wys > dostepna_wys:
-        ROW_H = max(24, (dostepna_wys - HEADER_H - 20) / (len(wiersze) + 1))
+    ROW_H = 30
     
     # Naglowek
     c.setFillColorRGB(*BG_DARK)
     c.rect(table_x, TABLE_TOP, table_w, HEADER_H, fill=1, stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    naglowki = ['NAZWA', 'NETTO CENA JEDN.', 'ILOŚĆ', 'NETTO WARTOŚĆ', 'VAT', 'BRUTTO WARTOŚĆ']
+    naglowki = ['NAZWA', 'NETTO CENA JEDN.', 'ILOŚĆ', 'WARTOŚĆ NETTO', 'VAT', 'WARTOŚĆ BRUTTO']
     for i, nag in enumerate(naglowki):
         # Podziel na 2 linie jesli dlugi
         parts = nag.split(' ')
@@ -390,7 +388,7 @@ def generuj_strone_podsumowania(tabele):
         else:
             line1 = parts[0] if parts else ''
             line2 = parts[1] if len(parts) > 1 else ''
-        c.setFont('Poppins', FONT_SIZE_TAB)
+        c.setFont('PoppinsBold', FONT_SIZE_TAB)
         y_base = TABLE_TOP + (HEADER_H - FONT_SIZE_TAB * 2.2) / 2
         if i == 0:
             c.drawString(col_starts[i] + 8, y_base + FONT_SIZE_TAB * 1.2, line1)
@@ -410,13 +408,17 @@ def generuj_strone_podsumowania(tabele):
     # Wiersze danych
     current_y = TABLE_TOP - ROW_H
     for i, w in enumerate(wiersze):
-        rh = max(ROW_BASE, wysokosc_wiersza(w['nazwa'], FONT_NAZWA, 340))
+        rh = ROW_H
         bg = BG_LIGHT if i % 2 == 0 else BG_WHITE
         c.setFillColorRGB(*bg)
         c.rect(table_x, current_y, table_w, rh, fill=1, stroke=0)
         c.setStrokeColorRGB(0.8, 0.8, 0.8)
         c.setLineWidth(0.5)
         c.line(table_x, current_y, table_x + table_w, current_y)
+        # Obramowanie komorki
+        c.setStrokeColorRGB(0.75, 0.75, 0.75)
+        c.setLineWidth(0.5)
+        c.rect(table_x, current_y, table_w, rh, fill=0, stroke=1)
         c.setFillColorRGB(*TEXT_DARK)
         # Nazwa (zawijana)
         c.setFont('Poppins', FONT_NAZWA)
@@ -466,17 +468,24 @@ def generuj_strone_podsumowania(tabele):
             c.line(col_ends[j-1], current_y, col_ends[j-1], current_y + rh)
         current_y -= rh
     
+    # Pusty wiersz przed podsumowaniem
+    c.setFillColorRGB(*BG_LIGHT)
+    c.rect(table_x, current_y, table_w, ROW_H, fill=1, stroke=0)
+    c.setStrokeColorRGB(0.75, 0.75, 0.75)
+    c.setLineWidth(0.5)
+    c.rect(table_x, current_y, table_w, ROW_H, fill=0, stroke=1)
+    current_y -= ROW_H
+    
     # Wiersz sum
     c.setFillColorRGB(*BG_LIGHT)
     c.rect(table_x, current_y, table_w, ROW_H, fill=1, stroke=0)
     c.setStrokeColorRGB(0.7, 0.7, 0.7)
     c.setLineWidth(0.8)
     c.setFillColorRGB(*TEXT_DARK)
-    c.setFont('Poppins', FONT_SIZE_TAB)
-    c.drawString(col_starts[0] + 6, current_y + ROW_H/2 - 10, 'RAZEM')
-    c.drawRightString(col_ends[2] - 8, current_y + ROW_H/2 - 10, str(int(suma_ilosc)))
-    c.drawRightString(col_ends[3] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_netto))
-    c.drawRightString(col_ends[5] - 8, current_y + ROW_H/2 - 10, formatPLN(suma_brutto))
+    c.setFont('PoppinsBold', FONT_SIZE_TAB)
+    c.drawString(col_starts[0] + 6, current_y + ROW_H/2 - 8, 'RAZEM')
+    c.drawRightString(col_ends[3] - 8, current_y + ROW_H/2 - 8, formatPLN(suma_netto))
+    c.drawRightString(col_ends[5] - 8, current_y + ROW_H/2 - 8, formatPLN(suma_brutto))
     for j in range(1, len(col_w)):
         c.line(col_ends[j-1], current_y, col_ends[j-1], current_y + ROW_H)
     c.rect(table_x, current_y, table_w, ROW_H, fill=0, stroke=1)
