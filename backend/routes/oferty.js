@@ -296,6 +296,20 @@ router.get('/:id/xlsx', async (req, res) => {
   }
 });
 
+// Zmiana kolejnosci mebli (drag & drop)
+router.put('/:id/reorder', async (req, res) => {
+  const { kolejnosc } = req.body;
+  try {
+    for (const k of kolejnosc) {
+      await pool.query(
+        'UPDATE furniture_tables SET kolejnosc=$1 WHERE id=$2 AND oferta_id=$3',
+        [k.kolejnosc, k.id, req.params.id]
+      );
+    }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;
 
 // Eksport oferty do CSV

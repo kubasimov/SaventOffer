@@ -77,6 +77,20 @@ export default function EdytorOferty() {
     }))
   }
 
+  async function reorderTabele(from, to) {
+    const tabele = [...oferta.tabele]
+    const [moved] = tabele.splice(from, 1)
+    tabele.splice(to, 0, moved)
+    const kolejnosc = tabele.map((t, i) => ({ id: t.id, kolejnosc: i + 1 }))
+    setOferta(prev => ({ ...prev, tabele: tabele.map((t, i) => ({ ...t, kolejnosc: i + 1 })) }))
+    try {
+      await axios.put(`/api/oferty/${id}/reorder`, { kolejnosc })
+    } catch (e) {
+      console.error('Reorder error:', e)
+      location.reload()
+    }
+  }
+
   async function usunTabele(tabela_id) {
     if (!confirm('Usunąć tę tabelę wraz z pozycjami?')) return
     await axios.delete(`/api/oferty/tabele/${tabela_id}`)
@@ -272,24 +286,36 @@ export default function EdytorOferty() {
         </div>
       </div>
 
-      {(!oferta.tabele || oferta.tabele.length === 0) ? (
-        <div className="card">
-          <div className="empty-state">
-            Brak mebli w ofercie — kliknij „+ Dodaj mebel"
+      <div className="card" style={{marginBottom: 16, padding: 12}}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12}}>
+            <h2 style={{margin:0, fontSize:18, color:'white'}}>Meble ({oferta.tabele?.length || 0})</h2>
+            <button className="btn btn-primary" onClick={dodajTabele}>+ Dodaj mebel</button>
           </div>
+          {(!oferta.tabele || oferta.tabele.length === 0) ? (
+            <div className="empty-state">Brak mebli w ofercie</div>
+          ) : (
+            <div>
+              {oferta.tabele.map((tabela, idx) => (
+                <div key={tabela.id}
+                  draggable
+                  onDragStart={e => { setDragIdx(idx); e.dataTransfer.effectAllowed = 'move' }}
+                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
+                  onDrop={e => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) reorderTabele(dragIdx, idx); setDragIdx(null) }}
+                  onDragEnd={() => setDragIdx(null)}
+                  style={{ opacity: dragIdx === idx ? 0.4 : 1, transition: 'opacity 0.15s', cursor: 'grab' }}
+                >
+                  <TabelaMebla
+                    tabela={tabela}
+                    cennik={cennik}
+                    kortGlobalna={kortGlobalna}
+                    onAktualizuj={aktualizujTabele}
+                    onUsun={usunTabele}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      ) : (
-        oferta.tabele.map(tabela => (
-          <TabelaMebla
-            key={tabela.id}
-            tabela={tabela}
-            cennik={cennik}
-            kortGlobalna={kortGlobalna}
-            onAktualizuj={aktualizujTabele}
-            onUsun={usunTabele}
-          />
-        ))
-      )}
       {modalZalozenia && (
         <KreatorPDF
           ofertaId={id}
