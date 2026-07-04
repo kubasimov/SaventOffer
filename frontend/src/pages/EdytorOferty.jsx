@@ -16,10 +16,11 @@ export default function EdytorOferty() {
   const [edytujNumer, setEdytujNumer] = useState(false)
   const [nowyNumer, setNowyNumer] = useState('')
   const [edytujNazwe, setEdytujNazwe] = useState(false)
-  const [nowaNazwaOferty, setNowaNazwaOferty] = useState('')
+  const [nowaNazwaOferty, setNowaNazwaOferty] = useState(oferta?.nazwa || '')
   const [historia, setHistoria] = useState([])
   const [modalHistoria, setModalHistoria] = useState(false)
   const [loadingHistoria, setLoadingHistoria] = useState(false)
+  const [dragIdx, setDragIdx] = useState(null)
 
   useEffect(() => {
     Promise.all([
