@@ -354,22 +354,7 @@ def generuj_strone_podsumowania(tabele):
         cx += w
     col_ends = [cs + w for cs, w in zip(col_starts, col_w)]
     
-    # Szacuj wysokosc wiersza z zawijaniem
-    def wysokosc_wiersza(tekst, font_size, max_w):
-        """Ile linii zajmie tekst przy danej szerokosci"""
-        c.setFont('Poppins', font_size)
-        words = tekst.split()
-        lines = 1
-        line_w = 0
-        for w in words:
-            ww = c.stringWidth(w + ' ', 'Poppins', font_size)
-            if line_w + ww > max_w:
-                lines += 1
-                line_w = ww
-            else:
-                line_w += ww
-        return lines * (font_size * 1.4) + 6
-    
+    # Naglowek
     HEADER_H = 52
     ROW_H = 30
     
