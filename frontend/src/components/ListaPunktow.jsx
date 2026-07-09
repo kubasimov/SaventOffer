@@ -67,7 +67,7 @@ export default function ListaPunktow({ punkty, setPunkty, placeholder, label, op
 
   const itemStyle = (zaznaczony) => ({
     display: 'flex', alignItems: 'center', gap: 10,
-    padding: '8px 12px', cursor: 'grab',
+    padding: '8px 12px',
     background: '#2b2b2b', borderRadius: 8,
     border: `1px solid ${zaznaczony ? '#3a3a3a' : '#3a3a3a'}`
   })
@@ -85,13 +85,14 @@ export default function ListaPunktow({ punkty, setPunkty, placeholder, label, op
         {punkty.map((p, i) => (
           <div
             key={i}
-            draggable
-            onDragStart={e => onDragStart(e, i)}
-            onDragOver={e => onDragOver(e, i)}
-            onDrop={e => onDrop(e, i)}
             style={itemStyle(p.zaznaczony)}
           >
-            <span style={{color:'#666', fontSize:12, cursor:'grab', userSelect:'none'}}>⠿</span>
+            <span style={{color:'#666', fontSize:12, cursor:'grab', userSelect:'none'}}
+              draggable
+              onDragStart={e => onDragStart(e, i)}
+              onDragOver={e => onDragOver(e, i)}
+              onDrop={e => onDrop(e, i)}
+            >⠿</span>
             <input
               type="checkbox"
               checked={p.zaznaczony}

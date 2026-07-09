@@ -21,6 +21,13 @@ export default function EdytorOferty() {
   const [modalHistoria, setModalHistoria] = useState(false)
   const [loadingHistoria, setLoadingHistoria] = useState(false)
   const [dragIdx, setDragIdx] = useState(null)
+  const [modalMail, setModalMail] = useState(false)
+  const [maileKlienta, setMaileKlienta] = useState([])
+  const [emailKlienta, setEmailKlienta] = useState('')
+  const [mailLoading, setMailLoading] = useState(false)
+  const [mailForm, setMailForm] = useState({ odbiorca: '', temat: '', tresc: '', odpowiedz_na: '' })
+  const [mailWysylanie, setMailWysylanie] = useState(false)
+  const [mailWyslane, setMailWyslane] = useState([])
 
   useEffect(() => {
     Promise.all([
@@ -71,6 +78,13 @@ export default function EdytorOferty() {
     }))
   }
 
+  function kopiujTabele(kopiaTabela) {
+    setOferta(prev => ({
+      ...prev,
+      tabele: [...(prev.tabele || []), kopiaTabela]
+    }))
+  }
+
   function aktualizujTabele(tabela_id, dane) {
     setOferta(prev => ({
       ...prev,
@@ -79,6 +93,7 @@ export default function EdytorOferty() {
   }
 
   const [zwiniete, setZwiniete] = useState({})
+  const wszystkieZwinięte = oferta?.tabele?.every(t => zwiniete[t.id]) || false
 
   function toggleZwiięcie(id) {
     setZwiniete(prev => ({ ...prev, [id]: !prev[id] }))
@@ -169,6 +184,50 @@ export default function EdytorOferty() {
     setLoadingHistoria(false)
   }
 
+  async function otworzMail() {
+    setModalMail(true)
+    setMailLoading(true)
+    setMailForm({ odbiorca: oferta?.klient_nazwa ? `${oferta.klient_nazwa} <${emailKlienta}>` : emailKlienta || '', temat: `Wycena: ${oferta?.numer || ''}`, tresc: '', odpowiedz_na: '' })
+    setMaileKlienta([])
+    try {
+      const [mRes, wRes] = await Promise.all([
+        axios.get(`/api/oferty/${id}/maile`),
+        axios.get(`/api/oferty/${id}/wyslane`)
+      ])
+      if (mRes.data.email) setEmailKlienta(mRes.data.email)
+      setMaileKlienta(mRes.data.maile || [])
+      setMailWyslane(wRes.data || [])
+    } catch(e) {}
+    setMailLoading(false)
+  }
+
+  async function wybierzMailOdpowiedz(mail) {
+    setMailForm({
+      odbiorca: mail.from || emailKlienta,
+      temat: `Re: ${mail.subject}`,
+      tresc: `\n\n--- Oryginalna wiadomość ---\nOd: ${mail.from}\nTemat: ${mail.subject}\nData: ${new Date(mail.date).toLocaleString('pl-PL')}\n\n${mail.text}`,
+      odpowiedz_na: mail.messageId
+    })
+  }
+
+  async function wyslijMail() {
+    if (!mailForm.odbiorca) return alert('Podaj adres odbiorcy')
+    setMailWysylanie(true)
+    try {
+      await axios.post(`/api/oferty/${id}/wyslij`, {
+        do_adresu: mailForm.odbiorca,
+        temat: mailForm.temat,
+        tresc: mailForm.tresc,
+        odpowiedz_na: mailForm.odpowiedz_na
+      })
+      alert('Mail wysłany!')
+      setModalMail(false)
+    } catch (e) {
+      alert('Błąd wysyłania: ' + (e.response?.data?.error || e.message))
+    }
+    setMailWysylanie(false)
+  }
+
   async function zapiszKlienta(klient_id) {
     await axios.put(`/api/oferty/${id}`, {
       klient_id,
@@ -232,6 +291,9 @@ export default function EdytorOferty() {
           </button>
           <button className="btn btn-secondary" onClick={pokazHistorie}>
             📋 Historia
+          </button>
+          <button className="btn btn-secondary" onClick={otworzMail}>
+            ✉️ Wyślij e-mailem
           </button>
           <button className="btn btn-primary" onClick={dodajTabele}>
             + Dodaj mebel
@@ -317,22 +379,22 @@ export default function EdytorOferty() {
           ) : (
             <div>
               {oferta.tabele.map((tabela, idx) => (
-                <div key={tabela.id}
-                  draggable
-                  onDragStart={e => { setDragIdx(idx); e.dataTransfer.effectAllowed = 'move' }}
-                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
-                  onDrop={e => { e.preventDefault(); if (dragIdx !== null && dragIdx !== idx) reorderTabele(dragIdx, idx); setDragIdx(null) }}
-                  onDragEnd={() => setDragIdx(null)}
-                  style={{ opacity: dragIdx === idx ? 0.4 : 1, transition: 'opacity 0.15s', cursor: 'grab' }}
-                >
+                <div key={tabela.id}>
                   <TabelaMebla
                     tabela={tabela}
                     cennik={cennik}
                     kortGlobalna={kortGlobalna}
                     onAktualizuj={aktualizujTabele}
                     onUsun={usunTabele}
+                    onKopiuj={kopiujTabele}
                     zwiniete={zwiniete[tabela.id] || false}
                     onToggleZwiięcie={() => toggleZwiięcie(tabela.id)}
+                    dragIdx={dragIdx}
+                    idx={idx}
+                    wszystkieZwinięte={wszystkieZwinięte}
+                    onDragStart={idx => { setDragIdx(idx) }}
+                    onDrop={(from, to) => { if (from !== null && from !== to) reorderTabele(from, to); setDragIdx(null) }}
+                    onDragEnd={() => setDragIdx(null)}
                   />
                 </div>
               ))}
@@ -412,6 +474,81 @@ export default function EdytorOferty() {
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setModalHistoria(false)}>Zamknij</button>
             </div>
+          </div>
+        </div>
+      )}
+    {modalMail && (
+        <div className="modal-overlay" onClick={() => setModalMail(false)}>
+          <div className="modal" style={{maxWidth:700}} onClick={e => e.stopPropagation()}>
+            <h2>✉️ Wyślij e-mailem</h2>
+            {mailLoading ? (
+              <div style={{padding:20, textAlign:'center', color:'#aaa'}}>Pobieranie maili klienta...</div>
+            ) : (
+              <>
+                {/* Lista maili klienta */}
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:13, color:'#c6bec4', fontWeight:500, marginBottom:8}}>
+                    Otrzymane maile od klienta ({emailKlienta || 'brak adresu'})
+                  </div>
+                  {maileKlienta.length === 0 ? (
+                    <div style={{fontSize:12, color:'#666', padding:8}}>Brak maili lub brak adresu email u klienta</div>
+                  ) : (
+                    <div style={{maxHeight:150, overflowY:'auto', display:'flex', flexDirection:'column', gap:4}}>
+                      {maileKlienta.map((m, i) => (
+                        <div key={i} onClick={() => wybierzMailOdpowiedz(m)}
+                          style={{padding:'6px 10px', background:'#2b2b2b', borderRadius:6, cursor:'pointer',
+                            border:'1px solid #3a3a3a', fontSize:12}}
+                        >
+                          <div style={{fontWeight:500, color: mailForm.odpowiedz_na === m.messageId ? '#5f2f4d' : '#c6bec4'}}>
+                            {m.subject || '(bez tematu)'}
+                          </div>
+                          <div style={{color:'#666', fontSize:11}}>
+                            {new Date(m.date).toLocaleString('pl-PL')} — {m.from}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Formularz maila */}
+                <div className="form-group">
+                  <label>Odbiorca</label>
+                  <input value={mailForm.odbiorca} onChange={e => setMailForm({...mailForm, odbiorca: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Temat</label>
+                  <input value={mailForm.temat} onChange={e => setMailForm({...mailForm, temat: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Treść</label>
+                  <textarea rows={8} value={mailForm.tresc}
+                    onChange={e => setMailForm({...mailForm, tresc: e.target.value})}
+                    style={{width:'100%', padding:8, borderRadius:6, border:'1.5px solid #555',
+                      fontSize:13, background:'#3a3a3a', color:'white', resize:'vertical'}}
+                  />
+                </div>
+
+                {/* Historia wyslanych */}
+                {mailWyslane.length > 0 && (
+                  <div style={{marginTop:8}}>
+                    <div style={{fontSize:12, color:'#666', marginBottom:4}}>Wysłane wcześniej:</div>
+                    {mailWyslane.map(m => (
+                      <div key={m.id} style={{fontSize:11, color:'#888', padding:'2px 0'}}>
+                        {new Date(m.utworzony).toLocaleString('pl-PL')} → {m.odbiorca} — {m.temat}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="modal-actions">
+                  <button className="btn btn-secondary" onClick={() => setModalMail(false)}>Anuluj</button>
+                  <button className="btn btn-primary" onClick={wyslijMail} disabled={mailWysylanie}>
+                    {mailWysylanie ? '⏳ Wysyłanie...' : '✉️ Wyślij'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

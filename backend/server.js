@@ -26,6 +26,7 @@ app.use('/api/whisper', authAndRole, require('./routes/whisper'));
 app.use('/api/import', authAndRole, require('./routes/import'));
 app.use('/api/users', authAndRole, require('./routes/users'));
 app.use('/api/ustawienia', authAndRole, require('./routes/ustawienia'));
+app.use('/api', authAndRole, require('./routes/email'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', czas: new Date().toISOString() });

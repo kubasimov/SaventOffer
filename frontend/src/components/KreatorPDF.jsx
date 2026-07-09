@@ -21,7 +21,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
   // Krok 3 — specyfikacja
   const [specyfikacja, setSpecyfikacja] = useState([])
 
-  // Krok 4 — obrazy
+  const [tylkoPodsumowanie, setTylkoPodsumowanie] = useState(false)
   const [kategoria, setKategoria] = useState('')
   const [klienci, setKlienci] = useState([])
   const [recznyWpis, setRecznyWpis] = useState(false)
@@ -103,6 +103,7 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
         formData.append('klient_dane', JSON.stringify({ ...klientDane, nazwa_inwestycji: nazwaInwestycji }))
         formData.append('specyfikacja', JSON.stringify(specAktywna))
         formData.append('kategoria', '')
+        if (tylkoPodsumowanie) formData.append('tylko_podsumowanie', '1')
         wlasneObrazy.forEach((plik, i) => formData.append(`obraz_${i}`, plik, plik.name))
         res = await axios.post(`/api/pdf/${ofertaId}/z-obrazami`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -222,13 +223,25 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
 
         {/* Krok 2 — Założenia */}
         {krok === 1 && (
-          <ListaPunktow
-            punkty={zalozenia}
-            setPunkty={setZalozenia}
-            label="Założenia oferty"
-            opis="Zaznacz punkty do uwzględnienia. Przeciągaj by zmienić kolejność."
-            placeholder="Dodaj założenie..."
-          />
+                  <div>
+                    <ListaPunktow
+                      punkty={zalozenia}
+                      setPunkty={setZalozenia}
+                      label="Założenia oferty"
+                      placeholder="Dodaj punkt..."
+                    />
+                    <div className="card" style={{marginTop:12}}>
+                      <label style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer'}}>
+                        <input type="checkbox" checked={tylkoPodsumowanie}
+                          onChange={e => setTylkoPodsumowanie(e.target.checked)}
+                          style={{width:18, height:18, cursor:'pointer', accentColor:'#5f2f4d'}} />
+                        <div>
+                          <div style={{fontWeight:500, fontSize:13, color:'#c6bec4'}}>Tylko tabela z podsumowaniem</div>
+                          <div style={{fontSize:12, color:'#aaa'}}>Pomiń strony poszczególnych mebli</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
         )}
 
         {/* Krok 3 — Specyfikacja */}
@@ -321,11 +334,11 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
                 { ikona: '📄', label: 'Okładka', opis: 'zawsze' },
-                { ikona: '👤', label: 'Dane klienta', opis: klientDane.nazwa || '(puste)' },
+                { ikona: '👤', label: 'Dane klienta', opis: '' },
                 { ikona: '📋', label: 'Założenia', opis: zalozenia.filter(p => p.zaznaczony).length > 0 ? `${zalozenia.filter(p => p.zaznaczony).length} punktów` : 'pominięte' },
                 { ikona: '🔩', label: 'Specyfikacja', opis: specyfikacja.filter(p => p.zaznaczony).length > 0 ? `${specyfikacja.filter(p => p.zaznaczony).length} pozycji` : 'pominięta' },
-                { ikona: '🖼️', label: 'Obrazy', opis: kategoria ? `Kategoria: ${kategoria} (${kategorie.find(k => k.nazwa === kategoria)?.pliki || 0} stron)` : 'pominięte' },
-                { ikona: '📊', label: 'Wycena', opis: 'tabele mebli' },
+                { ikona: '🖼️', label: 'Obrazy', opis: kategoria === '__wlasne__' ? `${wlasneObrazy.length} własnych` : (kategoria || 'pominięte') },
+                { ikona: '📊', label: 'Tylko podsumowanie', opis: '' },
                 { ikona: '📎', label: 'Strony końcowe', opis: 'zawsze' },
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12,

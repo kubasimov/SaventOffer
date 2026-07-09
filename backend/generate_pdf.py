@@ -319,20 +319,18 @@ def generuj_strone_podsumowania(tabele):
     suma_brutto = 0.0
     for idx, tabela in enumerate(tabele):
         pozycje = tabela.get('pozycje', [])
-        ilosc = int(tabela.get('ilosc_sztuk', 1))  # ilosc sztuk calej zabudowy
-        # Netto = suma wartosci bazowych WSZYSTKICH pozycji (cena 1 mebla)
-        nettoBazowe = round2(sum(float(p.get('wartosc_bazowa', 0)) for p in pozycje))
-        # Korekta (globalna + lokalna) juz zawarta w wartosci z DB
-        kortTabeli = float(tabela.get('korekta_pct', 0))
-        # Cena jednostkowa = netto bazowe z korekta (cena 1 mebla, NIE dzielona przez ilosc)
-        cenaJednZKorekta = round2(nettoBazowe * (1 + kortTabeli / 100))
-        # Wartosc netto = cena jednostkowa * ilosc sztuk
-        wartoscNetto = round2(cenaJednZKorekta * ilosc)
+        ilosc = int(tabela.get('ilosc_sztuk', 1))
+        # Netto = suma wartosci koncowych (z korekta lokalna i globalna)
+        netto = round2(sum(float(p.get('wartosc_koncowa', 0)) for p in pozycje))
+        # Cena jednostkowa = netto / ilosc (cena 1 mebla z korekta)
+        cena_jedn = round2(netto / ilosc) if ilosc > 0 else 0
         vat_pct = int(tabela.get('vat_pct', 23))
+        # Wartosc netto = cena_jedn * ilosc
+        wartoscNetto = round2(cena_jedn * ilosc)
         brutto = round2(wartoscNetto * (1 + vat_pct / 100))
         wiersze.append({
             'nazwa': tabela.get('nazwa_mebla', ''),
-            'cena_jedn': cenaJednZKorekta,
+            'cena_jedn': cena_jedn,
             'ilosc': ilosc,
             'netto': wartoscNetto,
             'vat': f'{vat_pct}%',
@@ -549,14 +547,15 @@ def generuj_pdf(dane, output_path):
             tlo = PdfReader(podklad_spec).pages[0]
             tlo.merge_page(strona)
             writer.add_page(tlo)
-    for tabela in dane.get('tabele', []):
-        tabela_buf = generuj_strone_tabeli(tabela)
-        tlo = szablon('podklad_oferta_cenowa.pdf')
-        tlo.merge_page(PdfReader(tabela_buf).pages[0])
-        writer.add_page(tlo)
+    if not dane.get('tylko_podsumowanie'):
+        for tabela in dane.get('tabele', []):
+            tabela_buf = generuj_strone_tabeli(tabela)
+            tlo = szablon('podklad_oferta_cenowa.pdf')
+            tlo.merge_page(PdfReader(tabela_buf).pages[0])
+            writer.add_page(tlo)
     # Podsumowanie wszystkich mebli
     tabele = dane.get('tabele', [])
-    if len(tabele) > 1:
+    if len(tabele) > 1 or dane.get('tylko_podsumowanie'):
         podsumowanie_buf = generuj_strone_podsumowania(tabele)
         tlo = szablon('podklad_oferta_cenowa.pdf')
         tlo.merge_page(PdfReader(podsumowanie_buf).pages[0])

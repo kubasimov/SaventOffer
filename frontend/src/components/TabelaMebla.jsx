@@ -37,6 +37,28 @@ function formatPLN(val) {
   return val.toFixed(2).replace('.', ',') + ' zł'
 }
 
+// Oblicz formułę typu "=1,25+0,6+0,35" → 2.2
+function obliczFormule(val) {
+  if (typeof val !== 'string' && typeof val !== 'number') return val
+  let str = String(val).trim()
+  if (!str) return val
+  // Zamien przecinek na kropke, dodaj zero przed kropka jesli potrzeba
+  str = str.replace(/,/g, '.')
+  if (str.startsWith('.')) str = '0' + str
+  // Jesli zaczyna sie od =, oblicz wyrazenie
+  if (str.startsWith('=')) {
+    const expr = str.substring(1).replace(/[^0-9+\-*/.]+/g, '')
+    try {
+      const result = Function('"use strict"; return (' + expr + ')')()
+      if (typeof result === 'number' && isFinite(result))
+        return Math.round((result + Number.EPSILON) * 100) / 100
+    } catch(e) {}
+    return val
+  }
+  // Zwykla liczba
+  return str
+}
+
 function znajdzIstniejaca(pozycje, form) {
   if (!form.nazwa.trim()) return null
   return pozycje.find(p =>
@@ -103,15 +125,17 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
   }
 
   async function dodajWymiar() {
-    const payload = {
-      wymiar_x: pozycja.jednostka === 'm2' ? parseFloat(nowyWymiar.wymiar_x) : null,
-      wymiar_y: pozycja.jednostka === 'm2' ? parseFloat(nowyWymiar.wymiar_y) : null,
+    const x = parseFloat(obliczFormule(nowyWymiar.wymiar_x))
+    const y = parseFloat(obliczFormule(nowyWymiar.wymiar_y))
+    const il = parseFloat(obliczFormule(nowyWymiar.ilosc))
+    const res = await axios.post(`/api/oferty/pozycje/${pozycja.id}/wymiary`, {
+      wymiar_x: pozycja.jednostka === 'm2' ? x : null,
+      wymiar_y: pozycja.jednostka === 'm2' ? y : null,
       ilosc: pozycja.jednostka === 'm2'
-        ? round2(parseFloat(nowyWymiar.wymiar_x || 0) * parseFloat(nowyWymiar.wymiar_y || 0))
-        : parseFloat(nowyWymiar.ilosc || 1),
-      kolejnosc: wymiary.length + 1
-    }
-    const res = await axios.post(`/api/oferty/pozycje/${pozycja.id}/wymiary`, payload)
+        ? round2(x * y)
+        : (il || 1),
+      kolejnosc: (pozycja.wymiary?.length || 0) + 1
+    })
     const nowe = [...wymiary, res.data]
     setNowyWymiar({ wymiar_x: '', wymiar_y: '', ilosc: '1' })
     onZaktualizujPozycje(pozycja.id, nowe)
@@ -239,6 +263,7 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                                     <input type="number" step="0.01"
                                       defaultValue={parseFloat(d.wymiar_x)}
                                       onChange={e => setEdytWartosci(v => ({...v, wymiar_x: e.target.value}))}
+                                      onBlur={e => setEdytWartosci(v => ({...v, wymiar_x: obliczFormule(e.target.value)}))}
                                       style={{width:65, padding:'3px 5px', border:'1.5px solid #555',
                                         borderRadius:4, fontSize:12, background:'#3a3a3a', color:'white'}}
                                     />
@@ -247,6 +272,7 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                                     <input type="number" step="0.01"
                                       defaultValue={parseFloat(d.wymiar_y)}
                                       onChange={e => setEdytWartosci(v => ({...v, wymiar_y: e.target.value}))}
+                                      onBlur={e => setEdytWartosci(v => ({...v, wymiar_y: obliczFormule(e.target.value)}))}
                                       style={{width:65, padding:'3px 5px', border:'1.5px solid #555',
                                         borderRadius:4, fontSize:12, background:'#3a3a3a', color:'white'}}
                                     />
@@ -309,23 +335,25 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
                 {pozycja.jednostka === 'm2' ? (
                   <>
                     <div>
-                                        <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. X (m)</div>
-                                        <input type="number" step="0.01"
-                                          value={nowyWymiar.wymiar_x}
-                                          ref={firstInputRef}
-                                          onChange={e => setNowyWymiar({...nowyWymiar, wymiar_x: e.target.value})}
-                                          onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
-                        style={{width:80, padding:'5px 8px', border:'1.5px solid #555', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
-                      />
-                    </div>
-                    <div>
-                      <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. Y (m)</div>
-                      <input type="number" step="0.01"
-                        value={nowyWymiar.wymiar_y}
-                        onChange={e => setNowyWymiar({...nowyWymiar, wymiar_y: e.target.value})}
-                        onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
-                        style={{width:80, padding:'5px 8px', border:'1.5px solid #555', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
-                      />
+                                          <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. X (m)</div>
+                                          <input type="text" step="0.01"
+                                            value={nowyWymiar.wymiar_x}
+                                            ref={firstInputRef}
+                                            onChange={e => setNowyWymiar({...nowyWymiar, wymiar_x: e.target.value})}
+                                            onBlur={e => setNowyWymiar({...nowyWymiar, wymiar_x: obliczFormule(e.target.value)})}
+                                            onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
+                                            style={{width:80, padding:'5px 8px', border:'1.5px solid #555', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
+                                          />
+                                        </div>
+                                        <div>
+                                          <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. Y (m)</div>
+                                          <input type="text" step="0.01"
+                                            value={nowyWymiar.wymiar_y}
+                                            onChange={e => setNowyWymiar({...nowyWymiar, wymiar_y: e.target.value})}
+                                            onBlur={e => setNowyWymiar({...nowyWymiar, wymiar_y: obliczFormule(e.target.value)})}
+                                            onKeyDown={e => e.key === 'Enter' && dodajWymiar()}
+                                            style={{width:80, padding:'5px 8px', border:'1.5px solid #555', borderRadius:6, fontSize:13, background:'#3a3a3a', color:'white'}}
+                                          />
                     </div>
                     {nowyWymiar.wymiar_x && nowyWymiar.wymiar_y && (
                       <div style={{fontSize:13, color:'#c6bec4', alignSelf:'center', paddingBottom:2}}>
@@ -358,7 +386,7 @@ function PozycjaRow({ pozycja, onUsunPozycje, onZaktualizujPozycje, korekta }) {
   )
 }
 
-export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktualizuj, onUsun, zwiniete = false, onToggleZwiięcie }) {
+export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktualizuj, onUsun, onKopiuj, zwiniete = false, onToggleZwiięcie, dragIdx = null, idx = 0, wszystkieZwinięte = false, onDragStart, onDrop, onDragEnd }) {
   const [pozycje, setPozycje] = useState(tabela.pozycje || [])
   const [korekta, setKorekta] = useState(parseFloat(tabela.korekta_pct) || 0)
   const [vatPct, setVatPct] = useState(parseInt(tabela.vat_pct) || 23)
@@ -421,7 +449,7 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
       razem_przed: sumaRaw,
       razem: razem
     })
-    window.location.reload()
+    if (onKopiuj) onKopiuj(nowaTabela)
   }
 
   async function zapiszKorekteDoDb(nowaKorekta, noweVat, nowaIlosc) {
@@ -482,12 +510,14 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
   async function dodajPozycje() {
     if (!form.nazwa) return alert('Wybierz pozycję z cennika lub wpisz nazwę')
     const istniejaca = znajdzIstniejaca(pozycje, form)
+    const xVal = parseFloat(obliczFormule(form.wymiar_x))
+    const yVal = parseFloat(obliczFormule(form.wymiar_y))
     const dimPayload = {
-      wymiar_x: form.jednostka === 'm2' ? parseFloat(form.wymiar_x) : null,
-      wymiar_y: form.jednostka === 'm2' ? parseFloat(form.wymiar_y) : null,
+      wymiar_x: form.jednostka === 'm2' ? xVal : null,
+      wymiar_y: form.jednostka === 'm2' ? yVal : null,
       ilosc: form.jednostka === 'm2'
-        ? round2(parseFloat(form.wymiar_x || 0) * parseFloat(form.wymiar_y || 0))
-        : parseFloat(form.ilosc || 1),
+        ? round2(xVal * yVal)
+        : parseFloat(obliczFormule(form.ilosc)) || 1,
       kolejnosc: istniejaca ? (istniejaca.wymiary?.length || 0) + 1 : 1
     }
     let nowe
@@ -547,9 +577,16 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
   const czyIstnieje = znajdzIstniejaca(pozycje, form)
 
   return (
-    <div className="card" style={{marginBottom: 16}}>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: zwiniete ? 0 : 16, flexWrap:'wrap', gap:8, cursor:'pointer'}}
-        onClick={onToggleZwiięcie}>
+    <div className="card" style={{marginBottom: 16, opacity: dragIdx === idx ? 0.4 : 1, transition: 'opacity 0.15s', cursor: wszystkieZwinięte ? 'grab' : 'default'}}
+      {...(wszystkieZwinięte ? {
+        draggable: true,
+        onDragStart: e => { onDragStart(idx); e.dataTransfer.effectAllowed = 'move' },
+        onDragOver: e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' },
+        onDrop: e => { e.preventDefault(); onDrop(dragIdx, idx) },
+        onDragEnd: onDragEnd
+      } : {})}>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: zwiniete ? 0 : 16, flexWrap:'wrap', gap:8}}
+        onClick={e => { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'TEXTAREA') onToggleZwiięcie(); }}>
         <div style={{display:'flex', alignItems:'center', gap:8}}>
           <span style={{fontSize:14, color:'#aaa', userSelect:'none'}}>{zwiniete ? '▶' : '▼'}</span>
           {edytujNazwe ? (
@@ -576,6 +613,14 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
           )}
         </div>
         <div style={{display:'flex', gap:8, alignItems:'center', flexWrap:'wrap'}}>
+          <span style={{fontSize:20, color:'#666', cursor:'grab', userSelect:'none', padding:'0 4px', letterSpacing:2}}
+            draggable
+            onDragStart={e => { onDragStart(idx); e.dataTransfer.effectAllowed = 'move' }}
+            onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
+            onDrop={e => { e.preventDefault(); onDrop(dragIdx, idx) }}
+            onDragEnd={onDragEnd}
+            title="Przeciągnij by zmienić kolejność"
+          >⠿</span>
           <div className="btn-group" style={{position:'relative', display:'inline-block'}}>
             <button className="btn btn-secondary btn-sm" onClick={e => {e.stopPropagation(); setOpenNarzedzia(!openNarzedzia)}}>
               🛠️ Narzędzia {openNarzedzia ? '▲' : '▼'}
@@ -734,9 +779,10 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
                 <div style={{display:'flex', gap:10, alignItems:'center'}}>
                   <div>
                     <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. X (m)</div>
-                    <input type="number" step="0.01" value={form.wymiar_x}
+                    <input type="text" step="0.01" value={form.wymiar_x}
                       ref={modalFirstInputRef}
                       onChange={e => setForm({...form, wymiar_x: e.target.value})}
+                      onBlur={e => setForm({...form, wymiar_x: obliczFormule(e.target.value)})}
                       onKeyDown={e => e.key === 'Enter' && dodajPozycje()}
                       style={{width:90, padding:'6px 8px', border:'1.5px solid #555',
                         borderRadius:6, fontSize:14, background:'#3a3a3a', color:'white'}} />
@@ -744,8 +790,9 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
                   <div style={{fontSize:18, color:'#666', marginTop:16}}>×</div>
                   <div>
                     <div style={{fontSize:11, color:'#aaa', marginBottom:3}}>Wym. Y (m)</div>
-                    <input type="number" step="0.01" value={form.wymiar_y}
+                    <input type="text" step="0.01" value={form.wymiar_y}
                       onChange={e => setForm({...form, wymiar_y: e.target.value})}
+                      onBlur={e => setForm({...form, wymiar_y: obliczFormule(e.target.value)})}
                       onKeyDown={e => e.key === 'Enter' && dodajPozycje()}
                       style={{width:90, padding:'6px 8px', border:'1.5px solid #555',
                         borderRadius:6, fontSize:14, background:'#3a3a3a', color:'white'}} />

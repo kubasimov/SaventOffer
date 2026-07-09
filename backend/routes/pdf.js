@@ -189,3 +189,4 @@ router.post('/:id/z-obrazami', multerPdf.any(), async (req, res) => {
 });
 
 module.exports = router;
+module.exports.pobierzDaneOferty = pobierzDaneOferty;
