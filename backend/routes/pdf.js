@@ -59,13 +59,24 @@ async function generujPrzezPythona(dane, outputPath, res, onCleanup) {
       return res.status(500).json({ error: 'Błąd generowania PDF', details: stderr });
     }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(outputPath)}"`);
-    const stream = fs.createReadStream(outputPath);
-    const cleanup = () => fs.unlink(outputPath, () => {});
-    stream.on('error', cleanup);
-    stream.on('end', cleanup);
-    stream.pipe(res);
+    // Kompresja ghostscript
+    const compressedPath = outputPath + '.compressed';
+    const gsCmd = `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 -dPDFSETTINGS=/printer -dNOPAUSE -dQUIET -dBATCH -sOutputFile='${compressedPath}' '${outputPath}'`;
+    exec(gsCmd, { timeout: 60000 }, (gsErr) => {
+      if (!gsErr && fs.existsSync(compressedPath)) {
+        fs.renameSync(compressedPath, outputPath);
+      } else if (fs.existsSync(compressedPath)) {
+        fs.unlinkSync(compressedPath);
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(outputPath)}"`);
+      const stream = fs.createReadStream(outputPath);
+      const cleanup = () => fs.unlink(outputPath, () => {});
+      stream.on('error', cleanup);
+      stream.on('end', cleanup);
+      stream.pipe(res);
+    });
   });
 }
 
@@ -113,6 +124,7 @@ router.post('/:id', async (req, res) => {
       zalozenia: req.body.zalozenia || '',
       specyfikacja: req.body.specyfikacja || [],
       kategoria: req.body.kategoria || '',
+      tylko_podsumowanie: req.body.tylko_podsumowanie === '1',
       tabele
     };
 
