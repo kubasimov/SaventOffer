@@ -108,33 +108,42 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
     try { require('fs').unlinkSync(danePath); } catch(e) {}
 
     // Wyslij maila
-        const transporter = getTransporter();
-        const stopkaRaw = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
-        // Usun <!DOCTYPE>, <html>, <head>, <body> ze stopki - zostaw tylko zawartosc
-        let stopkaTresc = stopkaRaw.replace(/<!DOCTYPE[^>]*>/gi, '').replace(/<\/?html[^>]*>/gi, '').replace(/<\/?head[^>]*>/gi, '').replace(/<meta[^>]*>/gi, '');
-        const stopkaBodyMatch = stopkaTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        if (stopkaBodyMatch) stopkaTresc = stopkaBodyMatch[1];
-        const wlasnyTekst = tresc || 'W załączniku przesyłam wycenę.';
-        const wlasnaTrescHtml = wlasnyTekst.replace(/\n/g, '<br>');
-        // Zbuduj czysty tekst (bez HTML) dla text/plain
-        const wlasnaTrescPlain = wlasnyTekst.replace(/<[^>]+>/g, '').replace(/<br>/gi, '\n');
-        // Wyciagnij tylko zawartosc <body> z oryginalnego HTML
-        let cytatTresc = html_oryginalny || '';
-        const bodyMatch = cytatTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-        if (bodyMatch) cytatTresc = bodyMatch[1];
-        cytatTresc = cytatTresc.replace(/<!DOCTYPE[^>]*>/gi, '').replace(/<\/?html[^>]*>/gi, '').replace(/<\/?head[^>]*>/gi, '').replace(/<meta[^>]*>/gi, '');
-        const cytatHtml = cytatTresc
-          ? `<blockquote style="border-left:2px solid #ccc;margin:10px 0;padding:0 0 0 10px;color:#888">${cytatTresc}</blockquote>`
-          : '';
-        const emailHtml = `<!DOCTYPE html>
-<html lang="pl">
-<head><meta charset="UTF-8"></head>
-<body>
-<p>${wlasnaTrescHtml}</p>
-${stopkaTresc}
-${cytatHtml}
-</body>
-</html>`;
+            const transporter = getTransporter();
+            const stopkaRaw = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
+            // Zachowaj style, usun tylko otaczajace <html><head><body>
+            let stopkaTresc = stopkaRaw.replace(/<!DOCTYPE[^>]*>/gi, '');
+            stopkaTresc = stopkaTresc.replace(/<\/?html[^>]*>/gi, '');
+            const styleMatch = stopkaTresc.match(/<style[^>]*>[\s\S]*<\/style>/i);
+            const styleBlock = styleMatch ? styleMatch[0] : '';
+            const stopkaBodyMatch = stopkaTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+            const stopkaBody = stopkaBodyMatch ? stopkaBodyMatch[1] : stopkaTresc;
+        
+            const wlasnyTekst = tresc || 'W załączniku przesyłam wycenę.';
+            // Konwertuj URL na klikalne linki
+            const urlRegex = /(https?:\/\/[^\s<]+)/g;
+            const wlasnaTrescHtml = wlasnyTekst.replace(/\n/g, '<br>').replace(urlRegex, '<a href="$1">$1</a>');
+            // Zbuduj czysty tekst dla text/plain
+            const wlasnaTrescPlain = wlasnyTekst.replace(/<[^>]+>/g, '').replace(/\n/g, '\r\n');
+        
+            // Wyciagnij tylko zawartosc <body> z oryginalnego HTML cytatu
+            let cytatTresc = html_oryginalny || '';
+            const bodyMatch = cytatTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+            if (bodyMatch) cytatTresc = bodyMatch[1];
+            cytatTresc = cytatTresc.replace(/<!DOCTYPE[^>]*>/gi, '').replace(/<\/?html[^>]*>/gi, '');
+            const cytatHtml = cytatTresc
+              ? `<blockquote style="border-left:2px solid #ccc;margin:16px 0;padding:0 0 0 12px;color:#555">${cytatTresc}</blockquote>`
+              : '';
+            const emailHtml = `<!DOCTYPE html>
+    <html lang="pl">
+    <head><meta charset="UTF-8"><meta name="color-scheme" content="light only">
+    <style>body{margin:0;padding:20px;font-family:Arial,sans-serif;font-size:14px;color:#333}${styleBlock}</style>
+    </head>
+    <body>
+    <p style="margin:0 0 16px 0">${wlasnaTrescHtml}</p>
+    ${stopkaBody}
+    ${cytatHtml}
+    </body>
+    </html>`;
     const mailOptions = {
       from: EMAIL_FROM, to: do_adresu,
       subject: temat || `Wycena: ${data.oferta.numer}`,
