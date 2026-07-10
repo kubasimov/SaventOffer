@@ -258,6 +258,7 @@ export default function Oferty() {
           ofertaNazwa={modalPDF.nazwa}
           klientId={modalPDF.klientId}
           onClose={() => setModalPDF(null)}
+          onWyslijMail={() => { setModalPDF(null); navigate(`/oferty/${modalPDF.id}`) }}
         />
       )}
     </div>
