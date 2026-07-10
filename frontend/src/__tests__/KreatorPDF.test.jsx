@@ -140,8 +140,10 @@ describe('KreatorPDF', () => {
     expect(formData).toBeInstanceOf(FormData)
   })
 
-  it('przycisk "Wyślij mail" generuje PDF i wysyla', async () => {
-    renderKreator()
+  it('przycisk "Wyślij mail" zamyka kreator i otwiera modal maila', async () => {
+    const onClose = vi.fn()
+    const onWyslijMail = vi.fn()
+    renderKreator({ onWyslijMail })
     await waitFor(() => expect(screen.getByPlaceholderText('np. Zabudowa kuchenna')).toBeInTheDocument())
     for (let i = 0; i < 4; i++) {
       await userEvent.click(screen.getByText('Dalej →'))
@@ -149,7 +151,7 @@ describe('KreatorPDF', () => {
     await waitFor(() => expect(screen.getByText('Podsumowanie PDF')).toBeInTheDocument())
     await userEvent.click(screen.getByRole('button', { name: /Wyślij mail/i }))
     await waitFor(() => {
-      expect(axios.post).toHaveBeenCalled()
+      expect(onWyslijMail).toHaveBeenCalled()
     })
   })
 })

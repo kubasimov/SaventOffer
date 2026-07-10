@@ -4,7 +4,7 @@ import ListaPunktow from './ListaPunktow'
 
 const KROKI = ['Dane klienta', 'Założenia', 'Specyfikacja', 'Obrazy', 'Generuj']
 
-export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientId, onClose }) {
+export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientId, onClose, onWyslijMail }) {
   const [krok, setKrok] = useState(0)
   const [loading, setLoading] = useState(false)
   const [kategorie, setKategorie] = useState([])
@@ -97,16 +97,9 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
       const specAktywna = specyfikacja.filter(p => p.zaznaczony).map(p => p.tekst)
 
       if (tylkoMail) {
-        // Wyslij mail przez backend (generuje PDF + wysyla SMTP + zapisuje w Sent)
-        await axios.post(`/api/oferty/${ofertaId}/wyslij`, {
-          do_adresu: klientDane.email || '',
-          temat: `Wycena: ${ofertaNumer}`,
-          tresc: '',
-          odpowiedz_na: '',
-          html_oryginalny: ''
-        })
+        // Zamknij kreator i otworz modal maila (te same opcje co ze strony oferty)
         setLoading(false)
-        onClose()
+        if (onWyslijMail) onWyslijMail()
         return
       }
 

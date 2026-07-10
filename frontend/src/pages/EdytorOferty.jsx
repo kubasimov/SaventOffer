@@ -412,6 +412,7 @@ export default function EdytorOferty() {
           ofertaNazwa={nowaNazwaOferty || oferta?.nazwa || ''}
           klientId={oferta?.klient_id}
           onClose={() => setModalZalozenia(false)}
+          onWyslijMail={() => { setModalZalozenia(false); otworzMail() }}
         />
       )}
 
