@@ -108,22 +108,31 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
     try { require('fs').unlinkSync(danePath); } catch(e) {}
 
     // Wyslij maila
-    const transporter = getTransporter();
-    const stopkaHtml = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
-    // Wlasna tresc uzytkownika - zachowaj nowe linie
-    const wlasnyTekst = tresc || 'W załączniku przesyłam wycenę.';
-    const wlasnaTrescHtml = wlasnyTekst.replace(/\n/g, '<br>');
-    const cytatHtml = html_oryginalny
-      ? `<blockquote style="border-left:2px solid #ccc;margin:10px 0;padding:0 0 0 10px;color:#888">${html_oryginalny}</blockquote>`
-      : '';
-    // Zbuduj czysty tekst (bez HTML) dla text/plain
-    const wlasnaTrescPlain = wlasnyTekst.replace(/<[^>]+>/g, '').replace(/<br>/gi, '\n');
-    const emailHtml = `<!DOCTYPE html>
+        const transporter = getTransporter();
+        const stopkaRaw = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
+        // Usun <!DOCTYPE>, <html>, <head>, <body> ze stopki - zostaw tylko zawartosc
+        let stopkaTresc = stopkaRaw.replace(/<!DOCTYPE[^>]*>/gi, '').replace(/<\/?html[^>]*>/gi, '').replace(/<\/?head[^>]*>/gi, '').replace(/<meta[^>]*>/gi, '');
+        const stopkaBodyMatch = stopkaTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (stopkaBodyMatch) stopkaTresc = stopkaBodyMatch[1];
+        const wlasnyTekst = tresc || 'W załączniku przesyłam wycenę.';
+        const wlasnaTrescHtml = wlasnyTekst.replace(/\n/g, '<br>');
+        // Zbuduj czysty tekst (bez HTML) dla text/plain
+        const wlasnaTrescPlain = wlasnyTekst.replace(/<[^>]+>/g, '').replace(/<br>/gi, '\n');
+        // Wyciagnij tylko zawartosc <body> z oryginalnego HTML
+        let cytatTresc = html_oryginalny || '';
+        const bodyMatch = cytatTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (bodyMatch) cytatTresc = bodyMatch[1];
+        cytatTresc = cytatTresc.replace(/<!DOCTYPE[^>]*>/gi, '').replace(/<\/?html[^>]*>/gi, '').replace(/<\/?head[^>]*>/gi, '').replace(/<meta[^>]*>/gi, '');
+        const cytatHtml = cytatTresc
+          ? `<blockquote style="border-left:2px solid #ccc;margin:10px 0;padding:0 0 0 10px;color:#888">${cytatTresc}</blockquote>`
+          : '';
+        const emailHtml = `<!DOCTYPE html>
 <html lang="pl">
 <head><meta charset="UTF-8"></head>
 <body>
 <p>${wlasnaTrescHtml}</p>
 ${cytatHtml}
+${stopkaTresc}
 </body>
 </html>`;
     const mailOptions = {
@@ -141,52 +150,18 @@ ${cytatHtml}
 
     const info = await transporter.sendMail(mailOptions);
 
-    // Zapisz kopie w IMAP INBOX.Sent — zbuduj raw RFC822 z multipart/alternative
+    // Zapisz kopie w IMAP INBOX.Sent uzywajac nodemailer (stream transport) dla poprawnego MIME
     try {
-      const fs = require('fs');
-      const pdfBase64 = fs.readFileSync(outputPath).toString('base64');
-      const boundary = '----=_NextPart_' + Date.now();
-      const altBoundary = '----=_Alt_' + Date.now();
-      const rawBody = [
-        `From: ${EMAIL_FROM}`,
-        `To: ${do_adresu}`,
-        `Subject: ${mailOptions.subject}`,
-        `Date: ${new Date().toUTCString()}`,
-        `Message-ID: ${info.messageId || ''}`,
-        odpowiedz_na ? `In-Reply-To: <${odpowiedz_na}>` : '',
-        odpowiedz_na ? `References: <${odpowiedz_na}>` : '',
-        'MIME-Version: 1.0',
-        `Content-Type: multipart/mixed; boundary="${boundary}"`,
-        'Content-Transfer-Encoding: 8bit',
-        '',
-        `--${boundary}`,
-        `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
-        'Content-Transfer-Encoding: 8bit',
-        '',
-        `--${altBoundary}`,
-        'Content-Type: text/plain; charset=utf-8',
-        'Content-Transfer-Encoding: 8bit',
-        '',
-        `${wlasnaTrescPlain}\n\n---\nStopka w czystym tekście`,
-        '',
-        `--${altBoundary}`,
-        'Content-Type: text/html; charset=utf-8',
-        'Content-Transfer-Encoding: 8bit',
-        '',
-        emailHtml.replace('</body>', stopkaHtml + '\n</body>'),
-        '',
-        `--${altBoundary}--`,
-        '',
-        `--${boundary}`,
-        'Content-Type: application/pdf',
-        'Content-Transfer-Encoding: base64',
-        `Content-Disposition: attachment; filename="${mailOptions.subject}.pdf"`,
-        '',
-        pdfBase64,
-        '',
-        `--${boundary}--`
-      ].filter(Boolean).join('\r\n');
-
+      const rawGen = nodemailer.createTransport({ streamTransport: true, newline: 'unix', buffer: true });
+      const rawInfo = await rawGen.sendMail(mailOptions);
+      // rawInfo.message jest strumieniem - zbierz do bufora
+      const rawBuffer = await new Promise((resolve, reject) => {
+        const chunks = [];
+        rawInfo.message.on('data', c => chunks.push(c));
+        rawInfo.message.on('end', () => resolve(Buffer.concat(chunks)));
+        rawInfo.message.on('error', reject);
+      });
+      
       await new Promise((resolve) => {
         const Imap2 = require('imap');
         const imapSent = new Imap2({
@@ -194,7 +169,7 @@ ${cytatHtml}
           host: IMAP_HOST, port: IMAP_PORT, tls: true
         });
         imapSent.once('ready', () => {
-          imapSent.append(rawBody, { mailbox: 'INBOX.Sent', flags: ['\\Seen'] }, (err) => {
+          imapSent.append(rawBuffer, { mailbox: 'INBOX.Sent', flags: ['\\Seen'] }, (err) => {
             if (err) console.error('IMAP append error:', err.message);
             imapSent.end();
             resolve();
