@@ -90,11 +90,25 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
     setKategoria('__wlasne__')
   }
 
-  async function generuj() {
+  async function generuj(tylkoMail = false) {
     setLoading(true)
     try {
       const zalozeniaTekst = zalozenia.filter(p => p.zaznaczony).map(p => p.tekst).join('\n')
       const specAktywna = specyfikacja.filter(p => p.zaznaczony).map(p => p.tekst)
+
+      if (tylkoMail) {
+        // Wyslij mail przez backend (generuje PDF + wysyla SMTP + zapisuje w Sent)
+        await axios.post(`/api/oferty/${ofertaId}/wyslij`, {
+          do_adresu: klientDane.email || '',
+          temat: `Wycena: ${ofertaNumer}`,
+          tresc: '',
+          odpowiedz_na: '',
+          html_oryginalny: ''
+        })
+        setLoading(false)
+        onClose()
+        return
+      }
 
       let res
       if (kategoria === '__wlasne__' && wlasneObrazy.length > 0) {
@@ -377,11 +391,11 @@ export default function KreatorPDF({ ofertaId, ofertaNumer, ofertaNazwa, klientI
           <div style={{ display: 'flex', gap: 8 }}>
             {krok === 4 ? (
               <>
-                <button style={{ ...btnStyle, background: '#3a3a3a', color: '#c6bec4' }} onClick={() => generuj()} disabled={loading}>
-                  {loading ? <span className="spin">⏳</span> : 'Bez założeń i danych'}
-                </button>
-                <button style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }} onClick={generuj} disabled={loading}>
+                <button style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }} onClick={() => generuj(false)} disabled={loading}>
                   {loading ? <span className="spin">⏳</span> : '⬇ Generuj PDF'}
+                </button>
+                <button style={{ ...btnStyle, background: '#5f2f4d', color: 'white' }} onClick={() => generuj(true)} disabled={loading}>
+                  {loading ? <span className="spin">⏳</span> : '✉️ Wyślij mail'}
                 </button>
               </>
             ) : (

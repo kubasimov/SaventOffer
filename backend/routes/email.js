@@ -163,13 +163,8 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
     try {
       const rawGen = nodemailer.createTransport({ streamTransport: true, newline: 'unix', buffer: true });
       const rawInfo = await rawGen.sendMail(mailOptions);
-      // rawInfo.message jest strumieniem - zbierz do bufora
-      const rawBuffer = await new Promise((resolve, reject) => {
-        const chunks = [];
-        rawInfo.message.on('data', c => chunks.push(c));
-        rawInfo.message.on('end', () => resolve(Buffer.concat(chunks)));
-        rawInfo.message.on('error', reject);
-      });
+      // Z buffer: true, rawInfo.message jest juz gotowym Bufferem
+      const rawBuffer = rawInfo.message;
       
       await new Promise((resolve) => {
         const Imap2 = require('imap');
@@ -180,6 +175,7 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
         imapSent.once('ready', () => {
           imapSent.append(rawBuffer, { mailbox: 'INBOX.Sent', flags: ['\\Seen'] }, (err) => {
             if (err) console.error('IMAP append error:', err.message);
+            else console.log('IMAP append OK');
             imapSent.end();
             resolve();
           });

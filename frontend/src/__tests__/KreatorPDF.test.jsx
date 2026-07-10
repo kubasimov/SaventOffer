@@ -140,14 +140,14 @@ describe('KreatorPDF', () => {
     expect(formData).toBeInstanceOf(FormData)
   })
 
-  it('przycisk "Bez zalozen i danych" generuje PDF', async () => {
+  it('przycisk "Wyślij mail" generuje PDF i wysyla', async () => {
     renderKreator()
     await waitFor(() => expect(screen.getByPlaceholderText('np. Zabudowa kuchenna')).toBeInTheDocument())
     for (let i = 0; i < 4; i++) {
       await userEvent.click(screen.getByText('Dalej →'))
     }
     await waitFor(() => expect(screen.getByText('Podsumowanie PDF')).toBeInTheDocument())
-    await userEvent.click(screen.getByRole('button', { name: /Bez założeń i danych/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Wyślij mail/i }))
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalled()
     })
