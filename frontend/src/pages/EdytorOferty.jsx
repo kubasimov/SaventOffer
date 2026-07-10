@@ -25,7 +25,7 @@ export default function EdytorOferty() {
   const [maileKlienta, setMaileKlienta] = useState([])
   const [emailKlienta, setEmailKlienta] = useState('')
   const [mailLoading, setMailLoading] = useState(false)
-  const [mailForm, setMailForm] = useState({ odbiorca: '', temat: '', tresc: '', odpowiedz_na: '' })
+  const [mailForm, setMailForm] = useState({ odbiorca: '', temat: '', tresc: '', odpowiedz_na: '', html_oryginalny: '' })
   const [mailWysylanie, setMailWysylanie] = useState(false)
   const [mailWyslane, setMailWyslane] = useState([])
 
@@ -187,7 +187,8 @@ export default function EdytorOferty() {
   async function otworzMail() {
     setModalMail(true)
     setMailLoading(true)
-    setMailForm({ odbiorca: oferta?.klient_nazwa ? `${oferta.klient_nazwa} <${emailKlienta}>` : emailKlienta || '', temat: `Wycena: ${oferta?.numer || ''}`, tresc: '', odpowiedz_na: '' })
+    const klientEmail = oferta?.klient_email || emailKlienta
+    setMailForm({ odbiorca: klientEmail, temat: `Wycena: ${oferta?.numer || ''}`, tresc: '', odpowiedz_na: '', html_oryginalny: '' })
     setMaileKlienta([])
     try {
       const [mRes, wRes] = await Promise.all([
@@ -202,11 +203,13 @@ export default function EdytorOferty() {
   }
 
   async function wybierzMailOdpowiedz(mail) {
+    const cytatHtml = mail.html ? mail.html : `<pre>${mail.text}</pre>`;
     setMailForm({
       odbiorca: mail.from || emailKlienta,
       temat: `Re: ${mail.subject}`,
-      tresc: `\n\n--- Oryginalna wiadomość ---\nOd: ${mail.from}\nTemat: ${mail.subject}\nData: ${new Date(mail.date).toLocaleString('pl-PL')}\n\n${mail.text}`,
-      odpowiedz_na: mail.messageId
+      tresc: '',
+      odpowiedz_na: mail.messageId,
+      html_oryginalny: cytatHtml
     })
   }
 
@@ -218,7 +221,8 @@ export default function EdytorOferty() {
         do_adresu: mailForm.odbiorca,
         temat: mailForm.temat,
         tresc: mailForm.tresc,
-        odpowiedz_na: mailForm.odpowiedz_na
+        odpowiedz_na: mailForm.odpowiedz_na,
+        html_oryginalny: mailForm.html_oryginalny || ''
       })
       alert('Mail wysłany!')
       setModalMail(false)

@@ -31,6 +31,7 @@ function pobierzMaile(adres, limit = 20) {
       host: IMAP_HOST, port: IMAP_PORT, tls: true
     });
     const wyniki = [];
+    let oczekuje = 0;
     imap.once('ready', () => {
       imap.openBox('INBOX', false, (err, box) => {
         if (err) { imap.end(); return reject(err); }
@@ -38,27 +39,29 @@ function pobierzMaile(adres, limit = 20) {
           if (err) { imap.end(); return reject(err); }
           const najnowsze = results.slice(-limit).reverse();
           if (!najnowsze.length) { imap.end(); return resolve([]); }
+          oczekuje = najnowsze.length;
           const fetch = imap.fetch(najnowsze, { bodies: '' });
-          fetch.on('message', (msg, seqno) => {
+          fetch.on('message', (msg) => {
             msg.on('body', (stream) => {
-              simpleParser(stream, (err, parsed) => {
-                if (err) return;
+              simpleParser(stream).then(parsed => {
                 const msgId = (parsed.messageId || '').replace(/[<>]/g, '');
                 wyniki.push({
                   uid: msgId,
                   from: parsed.from ? parsed.from.text : '',
                   subject: parsed.subject || '',
                   date: parsed.date || new Date(),
-                  text: (parsed.text || '').slice(0, 500),
+                  text: (parsed.text || '').slice(0, 10000),
+                  html: parsed.html || '',
                   messageId: msgId,
                   inReplyTo: (parsed.inReplyTo || '').replace(/[<>]/g, ''),
                   references: (parsed.references || '').replace(/[<>]/g, '')
                 });
+              }).catch(() => {}).finally(() => {
+                oczekuje--;
+                if (oczekuje <= 0) { imap.end(); resolve(wyniki); }
               });
             });
-            msg.on('end', () => {});
           });
-          fetch.on('end', () => { imap.end(); resolve(wyniki); });
           fetch.on('error', e => { imap.end(); reject(e); });
         });
       });
@@ -88,7 +91,7 @@ router.get('/oferty/:id/maile', async (req, res) => {
 // POST /api/oferty/:id/wyslij — generuje PDF i wysyla maila
 router.post('/oferty/:id/wyslij', async (req, res) => {
   try {
-    const { do_adresu, temat, tresc, odpowiedz_na } = req.body;
+    const { do_adresu, temat, tresc, odpowiedz_na, html_oryginalny } = req.body;
     if (!do_adresu) return res.status(400).json({ error: 'Brak adresu odbiorcy' });
 
     // Generuj PDF
@@ -106,10 +109,28 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
 
     // Wyslij maila
     const transporter = getTransporter();
+    const stopkaHtml = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
+    // Wlasna tresc uzytkownika - zachowaj nowe linie
+    const wlasnyTekst = tresc || 'W załączniku przesyłam wycenę.';
+    const wlasnaTrescHtml = wlasnyTekst.replace(/\n/g, '<br>');
+    const cytatHtml = html_oryginalny
+      ? `<blockquote style="border-left:2px solid #ccc;margin:10px 0;padding:0 0 0 10px;color:#888">${html_oryginalny}</blockquote>`
+      : '';
+    // Zbuduj czysty tekst (bez HTML) dla text/plain
+    const wlasnaTrescPlain = wlasnyTekst.replace(/<[^>]+>/g, '').replace(/<br>/gi, '\n');
+    const emailHtml = `<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"></head>
+<body>
+<p>${wlasnaTrescHtml}</p>
+${cytatHtml}
+</body>
+</html>`;
     const mailOptions = {
       from: EMAIL_FROM, to: do_adresu,
       subject: temat || `Wycena: ${data.oferta.numer}`,
-      html: tresc || `<p>W załączniku przesyłam wycenę.</p>`,
+      html: emailHtml,
+      text: wlasnaTrescPlain,
       attachments: [{ filename: `${data.oferta.numer}.pdf`, path: outputPath }]
     };
     if (odpowiedz_na) {
@@ -119,6 +140,72 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
     }
 
     const info = await transporter.sendMail(mailOptions);
+
+    // Zapisz kopie w IMAP INBOX.Sent — zbuduj raw RFC822 z multipart/alternative
+    try {
+      const fs = require('fs');
+      const pdfBase64 = fs.readFileSync(outputPath).toString('base64');
+      const boundary = '----=_NextPart_' + Date.now();
+      const altBoundary = '----=_Alt_' + Date.now();
+      const rawBody = [
+        `From: ${EMAIL_FROM}`,
+        `To: ${do_adresu}`,
+        `Subject: ${mailOptions.subject}`,
+        `Date: ${new Date().toUTCString()}`,
+        `Message-ID: ${info.messageId || ''}`,
+        odpowiedz_na ? `In-Reply-To: <${odpowiedz_na}>` : '',
+        odpowiedz_na ? `References: <${odpowiedz_na}>` : '',
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        `--${boundary}`,
+        `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        `--${altBoundary}`,
+        'Content-Type: text/plain; charset=utf-8',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        `${wlasnaTrescPlain}\n\n---\nStopka w czystym tekście`,
+        '',
+        `--${altBoundary}`,
+        'Content-Type: text/html; charset=utf-8',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        emailHtml.replace('</body>', stopkaHtml + '\n</body>'),
+        '',
+        `--${altBoundary}--`,
+        '',
+        `--${boundary}`,
+        'Content-Type: application/pdf',
+        'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${mailOptions.subject}.pdf"`,
+        '',
+        pdfBase64,
+        '',
+        `--${boundary}--`
+      ].filter(Boolean).join('\r\n');
+
+      await new Promise((resolve) => {
+        const Imap2 = require('imap');
+        const imapSent = new Imap2({
+          user: SMTP_USER, password: SMTP_PASS,
+          host: IMAP_HOST, port: IMAP_PORT, tls: true
+        });
+        imapSent.once('ready', () => {
+          imapSent.append(rawBody, { mailbox: 'INBOX.Sent', flags: ['\\Seen'] }, (err) => {
+            if (err) console.error('IMAP append error:', err.message);
+            imapSent.end();
+            resolve();
+          });
+        });
+        imapSent.once('error', (e) => { console.error('IMAP sent error:', e.message); resolve(); });
+        imapSent.connect();
+      });
+    } catch (imapErr) {
+      console.error('IMAP append error:', imapErr.message);
+    }
 
     // Zapisz w historii wyslanych maili
     const insertRes = await pool.query(

@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
     const total = parseInt(countResult.rows[0].count);
 
     const result = await pool.query(`
-      SELECT o.*, o.nazwa as oferta_nazwa, c.nazwa as klient_nazwa
+      SELECT o.*, o.nazwa as oferta_nazwa, c.nazwa as klient_nazwa, c.email as klient_email
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
       ORDER BY o.utworzony DESC
       LIMIT $1 OFFSET $2
@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const oferta = await pool.query(`
-      SELECT o.*, c.nazwa as klient_nazwa
+      SELECT o.*, c.nazwa as klient_nazwa, c.email as klient_email
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
       WHERE o.id = $1
     `, [req.params.id]);
@@ -208,7 +208,7 @@ router.delete('/wymiary/:dim_id', async (req, res) => {
 router.get('/:id/xlsx', async (req, res) => {
   try {
     const oferta = await pool.query(`
-      SELECT o.*, c.nazwa as klient_nazwa
+      SELECT o.*, c.nazwa as klient_nazwa, c.email as klient_email
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
       WHERE o.id = $1
     `, [req.params.id]);
@@ -276,7 +276,7 @@ router.put('/:id/reorder', async (req, res) => {
 router.get('/:id/csv', async (req, res) => {
   try {
     const oferta = await pool.query(`
-      SELECT o.*, c.nazwa as klient_nazwa
+      SELECT o.*, c.nazwa as klient_nazwa, c.email as klient_email
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
       WHERE o.id = $1
     `, [req.params.id]);
