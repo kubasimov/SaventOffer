@@ -111,10 +111,6 @@ router.put('/:id', async (req, res) => {
       }
       if (req.body.nazwa !== undefined && String(stary.nazwa || '') !== String(req.body.nazwa || ''))
         zmiany.push({ pole: 'nazwa', stara: stary.nazwa, nowa: req.body.nazwa });
-      if (req.body.numer !== undefined && String(stary.numer || '') !== String(req.body.numer || ''))
-        zmiany.push({ pole: 'numer', stara: stary.numer, nowa: req.body.numer });
-      if (req.body.korekta_globalna !== undefined && String(stary.korekta_globalna || '') !== String(req.body.korekta_globalna || ''))
-        zmiany.push({ pole: 'korekta_globalna', stara: stary.korekta_globalna, nowa: req.body.korekta_globalna });
       if (req.body.uwagi !== undefined && String(stary.uwagi || '') !== String(req.body.uwagi || ''))
         zmiany.push({ pole: 'uwagi', stara: stary.uwagi, nowa: req.body.uwagi });
       if (zmiany.length > 0) {

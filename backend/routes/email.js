@@ -194,6 +194,16 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
       [req.params.id, do_adresu, mailOptions.subject, info.messageId || '', odpowiedz_na || null]
     );
 
+    // Zmien status oferty na "wyslana" i zapisz w changelogu
+    const staryStatus = (await pool.query('SELECT status FROM offers WHERE id=$1', [req.params.id])).rows[0]?.status;
+    if (staryStatus && staryStatus !== 'wyslana') {
+      await pool.query('UPDATE offers SET status=$1 WHERE id=$2', ['wyslana', req.params.id]);
+      await pool.query(
+        `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, stara_wartosc, nowa_wartosc) VALUES ($1,$2,$3,$4,$5)`,
+        [req.params.id, req.user?.id, 'status', staryStatus, 'wyslana']
+      );
+    }
+
     // Usun PDF po wyslaniu
     try { require('fs').unlinkSync(outputPath); } catch(e) {}
 
