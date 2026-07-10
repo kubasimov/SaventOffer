@@ -131,8 +131,8 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
 <head><meta charset="UTF-8"></head>
 <body>
 <p>${wlasnaTrescHtml}</p>
-${cytatHtml}
 ${stopkaTresc}
+${cytatHtml}
 </body>
 </html>`;
     const mailOptions = {
