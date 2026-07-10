@@ -188,7 +188,7 @@ export default function EdytorOferty() {
     setModalMail(true)
     setMailLoading(true)
     const klientEmail = oferta?.klient_email || emailKlienta
-    setMailForm({ odbiorca: klientEmail, temat: `Wycena: ${oferta?.numer || ''}`, tresc: '', odpowiedz_na: '', html_oryginalny: '' })
+    setMailForm({ odbiorca: klientEmail, temat: `Wycena: ${oferta?.numer || ''}`, tresc: 'Dzień dobry,\n\noferta cenowa w załączniku.\n\nW razie pytań proszę o kontakt.', odpowiedz_na: '', html_oryginalny: '' })
     setMaileKlienta([])
     try {
       const [mRes, wRes] = await Promise.all([
