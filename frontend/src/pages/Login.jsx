@@ -88,10 +88,7 @@ export default function Login() {
 
           <div style={{marginTop:16, display:'flex', flexDirection:'column', gap:8, textAlign:'center', fontSize:13}}>
             {tryb === 'login' && (
-              <>
-                <a href="#" onClick={e => { e.preventDefault(); setTryb('register'); setBlad(null); setKomunikat(null) }} style={{color:'#5f2f4d'}}>Nie masz konta? Zarejestruj się</a>
-                <a href="#" onClick={e => { e.preventDefault(); setTryb('prosba'); setBlad(null); setKomunikat(null) }} style={{color:'#888'}}>Poproś o dostęp</a>
-              </>
+              <a href="#" onClick={e => { e.preventDefault(); setTryb('register'); setBlad(null); setKomunikat(null) }} style={{color:'#5f2f4d'}}>Nie masz konta? Zarejestruj się</a>
             )}
             {(tryb === 'register' || tryb === 'prosba') && (
               <a href="#" onClick={e => { e.preventDefault(); setTryb('login'); setBlad(null); setKomunikat(null) }} style={{color:'#5f2f4d'}}>← Powrót do logowania</a>

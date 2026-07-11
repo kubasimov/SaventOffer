@@ -42,25 +42,51 @@ router.post('/rejestracja', async (req, res) => {
 
 // Lista oczekujacych uzytkownikow (tylko admin)
 router.get('/oczekujacy', async (req, res) => {
-  const users = await pool.query('SELECT id, email, imie_nazwisko, utworzony FROM users WHERE aktywny = false ORDER BY utworzony ASC');
-  res.json(users.rows);
+  try {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Brak tokenu' });
+    const decoded = jwt.verify(auth.slice(7), jwtSecret);
+    if (decoded.rola !== 'admin') return res.status(403).json({ error: 'Brak uprawnien' });
+    const users = await pool.query('SELECT id, email, imie_nazwisko, utworzony FROM users WHERE aktywny = false ORDER BY utworzony ASC');
+    res.json(users.rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Zatwierdz uzytkownika (tylko admin)
 router.put('/zatwierdz/:id', async (req, res) => {
-  const { rola } = req.body;
-  if (!rola || !['admin', 'pracownik'].includes(rola)) return res.status(400).json({ error: 'Niepoprawna rola' });
-  const user = await pool.query('UPDATE users SET aktywny = true, rola = $1 WHERE id = $2 AND aktywny = false RETURNING email, imie_nazwisko', [rola, req.params.id]);
-  if (!user.rows.length) return res.status(404).json({ error: 'Uzytkownik nie znaleziony lub juz aktywny' });
-  wyslijPowiadomienie(`Uzytkownik ${user.rows[0].imie_nazwisko} zatwierdzony`, `<p>Użytkownik <b>${user.rows[0].imie_nazwisko}</b> (${user.rows[0].email}) został zatwierdzony z rolą <b>${rola}</b>.</p>`);
-  res.json({ success: true });
+  try {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Brak tokenu' });
+    const decoded = jwt.verify(auth.slice(7), jwtSecret);
+    if (decoded.rola !== 'admin') return res.status(403).json({ error: 'Brak uprawnien' });
+    const { rola } = req.body;
+    if (!rola || !['admin', 'pracownik'].includes(rola)) return res.status(400).json({ error: 'Niepoprawna rola' });
+    const user = await pool.query('UPDATE users SET aktywny = true, rola = $1 WHERE id = $2 AND aktywny = false RETURNING email, imie_nazwisko', [rola, req.params.id]);
+    if (!user.rows.length) return res.status(404).json({ error: 'Uzytkownik nie znaleziony lub juz aktywny' });
+    // Wyslij mail do uzytkownika
+    try {
+      await ADMIN_SMTP.sendMail({
+        from: ADMIN_EMAIL, to: user.rows[0].email,
+        subject: 'Twoje konto SaventOffer zostało aktywowane',
+        html: `<p>Witaj ${user.rows[0].imie_nazwisko},</p><p>Twoje konto w SaventOffer zostało aktywowane przez administratora.</p><p>Możesz się teraz zalogować: <a href="https://saventoffer.savento.pl/login">https://saventoffer.savento.pl/login</a></p>`
+      });
+    } catch(e) { console.error('Email aktywacji error:', e.message); }
+    wyslijPowiadomienie(`Uzytkownik ${user.rows[0].imie_nazwisko} zatwierdzony`, `<p>Użytkownik <b>${user.rows[0].imie_nazwisko}</b> (${user.rows[0].email}) został zatwierdzony z rolą <b>${rola}</b>.</p>`);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Odrzuc uzytkownika (usun)
+// Odrzuc uzytkownika (tylko admin)
 router.delete('/oczekujacy/:id', async (req, res) => {
-  const user = await pool.query('DELETE FROM users WHERE id = $1 AND aktywny = false RETURNING email, imie_nazwisko', [req.params.id]);
-  if (!user.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
-  res.json({ success: true });
+  try {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Brak tokenu' });
+    const decoded = jwt.verify(auth.slice(7), jwtSecret);
+    if (decoded.rola !== 'admin') return res.status(403).json({ error: 'Brak uprawnien' });
+    const user = await pool.query('DELETE FROM users WHERE id = $1 AND aktywny = false RETURNING email, imie_nazwisko', [req.params.id]);
+    if (!user.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // Logowanie — z powiadomieniem
