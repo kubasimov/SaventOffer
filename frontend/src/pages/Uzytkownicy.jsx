@@ -3,16 +3,21 @@ import axios from 'axios'
 
 export default function Uzytkownicy() {
   const [uzytkownicy, setUzytkownicy] = useState([])
+  const [oczekujacy, setOczekujacy] = useState([])
   const [modal, setModal] = useState(false)
   const [rozwinietaId, setRozwinietaId] = useState(null)
   const [form, setForm] = useState({ email: '', haslo: '', imie: '', rola: 'pracownik' })
   const [blad, setBlad] = useState(null)
 
-  useEffect(() => { pobierz() }, [])
+  useEffect(() => { pobierz(); pobierzOczekujacych() }, [])
 
   async function pobierz() {
     const res = await axios.get('/api/users')
     setUzytkownicy(res.data)
+  }
+
+  async function pobierzOczekujacych() {
+    try { const res = await axios.get('/api/auth/oczekujacy'); setOczekujacy(res.data) } catch {}
   }
 
   async function dodaj() {
@@ -47,12 +52,48 @@ export default function Uzytkownicy() {
     }
   }
 
+  async function zatwierdz(u, rola) {
+    await axios.put(`/api/auth/zatwierdz/${u.id}`, { rola })
+    pobierzOczekujacych()
+    pobierz()
+  }
+
+  async function odrzuc(u) {
+    if (!confirm(`Odrzucić prośbę "${u.imie_nazwisko}"?`)) return
+    await axios.delete(`/api/auth/oczekujacy/${u.id}`)
+    pobierzOczekujacych()
+  }
+
   return (
     <div>
       <div className="page-header">
         <h1>Użytkownicy</h1>
         <button className="btn btn-primary" onClick={() => setModal(true)}>+ Dodaj</button>
       </div>
+      {oczekujacy.length > 0 && (
+        <div className="card" style={{marginBottom:16, borderLeft:'3px solid #5f2f4d'}}>
+          <h2 style={{fontSize:16, marginBottom:12}}>⏳ Oczekujący na akceptację ({oczekujacy.length})</h2>
+          <table className="mobile-card-table">
+            <thead><tr><th>Imię</th><th>Email</th><th>Data zgłoszenia</th><th></th></tr></thead>
+            <tbody>
+              {oczekujacy.map(u => (
+                <tr key={u.id}>
+                  <td>{u.imie_nazwisko}</td>
+                  <td>{u.email}</td>
+                  <td>{new Date(u.utworzony).toLocaleString('pl-PL')}</td>
+                  <td style={{textAlign:'right'}}>
+                    <button className="btn btn-primary btn-sm" onClick={() => zatwierdz(u, 'pracownik')}>Zatwierdź</button>
+                    {' '}
+                    <button className="btn btn-secondary btn-sm" onClick={() => zatwierdz(u, 'admin')}>Admin</button>
+                    {' '}
+                    <button className="btn btn-danger btn-sm" onClick={() => odrzuc(u)}>Odrzuć</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="card">
         <table className="mobile-card-table">
           <thead>
