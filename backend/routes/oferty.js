@@ -19,18 +19,27 @@ router.get('/', async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
+    const { status, klient_id } = req.query;
+    
+    const where = [];
+    const params = [];
+    let idx = 1;
+    if (status) { where.push(`o.status = $${idx++}`); params.push(status); }
+    if (klient_id) { where.push(`o.klient_id = $${idx++}`); params.push(klient_id); }
+    const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
 
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM offers'
+      `SELECT COUNT(*) FROM offers o ${whereClause}`, params
     );
     const total = parseInt(countResult.rows[0].count);
 
     const result = await pool.query(`
       SELECT o.*, o.nazwa as oferta_nazwa, c.nazwa as klient_nazwa, c.email as klient_email
       FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
+      ${whereClause}
       ORDER BY o.utworzony DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+      LIMIT $${idx++} OFFSET $${idx++}
+    `, [...params, limit, offset]);
     res.json({ rows: result.rows, total, page, limit, pages: Math.ceil(total / limit) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

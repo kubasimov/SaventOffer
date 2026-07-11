@@ -27,17 +27,22 @@ export default function Oferty() {
   const [mailWysylanie, setMailWysylanie] = useState(false)
   const [mailWyslane, setMailWyslane] = useState([])
   const navigate = useNavigate()
+  const [filtry, setFiltry] = useState({ status: '', klient_id: '' })
+  const [akordeon, setAkordeon] = useState({ status: true, klienci: false })
 
   useEffect(() => {
     pobierzOferty()
     pobierzKlientow()
-  }, [page])
+  }, [page, filtry.status, filtry.klient_id])
 
   async function pobierzOferty() {
     try {
       setBlad(null)
       setLoading(true)
-      const res = await axios.get(`/api/oferty?page=${page}&limit=20`)
+      const params = new URLSearchParams({ page, limit: 20 })
+      if (filtry.status) params.set('status', filtry.status)
+      if (filtry.klient_id) params.set('klient_id', filtry.klient_id)
+      const res = await axios.get(`/api/oferty?${params}`)
       setOferty(res.data.rows)
       setTotal(res.data.total)
       setPages(res.data.pages)
@@ -145,7 +150,61 @@ export default function Oferty() {
   }
 
   return (
-    <div>
+    <div style={{display:'flex', gap:20}}>
+      {/* Sidebar */}
+      <div style={{width:220, minWidth:220}}>
+        <div className="card" style={{padding:0, overflow:'hidden'}}>
+          {/* Status */}
+          <div style={{borderBottom:'1px solid #3a3a3a'}}>
+            <div onClick={() => setAkordeon(a => ({...a, status: !a.status}))}
+              style={{padding:'10px 14px', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center',
+                background: '#2b2b2b', color:'#c6bec4', fontWeight:500, fontSize:13}}>
+              Status {akordeon.status ? '▼' : '▶'}
+            </div>
+            {akordeon.status && (
+              <div style={{padding:'4px 0'}}>
+                <div onClick={() => { setFiltry(f => ({...f, status: ''})); setPage(1) }}
+                  style={{padding:'6px 14px', cursor:'pointer', fontSize:13,
+                    color: !filtry.status ? '#5f2f4d' : '#aaa', fontWeight: !filtry.status ? 600 : 400,
+                    background: !filtry.status ? '#1a1a1a' : ''}}>Wszystkie</div>
+                {Object.entries({szkic:'Szkic', wyslana:'Wysłana', zaakceptowana:'Zaakceptowana', anulowana:'Anulowana'}).map(([k, v]) => (
+                  <div key={k} onClick={() => { setFiltry(f => ({...f, status: k})); setPage(1) }}
+                    style={{padding:'6px 14px', cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', gap:8,
+                      color: filtry.status === k ? '#c6bec4' : '#888', fontWeight: filtry.status === k ? 600 : 400,
+                      background: filtry.status === k ? '#3a3a3a' : ''}}>
+                    <span style={{width:8, height:8, borderRadius:'50%', display:'inline-block', background: statusKolor[k]}}></span>
+                    {v}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Klienci */}
+          <div>
+            <div onClick={() => setAkordeon(a => ({...a, klienci: !a.klienci}))}
+              style={{padding:'10px 14px', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center',
+                background: '#2b2b2b', color:'#c6bec4', fontWeight:500, fontSize:13}}>
+              Klienci {akordeon.klienci ? '▼' : '▶'}
+            </div>
+            {akordeon.klienci && (
+              <div style={{maxHeight:300, overflowY:'auto', padding:'4px 0'}}>
+                <div onClick={() => { setFiltry(f => ({...f, klient_id: ''})); setPage(1) }}
+                  style={{padding:'6px 14px', cursor:'pointer', fontSize:13,
+                    color: !filtry.klient_id ? '#5f2f4d' : '#aaa', fontWeight: !filtry.klient_id ? 600 : 400,
+                    background: !filtry.klient_id ? '#1a1a1a' : ''}}>Wszyscy</div>
+                {klienci.map(k => (
+                  <div key={k.id} onClick={() => { setFiltry(f => ({...f, klient_id: k.id})); setPage(1) }}
+                    style={{padding:'6px 14px', cursor:'pointer', fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                      color: filtry.klient_id === k.id ? '#c6bec4' : '#888', fontWeight: filtry.klient_id === k.id ? 600 : 400,
+                      background: filtry.klient_id === k.id ? '#3a3a3a' : ''}}>{k.nazwa}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* Tresci */}
+      <div style={{flex:1}}>
       <div className="page-header">
         <h1>Oferty</h1>
         {isAdmin && <button className="btn btn-primary" onClick={() => setModal(true)}>+ Nowa oferta</button>}
@@ -384,6 +443,7 @@ export default function Oferty() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
