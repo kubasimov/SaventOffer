@@ -203,15 +203,15 @@ export default function EdytorOferty() {
   }
 
   async function wybierzMailOdpowiedz(mail) {
-    const cytatHtml = mail.html ? mail.html : `<pre>${mail.text}</pre>`;
-    setMailForm({
-      odbiorca: mail.from || emailKlienta,
-      temat: `Re: ${mail.subject}`,
-      tresc: '',
-      odpowiedz_na: mail.messageId,
-      html_oryginalny: cytatHtml
-    })
-  }
+      const cytatHtml = mail.html ? mail.html : `<pre>${mail.text}</pre>`
+      setMailForm(prev => ({
+        ...prev,
+        odbiorca: mail.from || emailKlienta,
+        temat: `Re: ${mail.subject}`,
+        odpowiedz_na: mail.messageId,
+        html_oryginalny: cytatHtml
+      }))
+    }
 
   async function wyslijMail() {
     if (!mailForm.odbiorca) return alert('Podaj adres odbiorcy')

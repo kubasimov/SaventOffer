@@ -102,13 +102,13 @@ export default function Oferty() {
 
   async function wybierzMailOdpowiedz(mail) {
     const cytatHtml = mail.html ? mail.html : `<pre>${mail.text}</pre>`
-    setMailForm({
+    setMailForm(prev => ({
+      ...prev,
       odbiorca: mail.from || emailKlienta,
       temat: `Re: ${mail.subject}`,
-      tresc: '',
       odpowiedz_na: mail.messageId,
       html_oryginalny: cytatHtml
-    })
+    }))
   }
 
   async function wyslijMail() {

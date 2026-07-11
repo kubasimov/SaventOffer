@@ -29,8 +29,6 @@ beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
   delete axios.defaults.headers.common['Authorization']
-  // Ukryj bledy konsoli z Google Identity Services
-  vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
 describe('Login page', () => {
@@ -40,11 +38,6 @@ describe('Login page', () => {
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument()
     expect(screen.getByText('Zaloguj się', { selector: 'button' })).toBeInTheDocument()
     expect(screen.getByText('SaventOffer')).toBeInTheDocument()
-  })
-
-  it('renderuje przycisk Google', () => {
-    renderLogin()
-    expect(screen.getByText('lub')).toBeInTheDocument()
   })
 
   it('loguje sie przez email/haslo i nawiguje do /', async () => {

@@ -1,10 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db/pool');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const OAuth2Client = require('google-auth-library').OAuth2Client;
-const { jwtSecret } = require('../config');
+const pool = require('../db/pool');
 const { enforcePasswordPolicy } = require('../utils/password');
 
 const JWT_EXPIRES = '7d';
@@ -45,23 +43,6 @@ router.post('/zmien-haslo', async (req, res) => {
     await pool.query('UPDATE users SET haslo_hash = $1 WHERE id = $2', [hash, decoded.id]);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Blad zmiany hasla' }); }
-});
-
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-router.post('/google', async (req, res) => {
-  const { credential } = req.body;
-  if (!credential) return res.status(400).json({ error: 'Brak tokenu Google' });
-  try {
-    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
-    const { email, name: imie } = ticket.getPayload();
-    let user = (await pool.query('SELECT * FROM users WHERE email = $1', [email])).rows[0];
-    if (!user) {
-      const hash = await bcrypt.hash(Math.random().toString(36), 10);
-      user = (await pool.query('INSERT INTO users (email, haslo_hash, imie_nazwisko, rola) VALUES ($1,$2,$3,$4) RETURNING *', [email, hash, imie, 'pracownik'])).rows[0];
-    }
-    if (!user.aktywny) return res.status(401).json({ error: 'Konto zablokowane' });
-    res.json(sign(user));
-  } catch { res.status(401).json({ error: 'Nieprawidlowy token Google' }); }
 });
 
 module.exports = router;
