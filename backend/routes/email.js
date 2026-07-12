@@ -10,25 +10,47 @@ const { pobierzDaneOferty } = require('./pdf'); // jesli potrzebne
 const SMTP_HOST = process.env.SMTP_HOST || 'n3.smarthost.pl';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465');
 const SMTP_USER = process.env.SMTP_USER || 'reklamacja@savento.pl';
-const SMTP_PASS = process.env.SMTP_PASS || '5kbE4V!i#FDeWBfL#vrW';
+const SMTP_PASS = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || 'OcytKkFcyB#[PX5T';
 const IMAP_HOST = process.env.IMAP_HOST || 'n3.smarthost.pl';
 const IMAP_PORT = parseInt(process.env.IMAP_PORT || '993');
 const EMAIL_FROM = process.env.EMAIL_FROM || 'reklamacja@savento.pl';
 
-// Transporter SMTP
-function getTransporter() {
+async function pobierzKonfiguracjeEmail() {
+  try {
+    const pool = require('./db/pool');
+    const r = await pool.query("SELECT wartosc FROM ustawienia WHERE klucz='konfiguracja_email'");
+    if (r.rows.length) {
+      const c = JSON.parse(r.rows[0].wartosc);
+      return {
+        smtp_host: c.smtp_host || SMTP_HOST,
+        smtp_port: parseInt(c.smtp_port) || SMTP_PORT,
+        smtp_user: c.smtp_user || SMTP_USER,
+        smtp_pass: c.smtp_pass || SMTP_PASS,
+        imap_host: c.imap_host || IMAP_HOST,
+        imap_port: parseInt(c.imap_port) || IMAP_PORT,
+        email_from: c.email_from || EMAIL_FROM
+      };
+    }
+  } catch(e) { console.error('KonfiguracjaEmail error:', e.message); }
+  return { smtp_host: SMTP_HOST, smtp_port: SMTP_PORT, smtp_user: SMTP_USER, smtp_pass: SMTP_PASS, imap_host: IMAP_HOST, imap_port: IMAP_PORT, email_from: EMAIL_FROM };
+}
+
+// Transporter SMTP z konfiguracji z bazy
+async function getTransporter() {
+  const cfg = await pobierzKonfiguracjeEmail();
   return nodemailer.createTransport({
-    host: SMTP_HOST, port: SMTP_PORT, secure: true,
-    auth: { user: SMTP_USER, pass: SMTP_PASS }
+    host: cfg.smtp_host, port: cfg.smtp_port, secure: true,
+    auth: { user: cfg.smtp_user, pass: cfg.smtp_pass }
   });
 }
 
 // Pobierz ostatnie maile z IMAP dla danego adresu
-function pobierzMaile(adres, limit = 20) {
+async function pobierzMaile(adres, limit = 20) {
+  const cfg = await pobierzKonfiguracjeEmail();
   return new Promise((resolve, reject) => {
     const imap = new Imap({
-      user: SMTP_USER, password: SMTP_PASS,
-      host: IMAP_HOST, port: IMAP_PORT, tls: true
+      user: cfg.smtp_user, password: cfg.smtp_pass,
+      host: cfg.imap_host, port: cfg.imap_port, tls: true
     });
     const wyniki = [];
     let oczekuje = 0;
@@ -92,13 +114,16 @@ router.get('/oferty/:id/maile', async (req, res) => {
 router.post('/oferty/:id/wyslij', async (req, res) => {
   try {
     const { do_adresu, temat, tresc, odpowiedz_na, html_oryginalny } = req.body;
-    if (!do_adresu) return res.status(400).json({ error: 'Brak adresu odbiorcy' });
+        if (!do_adresu) return res.status(400).json({ error: 'Brak adresu odbiorcy' });
 
-    // Generuj PDF
-    const data = await pobierzDaneOferty(req.params.id);
-    if (!data) return res.status(404).json({ error: 'Nie znaleziono oferty' });
-    const outputPath = `/opt/savento/pdf-output/${data.oferta.numer}.pdf`;
-    const danePath = `/tmp/pdf_dane_${Date.now()}.json`;
+        // Generuj PDF
+        const data = await pobierzDaneOferty(req.params.id);
+        const pdfBuf = await generujPdf(data);
+        const outputPath = `/tmp/oferta_${Date.now()}.pdf`;
+        require('fs').writeFileSync(outputPath, pdfBuf);
+
+        // Pobierz konfiguracje email
+        const cfg = await pobierzKonfiguracjeEmail();
     require('fs').writeFileSync(danePath, JSON.stringify({
       ...data, klient_dane: req.body.klient_dane || null,
       zalozenia: '', specyfikacja: [], kategoria: '', tylko_podsumowanie: false
@@ -108,7 +133,7 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
     try { require('fs').unlinkSync(danePath); } catch(e) {}
 
     // Wyslij maila
-            const transporter = getTransporter();
+            const transporter = await getTransporter();
             const stopkaRaw = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
             // Zachowaj style, usun tylko otaczajace <html><head><body>
             let stopkaTresc = stopkaRaw.replace(/<!DOCTYPE[^>]*>/gi, '');
@@ -145,7 +170,7 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
     </body>
     </html>`;
     const mailOptions = {
-      from: EMAIL_FROM, to: do_adresu,
+      from: cfg.email_from, to: do_adresu,
       subject: temat || `Wycena: ${data.oferta.numer}`,
       html: emailHtml,
       text: wlasnaTrescPlain,
@@ -161,6 +186,7 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
 
     // Zapisz kopie w IMAP INBOX.Sent uzywajac nodemailer (stream transport) dla poprawnego MIME
     try {
+      const cfg = await pobierzKonfiguracjeEmail();
       const rawGen = nodemailer.createTransport({ streamTransport: true, newline: 'unix', buffer: true });
       const rawInfo = await rawGen.sendMail(mailOptions);
       // Z buffer: true, rawInfo.message jest juz gotowym Bufferem
@@ -169,8 +195,8 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
       await new Promise((resolve) => {
         const Imap2 = require('imap');
         const imapSent = new Imap2({
-          user: SMTP_USER, password: SMTP_PASS,
-          host: IMAP_HOST, port: IMAP_PORT, tls: true
+          user: cfg.smtp_user, password: cfg.smtp_pass,
+          host: cfg.imap_host, port: cfg.imap_port, tls: true
         });
         imapSent.once('ready', () => {
           imapSent.append(rawBuffer, { mailbox: 'INBOX.Sent', flags: ['\\Seen'] }, (err) => {

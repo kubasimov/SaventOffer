@@ -3,9 +3,10 @@ import axios from 'axios'
 import Cennik from './Cennik'
 import Uzytkownicy from './Uzytkownicy'
 import Import from './Import'
+import KonfiguracjaEmail from './KonfiguracjaEmail'
 import ListaPunktow from '../components/ListaPunktow'
 
-const ZAKLADKI = ['Cennik', 'Założenia', 'Specyfikacja', 'Użytkownicy', 'Import']
+const ZAKLADKI = ['Cennik', 'Założenia', 'Specyfikacja', 'Użytkownicy', 'Import', 'Poczta']
 
 export default function Ustawienia() {
   const [aktywna, setAktywna] = useState(0)
@@ -119,6 +120,7 @@ export default function Ustawienia() {
 
       {/* Zakładka: Import */}
       {aktywna === 4 && <Import />}
+      {aktywna === 5 && <KonfiguracjaEmail />}
     </div>
   )
 }

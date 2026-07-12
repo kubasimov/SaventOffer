@@ -103,6 +103,7 @@ export default function Klienci() {
                   <td className="mobile-hide">{k.kontakt || '—'}</td>
                   <td className="mobile-hide">{k.email || '—'}</td>
                   <td className="mobile-hide">{k.telefon || '—'}</td>
+                  <td className="mobile-hide">{k.utworzony ? new Date(k.utworzony).toLocaleDateString('pl-PL') : '—'}</td>
                   <td className="mobile-hide" style={{textAlign:'right'}}
                     onClick={e => e.stopPropagation()}>
                     <button className="btn btn-secondary btn-sm" onClick={() => otworzModal(k)}>Edytuj</button>

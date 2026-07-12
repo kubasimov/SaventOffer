@@ -7,7 +7,7 @@ router.get('/', async (req, res) => {
   try {
     // ?all=true — zwraca wszystkie rekordy (do dropdownów)
     if (req.query.all === 'true') {
-      const result = await pool.query('SELECT * FROM clients ORDER BY nazwa ASC');
+      const result = await pool.query('SELECT * FROM clients ORDER BY utworzony DESC');
       return res.json(result.rows);
     }
 
