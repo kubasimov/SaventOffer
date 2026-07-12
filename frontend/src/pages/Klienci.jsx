@@ -14,11 +14,13 @@ export default function Klienci() {
   const [form, setForm] = useState({ nazwa: '', adres: '', kontakt: '', email: '', telefon: '', uwagi: '' })
   const [sortBy, setSortBy] = useState('nazwa')
   const [sortOrder, setSortOrder] = useState('asc')
+  const [szukaj, setSzukaj] = useState('')
+  const [q, setQ] = useState('')
 
-  useEffect(() => { pobierzKlientow() }, [page, sortBy, sortOrder])
+  useEffect(() => { pobierzKlientow() }, [page, sortBy, sortOrder, q])
 
   async function pobierzKlientow() {
-    const res = await axios.get(`/api/klienci?page=${page}&limit=20&sort_by=${sortBy}&sort_order=${sortOrder}`)
+    const res = await axios.get(`/api/klienci?page=${page}&limit=20&sort_by=${sortBy}&sort_order=${sortOrder}${q ? `&q=${encodeURIComponent(q)}` : ''}`)
     setKlienci(res.data.rows)
     setTotal(res.data.total)
     setPages(res.data.pages)
@@ -84,7 +86,16 @@ export default function Klienci() {
       {/* Tresc */}
       <div style={{flex:1}}>
       <div className="page-header">
-        <h1>Klienci</h1>
+        <div style={{display:'flex', alignItems:'center', gap:12, flex:1}}>
+          <h1 style={{margin:0}}>Klienci</h1>
+          <input value={szukaj} onChange={e => setSzukaj(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { setQ(szukaj); setPage(1) } }}
+            placeholder="🔍 Szukaj po nazwie, emailu lub telefonie..."
+            style={{flex:1, maxWidth:320, padding:'6px 10px', borderRadius:6, border:'1px solid #444', fontSize:13, background:'#2b2b2b', color:'white'}} />
+          {(q || szukaj) && (
+            <button className="btn btn-secondary btn-sm" onClick={() => { setSzukaj(''); setQ(''); setPage(1) }}>✕</button>
+          )}
+        </div>
         <button className="btn btn-primary" onClick={() => otworzModal()}>+ Dodaj klienta</button>
       </div>
       <div className="card">

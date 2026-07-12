@@ -19,13 +19,14 @@ router.get('/', async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
-    const { status, klient_id } = req.query;
+    const { status, klient_id, q } = req.query;
     
     const where = [];
     const params = [];
     let idx = 1;
     if (status) { where.push(`o.status = $${idx++}`); params.push(status); }
     if (klient_id) { where.push(`o.klient_id = $${idx++}`); params.push(klient_id); }
+    if (q) { where.push(`(o.nazwa ILIKE $${idx} OR o.numer ILIKE $${idx} OR o.utworzony::text ILIKE $${idx})`); params.push(`%${q}%`); idx++; }
     const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
 
     const countResult = await pool.query(

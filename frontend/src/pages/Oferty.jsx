@@ -28,12 +28,14 @@ export default function Oferty() {
   const [mailWysylanie, setMailWysylanie] = useState(false)
   const [mailWyslane, setMailWyslane] = useState([])
   const navigate = useNavigate()
-  const [filtry, setFiltry] = useState({ status: '', klient_id: '' })
+  const [filtry, setFiltry] = useState({ status: '', klient_id: '', q: '' })
+  const [szukaj, setSzukaj] = useState('')
+  const [szukajKlienta, setSzukajKlienta] = useState('')
 
   useEffect(() => {
     pobierzOferty()
     pobierzKlientow()
-  }, [page, filtry.status, filtry.klient_id])
+  }, [page, filtry.status, filtry.klient_id, filtry.q])
 
   async function pobierzOferty() {
     try {
@@ -42,6 +44,7 @@ export default function Oferty() {
       const params = new URLSearchParams({ page, limit: 20 })
       if (filtry.status) params.set('status', filtry.status)
       if (filtry.klient_id) params.set('klient_id', filtry.klient_id)
+      if (filtry.q) params.set('q', filtry.q)
       const res = await axios.get(`/api/oferty?${params}`)
       setOferty(res.data.rows)
       setTotal(res.data.total)
@@ -56,9 +59,9 @@ export default function Oferty() {
 
   async function pobierzKlientow() {
     try {
-      const res = await axios.get('/api/klienci?all=true')
+      const res = await axios.get('/api/klienci?all=true&sort=nazwa')
       setKlienci(res.data)
-    } catch { /* ignoruj — dropdown nie jest krytyczny */ }
+    } catch { /* ignoruj */ }
   }
 
   async function usunOferte(id, numer) {
@@ -154,6 +157,22 @@ export default function Oferty() {
       {/* Sidebar */}
       <div style={{width:220, minWidth:220}}>
         <div className="card" style={{padding:0, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.25)', borderRadius:12}}>
+          <div style={{padding:'8px 10px', borderBottom:'1px solid #3a3a3a'}}>
+            <input
+              value={szukaj} onChange={e => setSzukaj(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { setFiltry(f => ({...f, q: szukaj})); setPage(1) } }}
+              placeholder="🔍 Szukaj oferty..."
+              style={{width:'100%', padding:'6px 8px', borderRadius:6, border:'1px solid #444', fontSize:12, background:'#2b2b2b', color:'white', boxSizing:'border-box'}}
+            />
+            {szukaj && szukaj !== filtry.q && (
+              <div style={{display:'flex', gap:4, marginTop:4}}>
+                <button className="btn btn-primary btn-sm" style={{flex:1, fontSize:11, padding:'3px 0'}}
+                  onClick={() => { setFiltry(f => ({...f, q: szukaj})); setPage(1) }}>Szukaj</button>
+                <button className="btn btn-secondary btn-sm" style={{fontSize:11, padding:'3px 6px'}}
+                  onClick={() => { setSzukaj(''); setFiltry(f => ({...f, q: ''})); setPage(1) }}>✕</button>
+              </div>
+            )}
+          </div>
           <SidebarAkordeon title="Status" icon="📋" domyslnieOtwarty>
             <AkordeonItem label="Wszystkie" aktywny={!filtry.status} onClick={() => { setFiltry(f => ({...f, status: ''})); setPage(1) }} />
             {Object.entries({szkic:'Szkic', wyslana:'Wysłana', zaakceptowana:'Zaakceptowana', anulowana:'Anulowana'}).map(([k, v]) => (
@@ -163,8 +182,12 @@ export default function Oferty() {
             ))}
           </SidebarAkordeon>
           <SidebarAkordeon title="Klienci" icon="👤" domyslnieOtwarty={false}>
+            <div style={{padding:'4px 8px'}}>
+              <input value={szukajKlienta} onChange={e => setSzukajKlienta(e.target.value)}
+                placeholder="🔍 Szukaj klienta..." style={{width:'100%', padding:'5px 8px', borderRadius:6, border:'1px solid #444', fontSize:12, background:'#2b2b2b', color:'white', boxSizing:'border-box'}} />
+            </div>
             <AkordeonItem label="Wszyscy" aktywny={!filtry.klient_id} onClick={() => { setFiltry(f => ({...f, klient_id: ''})); setPage(1) }} />
-            {klienci.map(k => (
+            {klienci.filter(k => !szukajKlienta || k.nazwa.toLowerCase().includes(szukajKlienta.toLowerCase())).map(k => (
               <AkordeonItem key={k.id} label={k.nazwa} aktywny={filtry.klient_id === k.id}
                 onClick={() => { setFiltry(f => ({...f, klient_id: k.id})); setPage(1) }} />
             ))}
