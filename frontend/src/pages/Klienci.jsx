@@ -11,11 +11,13 @@ export default function Klienci() {
   const [edytowany, setEdytowany] = useState(null)
   const [rozwinietaId, setRozwinietaId] = useState(null)
   const [form, setForm] = useState({ nazwa: '', adres: '', kontakt: '', email: '', telefon: '', uwagi: '' })
+  const [sortBy, setSortBy] = useState('nazwa')
+  const [sortOrder, setSortOrder] = useState('asc')
 
-  useEffect(() => { pobierzKlientow() }, [page])
+  useEffect(() => { pobierzKlientow() }, [page, sortBy, sortOrder])
 
   async function pobierzKlientow() {
-    const res = await axios.get(`/api/klienci?page=${page}&limit=20`)
+    const res = await axios.get(`/api/klienci?page=${page}&limit=20&sort_by=${sortBy}&sort_order=${sortOrder}`)
     setKlienci(res.data.rows)
     setTotal(res.data.total)
     setPages(res.data.pages)
@@ -80,10 +82,15 @@ export default function Klienci() {
           <table className="mobile-card-table">
             <thead>
               <tr>
-                <th>Nazwa</th>
+                <th style={{cursor:'pointer'}} onClick={() => { setSortBy('nazwa'); setSortOrder(sortBy === 'nazwa' && sortOrder === 'asc' ? 'desc' : 'asc'); setPage(1) }}>
+                  Nazwa {sortBy === 'nazwa' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                </th>
                 <th>Kontakt</th>
                 <th>Email</th>
                 <th>Telefon</th>
+                <th style={{cursor:'pointer'}} onClick={() => { setSortBy('data'); setSortOrder(sortBy === 'data' && sortOrder === 'desc' ? 'asc' : 'desc'); setPage(1) }}>
+                  Data {sortBy === 'data' ? (sortOrder === 'desc' ? '▼' : '▲') : ''}
+                </th>
                 <th></th>
               </tr>
             </thead>

@@ -14,12 +14,14 @@ router.get('/', async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const offset = (page - 1) * limit;
+    const sortBy = req.query.sort_by === 'data' ? 'utworzony' : 'nazwa';
+    const sortOrder = req.query.sort_order === 'asc' ? 'ASC' : 'DESC';
 
     const countResult = await pool.query('SELECT COUNT(*) FROM clients');
     const total = parseInt(countResult.rows[0].count);
 
     const result = await pool.query(
-      'SELECT * FROM clients ORDER BY nazwa ASC LIMIT $1 OFFSET $2',
+      `SELECT * FROM clients ORDER BY ${sortBy} ${sortOrder} LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
     res.json({ rows: result.rows, total, page, limit, pages: Math.ceil(total / limit) });
