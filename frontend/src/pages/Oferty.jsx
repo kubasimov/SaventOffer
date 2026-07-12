@@ -1,4 +1,5 @@
 import KreatorPDF from '../components/KreatorPDF'
+import SidebarAkordeon, { AkordeonItem } from '../components/SidebarAkordeon'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../AuthContext'
@@ -28,7 +29,6 @@ export default function Oferty() {
   const [mailWyslane, setMailWyslane] = useState([])
   const navigate = useNavigate()
   const [filtry, setFiltry] = useState({ status: '', klient_id: '' })
-  const [akordeon, setAkordeon] = useState({ status: true, klienci: false })
 
   useEffect(() => {
     pobierzOferty()
@@ -153,54 +153,22 @@ export default function Oferty() {
     <div style={{display:'flex', gap:20}}>
       {/* Sidebar */}
       <div style={{width:220, minWidth:220}}>
-        <div className="card" style={{padding:0, overflow:'hidden'}}>
-          {/* Status */}
-          <div style={{borderBottom:'1px solid #3a3a3a'}}>
-            <div onClick={() => setAkordeon(a => ({...a, status: !a.status}))}
-              style={{padding:'10px 14px', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center',
-                background: '#2b2b2b', color:'#c6bec4', fontWeight:500, fontSize:13}}>
-              Status {akordeon.status ? '▼' : '▶'}
-            </div>
-            {akordeon.status && (
-              <div style={{padding:'4px 0'}}>
-                <div onClick={() => { setFiltry(f => ({...f, status: ''})); setPage(1) }}
-                  style={{padding:'6px 14px', cursor:'pointer', fontSize:13,
-                    color: !filtry.status ? '#5f2f4d' : '#aaa', fontWeight: !filtry.status ? 600 : 400,
-                    background: !filtry.status ? '#1a1a1a' : ''}}>Wszystkie</div>
-                {Object.entries({szkic:'Szkic', wyslana:'Wysłana', zaakceptowana:'Zaakceptowana', anulowana:'Anulowana'}).map(([k, v]) => (
-                  <div key={k} onClick={() => { setFiltry(f => ({...f, status: k})); setPage(1) }}
-                    style={{padding:'6px 14px', cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', gap:8,
-                      color: filtry.status === k ? '#c6bec4' : '#888', fontWeight: filtry.status === k ? 600 : 400,
-                      background: filtry.status === k ? '#3a3a3a' : ''}}>
-                    <span style={{width:8, height:8, borderRadius:'50%', display:'inline-block', background: statusKolor[k]}}></span>
-                    {v}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {/* Klienci */}
-          <div>
-            <div onClick={() => setAkordeon(a => ({...a, klienci: !a.klienci}))}
-              style={{padding:'10px 14px', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center',
-                background: '#2b2b2b', color:'#c6bec4', fontWeight:500, fontSize:13}}>
-              Klienci {akordeon.klienci ? '▼' : '▶'}
-            </div>
-            {akordeon.klienci && (
-              <div style={{maxHeight:300, overflowY:'auto', padding:'4px 0'}}>
-                <div onClick={() => { setFiltry(f => ({...f, klient_id: ''})); setPage(1) }}
-                  style={{padding:'6px 14px', cursor:'pointer', fontSize:13,
-                    color: !filtry.klient_id ? '#5f2f4d' : '#aaa', fontWeight: !filtry.klient_id ? 600 : 400,
-                    background: !filtry.klient_id ? '#1a1a1a' : ''}}>Wszyscy</div>
-                {klienci.map(k => (
-                  <div key={k.id} onClick={() => { setFiltry(f => ({...f, klient_id: k.id})); setPage(1) }}
-                    style={{padding:'6px 14px', cursor:'pointer', fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-                      color: filtry.klient_id === k.id ? '#c6bec4' : '#888', fontWeight: filtry.klient_id === k.id ? 600 : 400,
-                      background: filtry.klient_id === k.id ? '#3a3a3a' : ''}}>{k.nazwa}</div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="card" style={{padding:0, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.25)', borderRadius:12}}>
+          <SidebarAkordeon title="Status" icon="📋" domyslnieOtwarty>
+            <AkordeonItem label="Wszystkie" aktywny={!filtry.status} onClick={() => { setFiltry(f => ({...f, status: ''})); setPage(1) }} />
+            {Object.entries({szkic:'Szkic', wyslana:'Wysłana', zaakceptowana:'Zaakceptowana', anulowana:'Anulowana'}).map(([k, v]) => (
+              <AkordeonItem key={k} label={v} aktywny={filtry.status === k}
+                kropka={statusKolor[k]}
+                onClick={() => { setFiltry(f => ({...f, status: k})); setPage(1) }} />
+            ))}
+          </SidebarAkordeon>
+          <SidebarAkordeon title="Klienci" icon="👤" domyslnieOtwarty={false}>
+            <AkordeonItem label="Wszyscy" aktywny={!filtry.klient_id} onClick={() => { setFiltry(f => ({...f, klient_id: ''})); setPage(1) }} />
+            {klienci.map(k => (
+              <AkordeonItem key={k.id} label={k.nazwa} aktywny={filtry.klient_id === k.id}
+                onClick={() => { setFiltry(f => ({...f, klient_id: k.id})); setPage(1) }} />
+            ))}
+          </SidebarAkordeon>
         </div>
       </div>
       {/* Tresci */}

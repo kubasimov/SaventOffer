@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import SidebarAkordeon, { AkordeonItem } from '../components/SidebarAkordeon'
 
 export default function Klienci() {
   const [klienci, setKlienci] = useState([])
@@ -64,7 +65,24 @@ export default function Klienci() {
   }
 
   return (
-    <div>
+    <div style={{display:'flex', gap:20}}>
+      {/* Sidebar */}
+      <div style={{width:220, minWidth:220}}>
+        <div className="card" style={{padding:0, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.25)', borderRadius:12}}>
+          <SidebarAkordeon title="Sortowanie" icon="🔤" domyslnieOtwarty>
+            <AkordeonItem label="Nazwa A-Z" ikona="A" aktywny={sortBy === 'nazwa' && sortOrder === 'asc'}
+              onClick={() => { setSortBy('nazwa'); setSortOrder('asc'); setPage(1) }} />
+            <AkordeonItem label="Nazwa Z-A" ikona="Z" aktywny={sortBy === 'nazwa' && sortOrder === 'desc'}
+              onClick={() => { setSortBy('nazwa'); setSortOrder('desc'); setPage(1) }} />
+            <AkordeonItem label="Najnowsi" ikona="🆕" aktywny={sortBy === 'data' && sortOrder === 'desc'}
+              onClick={() => { setSortBy('data'); setSortOrder('desc'); setPage(1) }} />
+            <AkordeonItem label="Najstarsi" ikona="📅" aktywny={sortBy === 'data' && sortOrder === 'asc'}
+              onClick={() => { setSortBy('data'); setSortOrder('asc'); setPage(1) }} />
+          </SidebarAkordeon>
+        </div>
+      </div>
+      {/* Tresc */}
+      <div style={{flex:1}}>
       <div className="page-header">
         <h1>Klienci</h1>
         <button className="btn btn-primary" onClick={() => otworzModal()}>+ Dodaj klienta</button>
@@ -140,52 +158,27 @@ export default function Klienci() {
             <h2>{edytowany ? 'Edytuj klienta' : 'Nowy klient'}</h2>
             <div className="form-group">
               <label>Nazwa firmy / klienta *</label>
-              <input
-                value={form.nazwa}
-                onChange={e => setForm({...form, nazwa: e.target.value})}
-                placeholder="np. Jan Kowalski"
-              />
+              <input value={form.nazwa} onChange={e => setForm({...form, nazwa: e.target.value})} placeholder="np. Jan Kowalski" />
             </div>
             <div className="form-group">
               <label>Adres</label>
-              <input
-                value={form.adres}
-                onChange={e => setForm({...form, adres: e.target.value})}
-                placeholder="np. ul. Kwiatowa 15, 00-001 Warszawa"
-              />
+              <input value={form.adres} onChange={e => setForm({...form, adres: e.target.value})} placeholder="np. ul. Kwiatowa 15, 00-001 Warszawa" />
             </div>
             <div className="form-group">
               <label>Osoba kontaktowa</label>
-              <input
-                value={form.kontakt}
-                onChange={e => setForm({...form, kontakt: e.target.value})}
-                placeholder="np. Anna Nowak"
-              />
+              <input value={form.kontakt} onChange={e => setForm({...form, kontakt: e.target.value})} placeholder="np. Anna Nowak" />
             </div>
             <div className="form-group">
               <label>Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm({...form, email: e.target.value})}
-                placeholder="np. jan@example.com"
-              />
+              <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="np. jan@example.com" />
             </div>
             <div className="form-group">
               <label>Telefon</label>
-              <input
-                value={form.telefon}
-                onChange={e => setForm({...form, telefon: e.target.value})}
-                placeholder="np. 600 123 456"
-              />
+              <input value={form.telefon} onChange={e => setForm({...form, telefon: e.target.value})} placeholder="np. 600 123 456" />
             </div>
             <div className="form-group">
               <label>Uwagi</label>
-              <input
-                value={form.uwagi}
-                onChange={e => setForm({...form, uwagi: e.target.value})}
-                placeholder="opcjonalne"
-              />
+              <input value={form.uwagi} onChange={e => setForm({...form, uwagi: e.target.value})} placeholder="opcjonalne" />
             </div>
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={() => setModal(false)}>Anuluj</button>
@@ -194,6 +187,7 @@ export default function Klienci() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
