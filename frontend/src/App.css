@@ -451,6 +451,11 @@ select:focus { border-color: #582A48; box-shadow: 0 0 0 3px rgba(95,47,77,0.3); 
 }
 .spin { display: inline-block; animation: spin 1s linear infinite; }
 
+/* Ukryj sidebar na urzadzeniach mobilnych */
+@media (max-width: 768px) {
+  .sidebar-desktop { display: none !important; }
+}
+
 /* ========== MOBILE CARD VIEW ========== */
 @media (max-width: 768px) {
   /* Oferty: kazdy wiersz = karta */

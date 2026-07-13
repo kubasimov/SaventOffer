@@ -69,7 +69,7 @@ export default function Klienci() {
   return (
     <div style={{display:'flex', gap:20}}>
       {/* Sidebar */}
-      <div style={{width:220, minWidth:220}}>
+      <div className="sidebar-desktop" style={{width:220, minWidth:220}}>
         <div className="card" style={{padding:0, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.25)', borderRadius:12}}>
           <SidebarAkordeon title="Sortowanie" icon="🔤" domyslnieOtwarty>
             <AkordeonItem label="Nazwa A-Z" ikona="A" aktywny={sortBy === 'nazwa' && sortOrder === 'asc'}

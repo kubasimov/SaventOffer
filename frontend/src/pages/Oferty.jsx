@@ -155,21 +155,16 @@ export default function Oferty() {
   return (
     <div style={{display:'flex', gap:20}}>
       {/* Sidebar */}
-      <div style={{width:220, minWidth:220}}>
+      <div className="sidebar-desktop" style={{width:220, minWidth:220}}>
         <div className="card" style={{padding:0, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.25)', borderRadius:12}}>
           <div style={{padding:'8px 10px', borderBottom:'1px solid #3a3a3a'}}>
-            <input
-              value={szukaj} onChange={e => setSzukaj(e.target.value)}
+            <input value={szukaj} onChange={e => setSzukaj(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { setFiltry(f => ({...f, q: szukaj})); setPage(1) } }}
-              placeholder="🔍 Szukaj oferty..."
-              style={{width:'100%', padding:'6px 8px', borderRadius:6, border:'1px solid #444', fontSize:12, background:'#2b2b2b', color:'white', boxSizing:'border-box'}}
-            />
+              placeholder="🔍 Szukaj oferty..." style={{width:'100%', padding:'6px 8px', borderRadius:6, border:'1px solid #444', fontSize:12, background:'#2b2b2b', color:'white', boxSizing:'border-box'}} />
             {szukaj && szukaj !== filtry.q && (
               <div style={{display:'flex', gap:4, marginTop:4}}>
-                <button className="btn btn-primary btn-sm" style={{flex:1, fontSize:11, padding:'3px 0'}}
-                  onClick={() => { setFiltry(f => ({...f, q: szukaj})); setPage(1) }}>Szukaj</button>
-                <button className="btn btn-secondary btn-sm" style={{fontSize:11, padding:'3px 6px'}}
-                  onClick={() => { setSzukaj(''); setFiltry(f => ({...f, q: ''})); setPage(1) }}>✕</button>
+                <button className="btn btn-primary btn-sm" style={{flex:1, fontSize:11, padding:'3px 0'}} onClick={() => { setFiltry(f => ({...f, q: szukaj})); setPage(1) }}>Szukaj</button>
+                <button className="btn btn-secondary btn-sm" style={{fontSize:11, padding:'3px 6px'}} onClick={() => { setSzukaj(''); setFiltry(f => ({...f, q: ''})); setPage(1) }}>✕</button>
               </div>
             )}
           </div>
