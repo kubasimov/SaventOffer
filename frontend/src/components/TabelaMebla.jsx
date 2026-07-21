@@ -449,7 +449,9 @@ export default function TabelaMebla({ tabela, cennik, kortGlobalna = 0, onAktual
       razem_przed: sumaRaw,
       razem: razem
     })
-    if (onKopiuj) onKopiuj(nowaTabela)
+    // Pobierz pelne dane tabeli z pozycjami
+    const pelnaTabela = (await axios.get(`/api/oferty/tabele-szczegoly/${nowaTabela.id}`)).data
+    if (onKopiuj) onKopiuj(pelnaTabela)
   }
 
   async function zapiszKorekteDoDb(nowaKorekta, noweVat, nowaIlosc) {

@@ -434,4 +434,57 @@ router.get('/:id/historia', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Kopiuj cala oferte z wszystkimi tabelami, pozycjami i wymiarami
+router.post('/:id/kopiuj', async (req, res) => {
+  try {
+    const { klient_id } = req.body;
+    // Pobierz oryginalna oferte
+    const orig = await pool.query('SELECT * FROM offers WHERE id = $1', [req.params.id]);
+    if (!orig.rows.length) return res.status(404).json({ error: 'Nie znaleziono' });
+    const o = orig.rows[0];
+    const numer = await generujNumer();
+    // Utworz nowa oferte
+    const nowa = await pool.query(
+      `INSERT INTO offers (klient_id, numer, nazwa, uwagi, status) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [klient_id || o.klient_id, numer, (o.nazwa || '') + ' (kopia)', o.uwagi, 'szkic']
+    );
+    // Kopiuj tabele
+    const tabele = await pool.query('SELECT * FROM furniture_tables WHERE oferta_id = $1 ORDER BY kolejnosc ASC', [req.params.id]);
+    for (const t of tabele.rows) {
+      const nowaTabela = await pool.query(
+        `INSERT INTO furniture_tables (oferta_id, nazwa_mebla, korekta_pct, vat_pct, kolejnosc) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+        [nowa.rows[0].id, t.nazwa_mebla + ' (kopia)', t.korekta_pct, t.vat_pct, t.kolejnosc]
+      );
+      // Kopiuj pozycje
+      const pozycje = await pool.query('SELECT * FROM table_items WHERE tabela_id = $1 ORDER BY kolejnosc ASC', [t.id]);
+      for (const p of pozycje.rows) {
+        const nowaPoz = await pool.query(
+          `INSERT INTO table_items (tabela_id, cennik_id, nazwa, jednostka, cena_jedn, kolejnosc) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+          [nowaTabela.rows[0].id, p.cennik_id, p.nazwa, p.jednostka, p.cena_jedn, p.kolejnosc]
+        );
+        // Kopiuj wymiary
+        const dims = await pool.query('SELECT * FROM item_dimensions WHERE item_id = $1 ORDER BY kolejnosc ASC', [p.id]);
+        for (const d of dims.rows) {
+          await pool.query(
+            `INSERT INTO item_dimensions (item_id, wymiar_x, wymiar_y, ilosc, kolejnosc) VALUES ($1,$2,$3,$4,$5)`,
+            [nowaPoz.rows[0].id, d.wymiar_x, d.wymiar_y, d.ilosc, d.kolejnosc]
+          );
+        }
+      }
+    }
+    // Log
+    await pool.query(
+      `INSERT INTO offer_changelog (oferta_id, uzytkownik_id, pole, nowa_wartosc) VALUES ($1,$2,$3,$4)`,
+      [nowa.rows[0].id, req.user?.id, 'utworzono', `${numer} (kopia ${o.numer})`]
+    );
+    // Zwroc pelna oferte
+    const full = await pool.query(`
+      SELECT o.*, c.nazwa as klient_nazwa, c.email as klient_email
+      FROM offers o LEFT JOIN clients c ON o.klient_id = c.id
+      WHERE o.id = $1
+    `, [nowa.rows[0].id]);
+    res.status(201).json({ ...full.rows[0], tabele: [] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 module.exports = router;

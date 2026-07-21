@@ -257,6 +257,17 @@ export default function Oferty() {
                     </button>
                   )}
                   {isAdmin && (
+                    <button className="btn btn-sm btn-secondary"
+                      onClick={async () => {
+                        try {
+                          const res = await axios.post(`/api/oferty/${o.id}/kopiuj`, {});
+                          navigate(`/oferty/${res.data.id}`);
+                        } catch(e) { alert('Błąd kopiowania: ' + (e.response?.data?.error || e.message)); }
+                      }}>
+                      ⧉ Kopiuj
+                    </button>
+                  )}
+                  {isAdmin && (
                     <button
                       className="btn btn-sm btn-danger"
                       onClick={() => usunOferte(o.id, o.numer)}
