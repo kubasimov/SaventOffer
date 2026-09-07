@@ -74,9 +74,37 @@ async function pobierzMaile(adres) {
                   const m = l.match(/^([^:]+):\s*(.*)/);
                   if (m) {
                     const key = m[1].toLowerCase();
-                    if (!h[key]) h[key] = m[2].trim();
-                    else if (Array.isArray(h[key])) h[key].push(m[2].trim());
-                    else h[key] = [h[key], m[2].trim()];
+                    // Dekoduj RFC 2047 (=?UTF-8?Q?...?= or =?UTF-8?B?...?=)
+                    const decoded = m[2].trim().replace(/=\?[^?]+\?[QqBb]\?[^?]*\?=/g, (match) => {
+                      const parts = match.match(/=\?([^?]+)\?([QqBb])\?([^?]*)\?=/);
+                      if (!parts) return match;
+                      const [, charset, encoding, encoded] = parts;
+                      if (encoding.toUpperCase() === 'Q') {
+                        // Q-encoding: =XX to bajt, _ to spacja
+                        const bytes = [];
+                        let i = 0;
+                        while (i < encoded.length) {
+                          if (encoded[i] === '=' && i + 2 < encoded.length) {
+                            bytes.push(parseInt(encoded.substr(i+1, 2), 16));
+                            i += 3;
+                          } else if (encoded[i] === '_') {
+                            bytes.push(0x20);
+                            i++;
+                          } else {
+                            bytes.push(encoded.charCodeAt(i));
+                            i++;
+                          }
+                        }
+                        try { return Buffer.from(bytes).toString(charset || 'utf-8'); } catch(e) { return match; }
+                      }
+                      if (encoding.toUpperCase() === 'B') {
+                        try { return Buffer.from(encoded, 'base64').toString(charset || 'utf-8'); } catch(e) { return match; }
+                      }
+                      return match;
+                    });
+                    if (!h[key]) h[key] = decoded;
+                    else if (Array.isArray(h[key])) h[key].push(decoded);
+                    else h[key] = [h[key], decoded];
                   }
                 });
                 const fromRaw = (Array.isArray(h.from) ? h.from[0] : h.from) || '';

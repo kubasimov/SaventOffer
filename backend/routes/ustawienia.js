@@ -139,20 +139,42 @@ router.post('/testuj-email', async (req, res) => {
             if (err || !results?.length) { imap.end(); return resolve(); }
             const najnowsze = results.slice(-5).reverse();
             let odebrane = 0;
-            const fetch = imap.fetch(najnowsze, { bodies: '' });
+            const fetch = imap.fetch(najnowsze, { bodies: 'HEADER' });
             fetch.on('message', (msg) => {
+              let raw = '';
               msg.on('body', (stream) => {
-                simpleParser(stream).then(parsed => {
-                  wynik.maile.push({
-                    from: parsed.from?.text || '',
-                    subject: parsed.subject || '',
-                    date: parsed.date?.toISOString() || ''
+                stream.on('data', (chunk) => { raw += chunk.toString('utf8'); });
+                stream.on('end', () => {
+                  // Dekoduj RFC 2047 w naglowkach
+                  const decoded = raw.replace(/=\?[^?]+\?[QqBb]\?[^?]*\?=/g, (match) => {
+                    const parts = match.match(/=\?([^?]+)\?([QqBb])\?([^?]*)\?=/);
+                    if (!parts) return match;
+                    const [, charset, encoding, encoded] = parts;
+                    if (encoding.toUpperCase() === 'Q') {
+                      const bytes = []; let i = 0;
+                      while (i < encoded.length) {
+                        if (encoded[i] === '=' && i + 2 < encoded.length) { bytes.push(parseInt(encoded.substr(i+1, 2), 16)); i += 3; }
+                        else if (encoded[i] === '_') { bytes.push(0x20); i++; }
+                        else { bytes.push(encoded.charCodeAt(i)); i++; }
+                      }
+                      try { return Buffer.from(bytes).toString(charset || 'utf-8'); } catch(e) { return match; }
+                    }
+                    if (encoding.toUpperCase() === 'B') {
+                      try { return Buffer.from(encoded, 'base64').toString(charset || 'utf-8'); } catch(e) { return match; }
+                    }
+                    return match;
                   });
-                }).catch(() => {});
-              });
-              msg.once('end', () => {
-                odebrane++;
-                if (odebrane >= najnowsze.length) { imap.end(); setTimeout(resolve, 300); }
+                  const fromMatch = decoded.match(/^From:\s*(.*)/m);
+                  const subjectMatch = decoded.match(/^Subject:\s*(.*)/m);
+                  const dateMatch = decoded.match(/^Date:\s*(.*)/m);
+                  wynik.maile.push({
+                    from: fromMatch ? fromMatch[1].trim() : '',
+                    subject: subjectMatch ? subjectMatch[1].trim() : '',
+                    date: dateMatch ? new Date(dateMatch[1].trim()).toISOString() : ''
+                  });
+                  odebrane++;
+                  if (odebrane >= najnowsze.length) { imap.end(); setTimeout(resolve, 300); }
+                });
               });
             });
             fetch.once('error', () => { imap.end(); resolve(); });
