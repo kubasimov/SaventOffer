@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const Imap = require('imap');
 const { simpleParser } = require('mailparser');
 const pool = require('../db/pool');
-const { pobierzDaneOferty } = require('./pdf'); // jesli potrzebne
+const { pobierzDaneOferty } = require('./pdf');
 
 // Konfiguracja SMTP/IMAP — wczytaj z .env lub uzyj testowych
 const SMTP_HOST = process.env.SMTP_HOST || 'n3.smarthost.pl';
@@ -17,7 +17,7 @@ const EMAIL_FROM = process.env.EMAIL_FROM || 'reklamacja@savento.pl';
 
 async function pobierzKonfiguracjeEmail() {
   try {
-    const pool = require('./db/pool');
+    const pool = require('../db/pool');
     const r = await pool.query("SELECT wartosc FROM ustawienia WHERE klucz='konfiguracja_email'");
     if (r.rows.length) {
       const c = JSON.parse(r.rows[0].wartosc);
@@ -45,52 +45,66 @@ async function getTransporter() {
   });
 }
 
-// Pobierz ostatnie maile z IMAP dla danego adresu
-async function pobierzMaile(adres, limit = 20) {
+// Pobierz ostatnie maile z IMAP dla danego adresu - uzyj HEADER zamiast bodies:''
+async function pobierzMaile(adres) {
   const cfg = await pobierzKonfiguracjeEmail();
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const imap = new Imap({
       user: cfg.smtp_user, password: cfg.smtp_pass,
       host: cfg.imap_host, port: cfg.imap_port, tls: true,
       tlsOptions: { rejectUnauthorized: false }
     });
     const wyniki = [];
-    let oczekuje = 0;
     imap.once('ready', () => {
-      imap.openBox('INBOX', false, (err, box) => {
-        if (err) { imap.end(); return reject(err); }
+      imap.openBox('INBOX', false, (err) => {
+        if (err) { imap.end(); return resolve([]); }
         imap.search([['FROM', adres]], (err, results) => {
-          if (err) { imap.end(); return reject(err); }
-          const najnowsze = results.slice(-limit).reverse();
-          if (!najnowsze.length) { imap.end(); return resolve([]); }
-          oczekuje = najnowsze.length;
-          const fetch = imap.fetch(najnowsze, { bodies: '' });
+          if (err || !results?.length) { imap.end(); return resolve([]); }
+          const najnowsze = results.slice(-20).reverse();
+          let odebrane = 0;
+          const fetch = imap.fetch(najnowsze, { bodies: 'HEADER' });
           fetch.on('message', (msg) => {
+            let raw = '';
             msg.on('body', (stream) => {
-              simpleParser(stream).then(parsed => {
-                const msgId = (parsed.messageId || '').replace(/[<>]/g, '');
-                wyniki.push({
-                  uid: msgId,
-                  from: parsed.from ? parsed.from.text : '',
-                  subject: parsed.subject || '',
-                  date: parsed.date || new Date(),
-                  text: (parsed.text || '').slice(0, 10000),
-                  html: parsed.html || '',
-                  messageId: msgId,
-                  inReplyTo: (parsed.inReplyTo || '').replace(/[<>]/g, ''),
-                  references: (parsed.references || '').replace(/[<>]/g, '')
+              stream.on('data', (chunk) => { raw += chunk.toString('utf8'); });
+              stream.on('end', () => {
+                // Sparsuj naglowki
+                const h = {};
+                raw.split('\r\n').forEach(l => {
+                  const m = l.match(/^([^:]+):\s*(.*)/);
+                  if (m) {
+                    const key = m[1].toLowerCase();
+                    if (!h[key]) h[key] = m[2].trim();
+                    else if (Array.isArray(h[key])) h[key].push(m[2].trim());
+                    else h[key] = [h[key], m[2].trim()];
+                  }
                 });
-              }).catch(() => {}).finally(() => {
-                oczekuje--;
-                if (oczekuje <= 0) { imap.end(); resolve(wyniki); }
+                const fromRaw = (Array.isArray(h.from) ? h.from[0] : h.from) || '';
+                const from = fromRaw.replace(/<[^>]*>/g, '').trim() || fromRaw;
+                const subject = (Array.isArray(h.subject) ? h.subject[0] : h.subject) || '';
+                const msgId = ((Array.isArray(h['message-id']) ? h['message-id'][0] : h['message-id']) || '').replace(/[<>]/g, '');
+                const inReplyTo = ((Array.isArray(h['in-reply-to']) ? h['in-reply-to'][0] : h['in-reply-to']) || '').replace(/[<>]/g, '');
+                const references = ((Array.isArray(h.references) ? h.references[0] : h.references) || '').replace(/[<>]/g, '');
+                const dateStr = (Array.isArray(h.date) ? h.date[0] : h.date) || '';
+                wyniki.push({
+                  uid: msgId, from, subject,
+                  date: dateStr ? new Date(dateStr) : new Date(),
+                  text: '', html: '',
+                  messageId: msgId, inReplyTo, references
+                });
+                odebrane++;
+                if (odebrane >= najnowsze.length) { imap.end(); resolve(wyniki); }
               });
             });
           });
-          fetch.on('error', e => { imap.end(); reject(e); });
+          fetch.on('error', () => { imap.end(); resolve(wyniki); });
+          fetch.on('end', () => {
+            setTimeout(() => { if (odebrane < najnowsze.length) { imap.end(); resolve(wyniki); } }, 3000);
+          });
         });
       });
     });
-    imap.once('error', reject);
+    imap.once('error', () => resolve([]));
     imap.connect();
   });
 }
@@ -112,20 +126,30 @@ router.get('/oferty/:id/maile', async (req, res) => {
   }
 });
 
+// GET /api/oferty/:id/wyslane — historia wyslanych maili
+router.get('/oferty/:id/wyslane', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM sent_emails WHERE oferta_id=$1 ORDER BY utworzony DESC',
+      [req.params.id]
+    );
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/oferty/:id/wyslij — generuje PDF i wysyla maila
 router.post('/oferty/:id/wyslij', async (req, res) => {
   try {
     const { do_adresu, temat, tresc, odpowiedz_na, html_oryginalny } = req.body;
-        if (!do_adresu) return res.status(400).json({ error: 'Brak adresu odbiorcy' });
+    if (!do_adresu) return res.status(400).json({ error: 'Brak adresu odbiorcy' });
 
-        // Generuj PDF
+    // Generuj PDF
         const data = await pobierzDaneOferty(req.params.id);
-        const pdfBuf = await generujPdf(data);
         const outputPath = `/tmp/oferta_${Date.now()}.pdf`;
-        require('fs').writeFileSync(outputPath, pdfBuf);
 
         // Pobierz konfiguracje email
         const cfg = await pobierzKonfiguracjeEmail();
+    const danePath = `/tmp/pdf_dane_${Date.now()}.json`;
     require('fs').writeFileSync(danePath, JSON.stringify({
       ...data, klient_dane: req.body.klient_dane || null,
       zalozenia: '', specyfikacja: [], kategoria: '', tylko_podsumowanie: false
@@ -135,42 +159,38 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
     try { require('fs').unlinkSync(danePath); } catch(e) {}
 
     // Wyslij maila
-            const transporter = await getTransporter();
-            const stopkaRaw = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
-            // Zachowaj style, usun tylko otaczajace <html><head><body>
-            let stopkaTresc = stopkaRaw.replace(/<!DOCTYPE[^>]*>/gi, '');
-            stopkaTresc = stopkaTresc.replace(/<\/?html[^>]*>/gi, '');
-            const styleMatch = stopkaTresc.match(/<style[^>]*>[\s\S]*<\/style>/i);
-            const styleBlock = styleMatch ? styleMatch[0] : '';
-            const stopkaBodyMatch = stopkaTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-            const stopkaBody = stopkaBodyMatch ? stopkaBodyMatch[1] : stopkaTresc;
-        
-            const wlasnyTekst = tresc || 'W załączniku przesyłam wycenę.';
-            // Konwertuj URL na klikalne linki
-            const urlRegex = /(https?:\/\/[^\s<]+)/g;
-            const wlasnaTrescHtml = wlasnyTekst.replace(/\n/g, '<br>').replace(urlRegex, '<a href="$1">$1</a>');
-            // Zbuduj czysty tekst dla text/plain
-            const wlasnaTrescPlain = wlasnyTekst.replace(/<[^>]+>/g, '').replace(/\n/g, '\r\n');
-        
-            // Wyciagnij tylko zawartosc <body> z oryginalnego HTML cytatu
-            let cytatTresc = html_oryginalny || '';
-            const bodyMatch = cytatTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-            if (bodyMatch) cytatTresc = bodyMatch[1];
-            cytatTresc = cytatTresc.replace(/<!DOCTYPE[^>]*>/gi, '').replace(/<\/?html[^>]*>/gi, '');
-            const cytatHtml = cytatTresc
-              ? `<blockquote style="border-left:2px solid #ccc;margin:16px 0;padding:0 0 0 12px;color:#555">${cytatTresc}</blockquote>`
-              : '';
-            const emailHtml = `<!DOCTYPE html>
-    <html lang="pl">
-    <head><meta charset="UTF-8"><meta name="color-scheme" content="light only">
-    <style>body{margin:0;padding:20px;font-family:Arial,sans-serif;font-size:14px;color:#333}${styleBlock}</style>
-    </head>
-    <body>
-    <p style="margin:0 0 16px 0">${wlasnaTrescHtml}</p>
-    ${stopkaBody}
-    ${cytatHtml}
-    </body>
-    </html>`;
+    const transporter = await getTransporter();
+    const stopkaRaw = require('fs').readFileSync('/opt/savento/backend/obrazy/contact_footer.html', 'utf8');
+    let stopkaTresc = stopkaRaw.replace(/<!DOCTYPE[^>]*>/gi, '');
+    stopkaTresc = stopkaTresc.replace(/<\/?html[^>]*>/gi, '');
+    const styleMatch = stopkaTresc.match(/<style[^>]*>[\s\S]*<\/style>/i);
+    const styleBlock = styleMatch ? styleMatch[0] : '';
+    const stopkaBodyMatch = stopkaTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const stopkaBody = stopkaBodyMatch ? stopkaBodyMatch[1] : stopkaTresc;
+
+    const wlasnyTekst = tresc || 'W załączniku przesyłam wycenę.';
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+    const wlasnaTrescHtml = wlasnyTekst.replace(/\n/g, '<br>').replace(urlRegex, '<a href="$1">$1</a>');
+    const wlasnaTrescPlain = wlasnyTekst.replace(/<[^>]+>/g, '').replace(/\n/g, '\r\n');
+
+    let cytatTresc = html_oryginalny || '';
+    const bodyMatch = cytatTresc.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    if (bodyMatch) cytatTresc = bodyMatch[1];
+    cytatTresc = cytatTresc.replace(/<!DOCTYPE[^>]*>/gi, '').replace(/<\/?html[^>]*>/gi, '');
+    const cytatHtml = cytatTresc
+      ? `<blockquote style="border-left:2px solid #ccc;margin:16px 0;padding:0 0 0 12px;color:#555">${cytatTresc}</blockquote>`
+      : '';
+    const emailHtml = `<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="color-scheme" content="light only">
+<style>body{margin:0;padding:20px;font-family:Arial,sans-serif;font-size:14px;color:#333}${styleBlock}</style>
+</head>
+<body>
+<p style="margin:0 0 16px 0">${wlasnaTrescHtml}</p>
+${stopkaBody}
+${cytatHtml}
+</body>
+</html>`;
     const mailOptions = {
       from: cfg.email_from, to: do_adresu,
       subject: temat || `Wycena: ${data.oferta.numer}`,
@@ -188,12 +208,10 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
 
     // Zapisz kopie w IMAP INBOX.Sent uzywajac nodemailer (stream transport) dla poprawnego MIME
     try {
-      const cfg = await pobierzKonfiguracjeEmail();
       const rawGen = nodemailer.createTransport({ streamTransport: true, newline: 'unix', buffer: true });
       const rawInfo = await rawGen.sendMail(mailOptions);
-      // Z buffer: true, rawInfo.message jest juz gotowym Bufferem
       const rawBuffer = rawInfo.message;
-      
+
       await new Promise((resolve) => {
         const Imap2 = require('imap');
         const imapSent = new Imap2({
@@ -240,17 +258,6 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
-
-// GET /api/oferty/:id/wyslane — historia wyslanych maili
-router.get('/oferty/:id/wyslane', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT * FROM sent_emails WHERE oferta_id=$1 ORDER BY utworzony DESC',
-      [req.params.id]
-    );
-    res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;
