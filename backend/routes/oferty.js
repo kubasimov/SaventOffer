@@ -459,8 +459,8 @@ router.post('/:id/kopiuj', async (req, res) => {
       const pozycje = await pool.query('SELECT * FROM table_items WHERE tabela_id = $1 ORDER BY kolejnosc ASC', [t.id]);
       for (const p of pozycje.rows) {
         const nowaPoz = await pool.query(
-          `INSERT INTO table_items (tabela_id, cennik_id, nazwa, jednostka, cena_jedn, kolejnosc) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-          [nowaTabela.rows[0].id, p.cennik_id, p.nazwa, p.jednostka, p.cena_jedn, p.kolejnosc]
+          `INSERT INTO table_items (tabela_id, cennik_id, nazwa, jednostka, cena_jedn, ilosc, kolejnosc) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+          [nowaTabela.rows[0].id, p.cennik_id, p.nazwa, p.jednostka, p.cena_jedn, p.ilosc, p.kolejnosc]
         );
         // Kopiuj wymiary
         const dims = await pool.query('SELECT * FROM item_dimensions WHERE item_id = $1 ORDER BY kolejnosc ASC', [p.id]);
