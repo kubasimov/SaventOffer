@@ -129,6 +129,7 @@ router.post('/testuj-email', async (req, res) => {
       const imap = new Imap({
         user: smtp_user, password: smtp_pass,
         host: imap_host, port: parseInt(imap_port) || 993, tls: true,
+        tlsOptions: { rejectUnauthorized: false },
         connTimeout: 5000
       });
       imap.once('ready', () => {

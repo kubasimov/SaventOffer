@@ -40,7 +40,8 @@ async function getTransporter() {
   const cfg = await pobierzKonfiguracjeEmail();
   return nodemailer.createTransport({
     host: cfg.smtp_host, port: cfg.smtp_port, secure: true,
-    auth: { user: cfg.smtp_user, pass: cfg.smtp_pass }
+    auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
+    tls: { rejectUnauthorized: false }
   });
 }
 
@@ -50,7 +51,8 @@ async function pobierzMaile(adres, limit = 20) {
   return new Promise((resolve, reject) => {
     const imap = new Imap({
       user: cfg.smtp_user, password: cfg.smtp_pass,
-      host: cfg.imap_host, port: cfg.imap_port, tls: true
+      host: cfg.imap_host, port: cfg.imap_port, tls: true,
+      tlsOptions: { rejectUnauthorized: false }
     });
     const wyniki = [];
     let oczekuje = 0;
@@ -196,7 +198,8 @@ router.post('/oferty/:id/wyslij', async (req, res) => {
         const Imap2 = require('imap');
         const imapSent = new Imap2({
           user: cfg.smtp_user, password: cfg.smtp_pass,
-          host: cfg.imap_host, port: cfg.imap_port, tls: true
+          host: cfg.imap_host, port: cfg.imap_port, tls: true,
+          tlsOptions: { rejectUnauthorized: false }
         });
         imapSent.once('ready', () => {
           imapSent.append(rawBuffer, { mailbox: 'INBOX.Sent', flags: ['\\Seen'] }, (err) => {
