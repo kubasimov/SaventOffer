@@ -108,7 +108,10 @@ async function pobierzMaile(adres) {
                   }
                 });
                 const fromRaw = (Array.isArray(h.from) ? h.from[0] : h.from) || '';
-                const from = fromRaw.replace(/<[^>]*>/g, '').trim() || fromRaw;
+                // Zachowaj adres email: "Nazwa <email>" — do odpowiedzi potrzebny TYLKO email
+                const fromEmailMatch = fromRaw.match(/<([^>]+)>/);
+                const fromEmail = fromEmailMatch ? fromEmailMatch[1].trim() : fromRaw.trim();
+                const from = fromEmail;
                 const subject = (Array.isArray(h.subject) ? h.subject[0] : h.subject) || '';
                 const msgId = ((Array.isArray(h['message-id']) ? h['message-id'][0] : h['message-id']) || '').replace(/[<>]/g, '');
                 const inReplyTo = ((Array.isArray(h['in-reply-to']) ? h['in-reply-to'][0] : h['in-reply-to']) || '').replace(/[<>]/g, '');

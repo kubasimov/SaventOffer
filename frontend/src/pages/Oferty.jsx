@@ -27,6 +27,7 @@ export default function Oferty() {
   const [mailForm, setMailForm] = useState({ odbiorca: '', temat: '', tresc: 'Dzień dobry,\n\noferta cenowa w załączniku.\n\nW razie pytań proszę o kontakt.', odpowiedz_na: '', html_oryginalny: '' })
   const [mailWysylanie, setMailWysylanie] = useState(false)
   const [mailWyslane, setMailWyslane] = useState([])
+  const [aktywnaOfertaMail, setAktywnaOfertaMail] = useState(null) // id oferty dla modala maila
   const navigate = useNavigate()
   const [filtry, setFiltry] = useState({ status: '', klient_id: '', q: '' })
   const [szukaj, setSzukaj] = useState('')
@@ -90,16 +91,18 @@ export default function Oferty() {
     return new Date(str).toLocaleDateString('pl-PL')
   }
 
-  async function otworzMail() {
+  async function otworzMail(idOferty = null) {
     setModalMail(true)
     setMailLoading(true)
-    const oferta = oferty.find(o => o.id === modalPDF?.id)
+    const ofertaId = idOferty || modalPDF?.id
+    setAktywnaOfertaMail(ofertaId)
+    const oferta = oferty.find(o => o.id === ofertaId)
     setMailForm(f => ({ ...f, odbiorca: oferta?.klient_email || '', temat: `Wycena: ${oferta?.numer || ''}` }))
     setMaileKlienta([])
     try {
       const [mRes, wRes] = await Promise.all([
-        axios.get(`/api/oferty/${modalPDF.id}/maile`),
-        axios.get(`/api/oferty/${modalPDF.id}/wyslane`)
+        axios.get(`/api/oferty/${ofertaId}/maile`),
+        axios.get(`/api/oferty/${ofertaId}/wyslane`)
       ])
       if (mRes.data.email) setEmailKlienta(mRes.data.email)
       setMaileKlienta(mRes.data.maile || [])
@@ -121,9 +124,10 @@ export default function Oferty() {
 
   async function wyslijMail() {
     if (!mailForm.odbiorca) return alert('Podaj adres odbiorcy')
+    if (!aktywnaOfertaMail) return alert('Brak oferty do wysłania')
     setMailWysylanie(true)
     try {
-      await axios.post(`/api/oferty/${modalPDF.id}/wyslij`, {
+      await axios.post(`/api/oferty/${aktywnaOfertaMail}/wyslij`, {
         do_adresu: mailForm.odbiorca,
         temat: mailForm.temat,
         tresc: mailForm.tresc,
@@ -132,6 +136,7 @@ export default function Oferty() {
       })
       alert('Mail wysłany!')
       setModalMail(false)
+      setAktywnaOfertaMail(null)
     } catch (e) {
       alert('Błąd wysyłania: ' + (e.response?.data?.error || e.message))
     }
@@ -369,11 +374,11 @@ export default function Oferty() {
           ofertaNazwa={modalPDF.nazwa}
           klientId={modalPDF.klientId}
           onClose={() => setModalPDF(null)}
-          onWyslijMail={() => { setModalPDF(null); otworzMail() }}
+          onWyslijMail={() => { const id = modalPDF.id; setModalPDF(null); otworzMail(id) }}
         />
       )}
-    {modalMail && (
-        <div className="modal-overlay" onClick={() => setModalMail(false)}>
+      {modalMail && (
+        <div className="modal-overlay" onClick={() => { setModalMail(false); setAktywnaOfertaMail(null) }}>
           <div className="modal" style={{maxWidth:700}} onClick={e => e.stopPropagation()}>
             <h2>✉️ Wyślij e-mailem</h2>
             {mailLoading ? (
