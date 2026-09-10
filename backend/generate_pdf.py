@@ -301,178 +301,126 @@ def generuj_strone_z_obrazem(sciezka_obrazu):
 
 
 def generuj_strone_podsumowania(tabele):
-    """Tabelka zestawienia z 6 kolumnami."""
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
     TABLE_BOTTOM = 40
-    dostepna_wys = TABLE_TOP - TABLE_BOTTOM
-    
-    # Rozmiary (takie same jak w tabelach pojedynczej wyceny)
-    FONT_NAZWA = 18
-    FONT_MALA = 18
-    FONT_BOLD = FONT_SIZE_TAB
-    
-    # Oblicz dane dla kazdego mebla
+    DOSTEPNA = TABLE_TOP - TABLE_BOTTOM
+    BASE_COL_W = [370, 140, 80, 140, 60, 140]
+    BASE_HEADER_H = 52
+    BASE_ROW_H = 30
+    BASE_FONT_NAZWA = 18
+    BASE_FONT_TAB = 19
     wiersze = []
-    suma_ilosc = 0
     suma_netto = 0.0
     suma_brutto = 0.0
-    for idx, tabela in enumerate(tabele):
-        pozycje = tabela.get('pozycje', [])
-        ilosc = int(tabela.get('ilosc_sztuk', 1))
-        # Netto = suma wartosci koncowych (z korekta lokalna i globalna)
-        netto = round2(sum(float(p.get('wartosc_koncowa', 0)) for p in pozycje))
-        # Cena jednostkowa = netto / ilosc (cena 1 mebla z korekta)
-        cena_jedn = round2(netto / ilosc) if ilosc > 0 else 0
-        vat_pct = int(tabela.get('vat_pct', 23))
-        # Wartosc netto = cena_jedn * ilosc
-        wartoscNetto = round2(cena_jedn * ilosc)
-        brutto = round2(wartoscNetto * (1 + vat_pct / 100))
-        wiersze.append({
-            'nazwa': tabela.get('nazwa_mebla', ''),
-            'cena_jedn': cena_jedn,
-            'ilosc': ilosc,
-            'netto': wartoscNetto,
-            'vat': f'{vat_pct}%',
-            'brutto': brutto,
-        })
-        suma_ilosc += ilosc
-        suma_netto += wartoscNetto
-        suma_brutto += brutto
-    
-    # Kolumny: NAZWA, CENA JEDN. NETTO, ILOSC, WARTOSC NETTO, PODATEK, WARTOSC BRUTTO
-    col_w = [370, 140, 80, 140, 60, 140]
-    # nazwa, cena, ilosc, netto, vat, brutto
-    table_w = sum(col_w)
-    table_x = (PAGE_W - table_w) / 2
-    col_starts = []
-    cx = table_x
-    for w in col_w:
-        col_starts.append(cx)
-        cx += w
-    col_ends = [cs + w for cs, w in zip(col_starts, col_w)]
-    
-    # Naglowek
-    HEADER_H = 52
-    ROW_H = 30
-    
-    # Naglowek
+    for tab in tabele:
+        poz = tab.get('pozycje', [])
+        il = int(tab.get('ilosc_sztuk', 1))
+        net = round2(sum(float(p.get('wartosc_koncowa',0)) for p in poz))
+        cj = round2(net/il) if il>0 else 0
+        vp = int(tab.get('vat_pct',23))
+        wn = round2(cj*il)
+        br = round2(wn*(1+vp/100))
+        wiersze.append({'nazwa':tab.get('nazwa_mebla',''),'cena_jedn':cj,'ilosc':il,'netto':wn,'vat':f'{vp}%','brutto':br})
+        suma_netto += wn; suma_brutto += br
+    if not wiersze:
+        c.save(); buf.seek(0); return buf
+    def rh_wys(font,size,txt,cw0):
+        ln=1;lw=0
+        for w in txt.split():
+            ww=c.stringWidth(w+' ',font,size)
+            if lw+ww>cw0-10: ln+=1; lw=ww
+            else: lw+=ww
+        return max(30,int(ln*size*1.4+6))
+    rrh = [rh_wys('Poppins',BASE_FONT_NAZWA,w['nazwa'],BASE_COL_W[0]) for w in wiersze]
+    th = BASE_HEADER_H + sum(rrh) + BASE_ROW_H + BASE_ROW_H
+    scale = 1.0
+    if th > DOSTEPNA:
+        scale = DOSTEPNA / th
+    col_w = [max(80,int(w*scale)) for w in BASE_COL_W]
+    tw = sum(col_w)
+    tx = (PAGE_W-tw)/2
+    HEADER_H = max(20,int(BASE_HEADER_H*scale))
+    ROW_H = max(14,int(BASE_ROW_H*scale))
+    FNT = max(6,BASE_FONT_NAZWA*scale)
+    FTAB = max(7,BASE_FONT_TAB*scale)
+    cs = []; cx=tx
+    for w in col_w: cs.append(cx); cx+=w
+    ce = [cs[i]+col_w[i] for i in range(len(col_w))]
+    if scale < 1.0:
+        rrh = [rh_wys('Poppins',FNT,w['nazwa'],col_w[0]) for w in wiersze]
     c.setFillColorRGB(*BG_DARK)
-    c.rect(table_x, TABLE_TOP, table_w, HEADER_H, fill=1, stroke=0)
+    c.rect(tx,TABLE_TOP,tw,HEADER_H,fill=1,stroke=0)
     c.setFillColorRGB(*TEXT_WHITE)
-    naglowki = ['NAZWA', 'NETTO CENA JEDN.', 'ILOŚĆ', 'WARTOŚĆ NETTO', 'VAT', 'WARTOŚĆ BRUTTO']
-    for i, nag in enumerate(naglowki):
-        # Podziel na 2 linie jesli dlugi
-        parts = nag.split(' ')
-        if len(parts) > 2:
-            mid = len(parts) // 2
-            line1 = ' '.join(parts[:mid])
-            line2 = ' '.join(parts[mid:])
+    nags = ['NAZWA','NETTO CENA JEDN.','ILOSC','WARTOSC NETTO','VAT','WARTOSC BRUTTO']
+    for i,n in enumerate(nags):
+        p=n.split();mid=len(p)//2;l1=' '.join(p[:mid]);l2=' '.join(p[mid:]) if len(p)>2 else (p[1] if len(p)>1 else '')
+        c.setFont('PoppinsBold',FTAB)
+        yb=TABLE_TOP+(HEADER_H-FTAB*2.2)/2
+        if i==0:
+            c.drawString(cs[i]+8,yb+FTAB*1.2,l1)
+            if l2: c.drawString(cs[i]+8,yb,l2)
         else:
-            line1 = parts[0] if parts else ''
-            line2 = parts[1] if len(parts) > 1 else ''
-        c.setFont('PoppinsBold', FONT_SIZE_TAB)
-        y_base = TABLE_TOP + (HEADER_H - FONT_SIZE_TAB * 2.2) / 2
-        if i == 0:
-            c.drawString(col_starts[i] + 8, y_base + FONT_SIZE_TAB * 1.2, line1)
-            if line2:
-                c.drawString(col_starts[i] + 8, y_base, line2)
-        else:
-            if line2:
-                # 2 linie
-                c.drawCentredString(col_starts[i] + col_w[i]/2, y_base + FONT_SIZE_TAB * 1.2, line1)
-                c.drawCentredString(col_starts[i] + col_w[i]/2, y_base, line2)
-            else:
-                c.drawCentredString(col_starts[i] + col_w[i]/2, TABLE_TOP + HEADER_H/2 - FONT_SIZE_TAB/2, line1)
-    # Pionowe linie naglowka
-    for j in range(1, len(col_w)):
-        c.line(col_ends[j-1], TABLE_TOP, col_ends[j-1], TABLE_TOP + HEADER_H)
-    
-    # Wiersze danych
-    current_y = TABLE_TOP - ROW_H
-    for i, w in enumerate(wiersze):
-        rh = ROW_H
-        bg = BG_LIGHT if i % 2 == 0 else BG_WHITE
+            if l2:
+                c.drawCentredString(cs[i]+col_w[i]/2,yb+FTAB*1.2,l1)
+                c.drawCentredString(cs[i]+col_w[i]/2,yb,l2)
+            else: c.drawCentredString(cs[i]+col_w[i]/2,TABLE_TOP+HEADER_H/2-FTAB/2,l1)
+        if i>0:
+            c.setStrokeColorRGB(0.5,0.3,0.4);c.setLineWidth(0.5)
+            c.line(ce[i-1],TABLE_TOP,ce[i-1],TABLE_TOP+HEADER_H)
+    cy = TABLE_TOP - ROW_H
+    for i,w in enumerate(wiersze):
+        rh=rrh[i];bg=BG_LIGHT if i%2==0 else BG_WHITE
         c.setFillColorRGB(*bg)
-        c.rect(table_x, current_y, table_w, rh, fill=1, stroke=0)
-        c.setStrokeColorRGB(0.8, 0.8, 0.8)
-        c.setLineWidth(0.5)
-        c.line(table_x, current_y, table_x + table_w, current_y)
-        # Obramowanie komorki
-        c.setStrokeColorRGB(0.75, 0.75, 0.75)
-        c.setLineWidth(0.5)
-        c.rect(table_x, current_y, table_w, rh, fill=0, stroke=1)
+        ay=cy-(rh-ROW_H)
+        c.rect(tx,ay,tw,rh,fill=1,stroke=0)
+        c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
+        c.rect(tx,ay,tw,rh,fill=0,stroke=1)
+        c.setFont('Poppins',FNT)
+        wds=w['nazwa'].split();lc=1;lw=0
+        for wd in wds:
+            ww=c.stringWidth(wd+' ','Poppins',FNT)
+            if lw+ww>col_w[0]-10: lc+=1;lw=ww
+            else: lw+=ww
         c.setFillColorRGB(*TEXT_DARK)
-        # Nazwa (zawijana)
-        c.setFont('Poppins', FONT_NAZWA)
-        words = w['nazwa'].split()
-        # Oblicz liczbe linii
-        lines_count = 1
-        line_w = 0
-        for word in words:
-            ww = c.stringWidth(word + ' ', 'Poppins', FONT_NAZWA)
-            if line_w + ww > col_w[0] - 10:
-                lines_count += 1
-                line_w = ww
-            else:
-                line_w += ww
-        if lines_count == 1:
-            # Srodek w pionie
-            y_t = current_y + rh/2 - FONT_NAZWA/2
-            c.drawString(col_starts[0] + 6, y_t, w['nazwa'])
+        if lc==1: c.drawString(cs[0]+6,ay+rh/2-FNT/2,w['nazwa'])
         else:
-            # Wiele linii — zacznij od gory
-            y_t = current_y + rh - 8
-            line_w = 0
-            line_start = 0
-            for wi, word in enumerate(words):
-                ww = c.stringWidth(word + ' ', 'Poppins', FONT_NAZWA)
-                if line_w + ww > col_w[0] - 10:
-                    c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:wi]))
-                    y_t -= FONT_NAZWA * 1.4
-                    line_w = ww
-                    line_start = wi
-                else:
-                    line_w += ww
-            if line_start < len(words):
-                c.drawString(col_starts[0] + 6, y_t, ' '.join(words[line_start:]))
-        
-        # Pozostale kolumny
-        for ci in range(1, len(col_w)):
-            fs = FONT_MALA if ci in (1, 3, 5) else FONT_NAZWA
-            c.setFont('Poppins', fs)
-            val_map = {1: w['cena_jedn'], 2: w['ilosc'], 3: w['netto'], 4: w['vat'], 5: w['brutto']}
-            val = val_map[ci]
-            txt = formatPLN(val) if ci in (1, 3, 5) else str(val) if ci == 2 else val
-            c.drawRightString(col_ends[ci] - 8, current_y + rh/2 - fs/2, txt)
-        
-        # Linie pionowe
-        for j in range(1, len(col_w)):
-            c.line(col_ends[j-1], current_y, col_ends[j-1], current_y + rh)
-        current_y -= rh
-    
-    # Pusty wiersz przed podsumowaniem
+            yt=ay+rh-8;lw=0;ls=0
+            for wi,wd in enumerate(wds):
+                ww=c.stringWidth(wd+' ','Poppins',FNT)
+                if lw+ww>col_w[0]-10:
+                    c.drawString(cs[0]+6,yt,' '.join(wds[ls:wi]))
+                    yt-=FNT*1.4;lw=ww;ls=wi
+                else: lw+=ww
+            if ls<len(wds): c.drawString(cs[0]+6,yt,' '.join(wds[ls:]))
+        for ci in range(1,len(col_w)):
+            fs=FTAB if ci in(1,3,5)else FNT
+            c.setFont('Poppins',fs)
+            vm={1:w['cena_jedn'],2:w['ilosc'],3:w['netto'],4:w['vat'],5:w['brutto']}[ci]
+            txt=formatPLN(vm) if ci in(1,3,5)else str(vm) if ci==2 else vm
+            c.setFillColorRGB(*TEXT_DARK)
+            c.drawRightString(ce[ci]-8,ay+rh/2-fs/2,txt)
+        for j in range(1,len(col_w)):
+            c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
+            c.line(ce[j-1],ay,ce[j-1],ay+rh)
+        cy=ay-ROW_H
     c.setFillColorRGB(*BG_LIGHT)
-    c.rect(table_x, current_y, table_w, ROW_H, fill=1, stroke=0)
-    c.setStrokeColorRGB(0.75, 0.75, 0.75)
-    c.setLineWidth(0.5)
-    c.rect(table_x, current_y, table_w, ROW_H, fill=0, stroke=1)
-    current_y -= ROW_H
-    
-    # Wiersz sum
+    c.rect(tx,cy,tw,ROW_H,fill=1,stroke=0)
+    c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
+    c.rect(tx,cy,tw,ROW_H,fill=0,stroke=1)
+    cy-=ROW_H
     c.setFillColorRGB(*BG_LIGHT)
-    c.rect(table_x, current_y, table_w, ROW_H, fill=1, stroke=0)
-    c.setStrokeColorRGB(0.7, 0.7, 0.7)
-    c.setLineWidth(0.8)
-    c.setFillColorRGB(*TEXT_DARK)
-    c.setFont('PoppinsBold', FONT_SIZE_TAB)
-    c.drawString(col_starts[0] + 6, current_y + ROW_H/2 - 8, 'RAZEM')
-    c.drawRightString(col_ends[3] - 8, current_y + ROW_H/2 - 8, formatPLN(suma_netto))
-    c.drawRightString(col_ends[5] - 8, current_y + ROW_H/2 - 8, formatPLN(suma_brutto))
-    for j in range(1, len(col_w)):
-        c.line(col_ends[j-1], current_y, col_ends[j-1], current_y + ROW_H)
-    c.rect(table_x, current_y, table_w, ROW_H, fill=0, stroke=1)
-    
+    c.rect(tx,cy,tw,ROW_H,fill=1,stroke=0)
+    c.setStrokeColorRGB(0.7,0.7,0.7);c.setLineWidth(0.8)
+    c.setFillColorRGB(*TEXT_DARK);c.setFont('PoppinsBold',FTAB)
+    c.drawString(cs[0]+6,cy+ROW_H/2-FTAB/2,'RAZEM')
+    c.drawRightString(ce[3]-8,cy+ROW_H/2-FTAB/2,formatPLN(suma_netto))
+    c.drawRightString(ce[5]-8,cy+ROW_H/2-FTAB/2,formatPLN(suma_brutto))
+    for j in range(1,len(col_w)):
+        c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
+        c.line(ce[j-1],cy,ce[j-1],cy+ROW_H)
+    c.setStrokeColorRGB(0.7,0.7,0.7);c.setLineWidth(0.8)
+    c.rect(tx,cy,tw,ROW_H,fill=0,stroke=1)
     c.save()
     buf.seek(0)
     return buf
