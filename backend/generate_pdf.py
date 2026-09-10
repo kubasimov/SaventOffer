@@ -303,7 +303,7 @@ def generuj_strone_z_obrazem(sciezka_obrazu):
 def generuj_strone_podsumowania(tabele):
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
-    TABLE_BOTTOM = 210
+    TABLE_BOTTOM = 70
     DOSTEPNA = TABLE_TOP - TABLE_BOTTOM
     BASE_COL_W = [370, 140, 80, 140, 60, 140]
     BASE_HEADER_H = 52
