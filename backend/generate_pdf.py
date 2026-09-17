@@ -302,7 +302,7 @@ def generuj_strone_z_obrazem(sciezka_obrazu):
 
 def generuj_strone_podsumowania(tabele):
     buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))  # canvas do pomiaru szerokości
     TABLE_BOTTOM = 70
     DOSTEPNA = TABLE_TOP - TABLE_BOTTOM
     BASE_COL_W = [370, 140, 80, 140, 60, 140]
@@ -310,6 +310,8 @@ def generuj_strone_podsumowania(tabele):
     BASE_ROW_H = 30
     BASE_FONT_NAZWA = 18
     BASE_FONT_TAB = 19
+    MIN_SCALE = 0.45  # nie zmniejszaj czcionki poniżej ~45% (czytelność)
+
     wiersze = []
     suma_netto = 0.0
     suma_brutto = 0.0
@@ -325,102 +327,162 @@ def generuj_strone_podsumowania(tabele):
         suma_netto += wn; suma_brutto += br
     if not wiersze:
         c.save(); buf.seek(0); return buf
-    def rh_wys(font,size,txt,cw0):
-        ln=1;lw=0
+
+    def row_h(font, size, txt, cw0):
+        ln=1; lw=0
         for w in txt.split():
-            ww=c.stringWidth(w+' ',font,size)
-            if lw+ww>cw0-10: ln+=1; lw=ww
+            ww = c.stringWidth(w+' ', font, size)
+            if lw+ww > cw0-10: ln+=1; lw=ww
             else: lw+=ww
-        return max(30,int(ln*size*1.4+6))
-    rrh = [rh_wys('Poppins',BASE_FONT_NAZWA,w['nazwa'],BASE_COL_W[0]) for w in wiersze]
-    th = BASE_HEADER_H + sum(rrh) + BASE_ROW_H + BASE_ROW_H
+        return max(1, ln)
+    # Najpierw sprawdź ile wierszy mieści się w 1 kolumnie bez przewijania,
+    # potem policz skalę (na bazie 1-linijkowych wierszy)
+    lines_per = [row_h('Poppins', BASE_FONT_NAZWA, w['nazwa'], BASE_COL_W[0]) for w in wiersze]
+    # Szacunkowa wysokość 1-liniowego wiersza ~ BASE_ROW_H.
+    # Każdy wiersz: BASE_ROW_H na 1 linię + (lines-1)*BASE_FONT_NAZWA*1.4
+    est = []
+    for l in lines_per:
+        est.append(BASE_ROW_H + (l-1)*BASE_FONT_NAZWA*1.4)
+    total1 = BASE_HEADER_H + sum(est) + BASE_ROW_H + BASE_ROW_H
     scale = 1.0
-    if th > DOSTEPNA:
-        scale = DOSTEPNA / th
-    col_w = [max(80,int(w*scale)) for w in BASE_COL_W]
+    if total1 > DOSTEPNA:
+        scale = max(MIN_SCALE, DOSTEPNA / total1)
+
+    col_w = [max(80, int(w*scale)) for w in BASE_COL_W]
     tw = sum(col_w)
-    tx = (PAGE_W-tw)/2
-    HEADER_H = max(20,int(BASE_HEADER_H*scale))
-    ROW_H = max(14,int(BASE_ROW_H*scale))
-    FNT = max(6,BASE_FONT_NAZWA*scale)
-    FTAB = max(7,BASE_FONT_TAB*scale)
-    cs = []; cx=tx
-    for w in col_w: cs.append(cx); cx+=w
+    tx = (PAGE_W - tw)/2
+    HEADER_H = max(20, int(BASE_HEADER_H*scale))
+    ROW_H = max(14, int(BASE_ROW_H*scale))
+    FNT = max(6, BASE_FONT_NAZWA*scale)
+    FTAB = max(7, BASE_FONT_TAB*scale)
+    LINE_H = FNT * 1.4
+    cs = []; cx = tx
+    for w in col_w: cs.append(cx); cx += w
     ce = [cs[i]+col_w[i] for i in range(len(col_w))]
-    if scale < 1.0:
-        rrh = [rh_wys('Poppins',FNT,w['nazwa'],col_w[0]) for w in wiersze]
-    c.setFillColorRGB(*BG_DARK)
-    c.rect(tx,TABLE_TOP,tw,HEADER_H,fill=1,stroke=0)
-    c.setFillColorRGB(*TEXT_WHITE)
-    nags = ['NAZWA','NETTO CENA JEDN.','ILOSC','WARTOSC NETTO','VAT','WARTOSC BRUTTO']
-    for i,n in enumerate(nags):
-        p=n.split();mid=len(p)//2;l1=' '.join(p[:mid]);l2=' '.join(p[mid:]) if len(p)>2 else (p[1] if len(p)>1 else '')
-        c.setFont('PoppinsBold',FTAB)
-        yb=TABLE_TOP+(HEADER_H-FTAB*2.2)/2
-        if i==0:
-            c.drawString(cs[i]+8,yb+FTAB*1.2,l1)
-            if l2: c.drawString(cs[i]+8,yb,l2)
+
+    # Wysokości wierszy po skali (dokładne, z zawijaniem)
+    row_heights = []
+    for l in lines_per:
+        if l == 1:
+            row_heights.append(ROW_H)
         else:
-            if l2:
-                c.drawCentredString(cs[i]+col_w[i]/2,yb+FTAB*1.2,l1)
-                c.drawCentredString(cs[i]+col_w[i]/2,yb,l2)
-            else: c.drawCentredString(cs[i]+col_w[i]/2,TABLE_TOP+HEADER_H/2-FTAB/2,l1)
-        if i>0:
-            c.setStrokeColorRGB(0.5,0.3,0.4);c.setLineWidth(0.5)
-            c.line(ce[i-1],TABLE_TOP,ce[i-1],TABLE_TOP+HEADER_H)
-    cy = TABLE_TOP - ROW_H
-    for i,w in enumerate(wiersze):
-        rh=rrh[i];bg=BG_LIGHT if i%2==0 else BG_WHITE
+            row_heights.append(int(l * LINE_H) + 6)
+
+    def draw_header():
+        c.setFillColorRGB(*BG_DARK)
+        c.rect(tx, TABLE_TOP, tw, HEADER_H, fill=1, stroke=0)
+        c.setFillColorRGB(*TEXT_WHITE)
+        nags = ['NAZWA','NETTO CENA JEDN.','ILOSC','WARTOSC NETTO','VAT','WARTOSC BRUTTO']
+        for i,n in enumerate(nags):
+            p=n.split(); mid=len(p)//2; l1=' '.join(p[:mid]); l2=' '.join(p[mid:]) if len(p)>2 else (p[1] if len(p)>1 else '')
+            c.setFont('PoppinsBold', FTAB)
+            yb = TABLE_TOP + (HEADER_H-FTAB*2.2)/2
+            if i==0:
+                c.drawString(cs[i]+8, yb+FTAB*1.2, l1)
+                if l2: c.drawString(cs[i]+8, yb, l2)
+            else:
+                if l2:
+                    c.drawCentredString(cs[i]+col_w[i]/2, yb+FTAB*1.2, l1)
+                    c.drawCentredString(cs[i]+col_w[i]/2, yb, l2)
+                else:
+                    c.drawCentredString(cs[i]+col_w[i]/2, TABLE_TOP+HEADER_H/2-FTAB/2, l1)
+            if i>0:
+                c.setStrokeColorRGB(0.5,0.3,0.4); c.setLineWidth(0.5)
+                c.line(ce[i-1], TABLE_TOP, ce[i-1], TABLE_TOP+HEADER_H)
+
+    def draw_row(i, w, y_center_anchor):
+        # rysuje wiersz o wysokosci row_heights[i] zaczynajac od gory w y_top
+        rh = row_heights[i]
+        y_top = y_center_anchor  # gorna krawedz wiersza
+        y_bot = y_top - rh
+        bg = BG_LIGHT if i%2==0 else BG_WHITE
         c.setFillColorRGB(*bg)
-        ay=cy-(rh-ROW_H)
-        c.rect(tx,ay,tw,rh,fill=1,stroke=0)
-        c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
-        c.rect(tx,ay,tw,rh,fill=0,stroke=1)
-        c.setFont('Poppins',FNT)
-        wds=w['nazwa'].split();lc=1;lw=0
+        c.rect(tx, y_bot, tw, rh, fill=1, stroke=0)
+        c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(0.5)
+        c.rect(tx, y_bot, tw, rh, fill=0, stroke=1)
+        # Nazwa
+        c.setFont('Poppins', FNT)
+        wds = w['nazwa'].split(); lc=1; lw=0
         for wd in wds:
-            ww=c.stringWidth(wd+' ','Poppins',FNT)
-            if lw+ww>col_w[0]-10: lc+=1;lw=ww
+            ww = c.stringWidth(wd+' ','Poppins',FNT)
+            if lw+ww > col_w[0]-10: lc+=1; lw=ww
             else: lw+=ww
         c.setFillColorRGB(*TEXT_DARK)
-        if lc==1: c.drawString(cs[0]+6,ay+rh/2-FNT/2,w['nazwa'])
+        if lc==1:
+            c.drawString(cs[0]+6, y_bot + rh/2 - FNT/2, w['nazwa'])
         else:
-            yt=ay+rh-8;lw=0;ls=0
+            yt = y_top - 8
+            lw=0; ls=0
             for wi,wd in enumerate(wds):
-                ww=c.stringWidth(wd+' ','Poppins',FNT)
-                if lw+ww>col_w[0]-10:
-                    c.drawString(cs[0]+6,yt,' '.join(wds[ls:wi]))
-                    yt-=FNT*1.4;lw=ww;ls=wi
+                ww = c.stringWidth(wd+' ','Poppins',FNT)
+                if lw+ww > col_w[0]-10:
+                    c.drawString(cs[0]+6, yt, ' '.join(wds[ls:wi]))
+                    yt -= LINE_H; lw=ww; ls=wi
                 else: lw+=ww
-            if ls<len(wds): c.drawString(cs[0]+6,yt,' '.join(wds[ls:]))
+            if ls < len(wds): c.drawString(cs[0]+6, yt, ' '.join(wds[ls:]))
+        # Pozostałe kolumny
         for ci in range(1,len(col_w)):
-            fs=FTAB if ci in(1,3,5)else FNT
-            c.setFont('Poppins',fs)
-            vm={1:w['cena_jedn'],2:w['ilosc'],3:w['netto'],4:w['vat'],5:w['brutto']}[ci]
-            txt=formatPLN(vm) if ci in(1,3,5)else str(vm) if ci==2 else vm
+            fs = FTAB if ci in(1,3,5) else FNT
+            c.setFont('Poppins', fs)
+            vm = {1:w['cena_jedn'],2:w['ilosc'],3:w['netto'],4:w['vat'],5:w['brutto']}[ci]
+            txt = formatPLN(vm) if ci in(1,3,5) else str(vm) if ci==2 else vm
             c.setFillColorRGB(*TEXT_DARK)
-            c.drawRightString(ce[ci]-8,ay+rh/2-fs/2,txt)
+            c.drawRightString(ce[ci]-8, y_bot + rh/2 - fs/2, txt)
         for j in range(1,len(col_w)):
-            c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
-            c.line(ce[j-1],ay,ce[j-1],ay+rh)
-        cy=ay-ROW_H
-    c.setFillColorRGB(*BG_LIGHT)
-    c.rect(tx,cy,tw,ROW_H,fill=1,stroke=0)
-    c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
-    c.rect(tx,cy,tw,ROW_H,fill=0,stroke=1)
-    cy-=ROW_H
-    c.setFillColorRGB(*BG_LIGHT)
-    c.rect(tx,cy,tw,ROW_H,fill=1,stroke=0)
-    c.setStrokeColorRGB(0.7,0.7,0.7);c.setLineWidth(0.8)
-    c.setFillColorRGB(*TEXT_DARK);c.setFont('PoppinsBold',FTAB)
-    c.drawString(cs[0]+6,cy+ROW_H/2-FTAB/2,'RAZEM')
-    c.drawRightString(ce[3]-8,cy+ROW_H/2-FTAB/2,formatPLN(suma_netto))
-    c.drawRightString(ce[5]-8,cy+ROW_H/2-FTAB/2,formatPLN(suma_brutto))
-    for j in range(1,len(col_w)):
-        c.setStrokeColorRGB(0.75,0.75,0.75);c.setLineWidth(0.5)
-        c.line(ce[j-1],cy,ce[j-1],cy+ROW_H)
-    c.setStrokeColorRGB(0.7,0.7,0.7);c.setLineWidth(0.8)
-    c.rect(tx,cy,tw,ROW_H,fill=0,stroke=1)
+            c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(0.5)
+            c.line(ce[j-1], y_bot, ce[j-1], y_top)
+
+    def draw_sum(cy_top):
+        # pusty wiersz + RAZEM
+        c.setFillColorRGB(*BG_LIGHT)
+        c.rect(tx, cy_top-ROW_H, tw, ROW_H, fill=1, stroke=0)
+        c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(0.5)
+        c.rect(tx, cy_top-ROW_H, tw, ROW_H, fill=0, stroke=1)
+        y = cy_top-2*ROW_H
+        c.setFillColorRGB(*BG_LIGHT)
+        c.rect(tx, y, tw, ROW_H, fill=1, stroke=0)
+        c.setStrokeColorRGB(0.7,0.7,0.7); c.setLineWidth(0.8)
+        c.setFillColorRGB(*TEXT_DARK); c.setFont('PoppinsBold', FTAB)
+        c.drawString(cs[0]+6, y+ROW_H/2-FTAB/2, 'RAZEM')
+        c.drawRightString(ce[3]-8, y+ROW_H/2-FTAB/2, formatPLN(suma_netto))
+        c.drawRightString(ce[5]-8, y+ROW_H/2-FTAB/2, formatPLN(suma_brutto))
+        for j in range(1,len(col_w)):
+            c.setStrokeColorRGB(0.75,0.75,0.75); c.setLineWidth(0.5)
+            c.line(ce[j-1], y, ce[j-1], y+ROW_H)
+        c.setStrokeColorRGB(0.7,0.7,0.7); c.setLineWidth(0.8)
+        c.rect(tx, y, tw, ROW_H, fill=0, stroke=1)
+
+    # --- Paginacja: dziel wiersze na strony ---
+    # dostępna wysokość na wiersze (bez headera i 2 wierszy sum)
+    space_per_page = DOSTEPNA - HEADER_H - 2*ROW_H
+    pages = []  # listy indeksów
+    cur = []
+    used = 0.0
+    for i in range(len(wiersze)):
+        h = row_heights[i]
+        if cur and used + h > space_per_page:
+            pages.append(cur); cur=[]; used=0.0
+        cur.append(i); used += h
+    if cur: pages.append(cur)
+
+    c = canvas.Canvas(buf, pagesize=(PAGE_W, PAGE_H))
+    first_page = True
+    for pi, page_idx in enumerate(pages):
+        if not first_page:
+            c.showPage()
+        first_page = False
+        draw_header()
+        y_top = TABLE_TOP - ROW_H  # górna krawędź pierwszego wiersza
+        for i in page_idx:
+            draw_row(i, wiersze[i], y_top)
+            y_top -= row_heights[i]
+        # Na ostatniej stronie dorysuj RAZEM
+        if pi == len(pages)-1:
+            draw_sum(y_top)
+        # Upewnij się, że RAZEM nie wykracza poza TABLE_BOTTOM
+        if pi == len(pages)-1 and (y_top - 2*ROW_H) < TABLE_BOTTOM:
+            # jeśli suma nie zmieściła się, zostaw — min 2 wiersze zawsze były liczone w space_per_page
+            pass
     c.save()
     buf.seek(0)
     return buf
